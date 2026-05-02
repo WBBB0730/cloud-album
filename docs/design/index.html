@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>云相册移动端设计稿</title>
+    <style>
+      :root {
+        --page: #f4f5f6;
+        --surface: #ffffff;
+        --surface-soft: #f7f8f8;
+        --text: #171a1f;
+        --muted: #747b86;
+        --line: #e6e8eb;
+        --accent: #0f9f8f;
+        --accent-soft: #e7f6f3;
+        --dark: #090b0f;
+        --radius-sm: 8px;
+        --radius-md: 10px;
+        --radius-lg: 12px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--page);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        letter-spacing: 0;
+      }
+
+      .page {
+        width: min(1280px, 100%);
+        margin: 0 auto;
+        padding: 40px 28px 48px;
+      }
+
+      .header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 30px;
+      }
+
+      .header h1 {
+        margin: 0 0 8px;
+        font-size: 30px;
+        line-height: 1.15;
+      }
+
+      .header p {
+        max-width: 640px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.7;
+      }
+
+      .badge {
+        flex: 0 0 auto;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        color: #3d4652;
+        padding: 8px 14px;
+        font-size: 13px;
+      }
+
+      .showcase {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, 340px);
+        justify-content: center;
+        gap: 30px 34px;
+        align-items: start;
+      }
+
+      .screen-wrap {
+        display: grid;
+        gap: 14px;
+      }
+
+      .screen-title {
+        padding-inline: 8px;
+      }
+
+      .screen-title strong {
+        display: block;
+        font-size: 15px;
+        margin-bottom: 4px;
+      }
+
+      .screen-title span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .phone {
+        width: 100%;
+        max-width: 340px;
+        aspect-ratio: 390 / 780;
+        margin: 0 auto;
+        border: 10px solid #15171b;
+        border-radius: 32px;
+        background: var(--surface);
+        box-shadow:
+          0 24px 70px rgb(20 26 34 / 18%),
+          0 2px 10px rgb(20 26 34 / 10%);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .phone::before {
+        content: "";
+        position: absolute;
+        top: 9px;
+        left: 50%;
+        z-index: 5;
+        width: 92px;
+        height: 27px;
+        transform: translateX(-50%);
+        border-radius: 14px;
+        background: #111316;
+      }
+
+      .app {
+        height: 100%;
+        overflow: hidden;
+        padding: 42px 16px 16px;
+        background: var(--surface);
+      }
+
+      .app.dark {
+        height: 100%;
+        background: var(--dark);
+        color: #f8fafc;
+        padding-inline: 0;
+        padding-bottom: 0;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 42px;
+        margin-bottom: 14px;
+      }
+
+      .topbar h2 {
+        flex: 1;
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
+      .topbar .title-stack {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .title-stack h2 {
+        margin-bottom: 4px;
+        font-size: 18px;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }
+
+      .title-stack p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .icon-btn {
+        display: inline-grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        color: #2d3440;
+      }
+
+      .icon-btn svg {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .view-switch {
+        display: flex;
+        gap: 2px;
+        width: fit-content;
+        margin-bottom: 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface-soft);
+        padding: 2px;
+      }
+
+      .switch-btn {
+        display: inline-grid;
+        place-items: center;
+        width: 30px;
+        height: 28px;
+        border: 0;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--muted);
+      }
+
+      .switch-btn.active {
+        background: var(--surface);
+        color: var(--accent);
+        box-shadow: 0 1px 4px rgb(20 26 34 / 8%);
+      }
+
+      .switch-btn svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .folder-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .folder-card {
+        overflow: hidden;
+        min-height: 122px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+      }
+
+      .cover {
+        position: relative;
+        height: 72px;
+        overflow: hidden;
+        background: var(--surface-soft);
+      }
+
+      .cover::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgb(0 0 0 / 22%), transparent 52%);
+      }
+
+      .cover span {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .photo-a {
+        background: linear-gradient(135deg, #80c8b9, #f3d58a);
+      }
+
+      .photo-b {
+        background: linear-gradient(135deg, #9db8e8, #f7b4a5);
+      }
+
+      .photo-c {
+        background: linear-gradient(135deg, #d7e2ea, #8ab6a8);
+      }
+
+      .photo-d {
+        background: linear-gradient(135deg, #e7b6be, #9fc9df);
+      }
+
+      .photo-e {
+        background: linear-gradient(135deg, #c4d7a8, #e9c89a);
+      }
+
+      .photo-f {
+        background: linear-gradient(135deg, #b6c5d9, #8fb0a3);
+      }
+
+      .folder-card strong {
+        display: block;
+        overflow: hidden;
+        margin: 10px 10px 0;
+        font-size: 15px;
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .folder-card small {
+        display: block;
+        margin: 5px 10px 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .folder-list-preview {
+        display: grid;
+        gap: 8px;
+      }
+
+      .folder-row {
+        display: grid;
+        grid-template-columns: 54px 1fr auto;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        padding: 7px;
+      }
+
+      .row-cover {
+        width: 54px;
+        height: 42px;
+        overflow: hidden;
+        border-radius: var(--radius-sm);
+      }
+
+      .row-cover span {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .folder-row strong {
+        display: block;
+        overflow: hidden;
+        font-size: 14px;
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .folder-row small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .row-more {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        color: var(--muted);
+      }
+
+      .row-more svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .media-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+      }
+
+      .filter-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: -4px 0 14px;
+      }
+
+      .segmented {
+        display: flex;
+        gap: 2px;
+        width: fit-content;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface-soft);
+        padding: 2px;
+      }
+
+      .chip {
+        border: 0;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--muted);
+        padding: 7px 9px;
+        font-size: 12px;
+        line-height: 1;
+        font-family: inherit;
+      }
+
+      .chip.active {
+        background: var(--surface);
+        color: var(--accent);
+        box-shadow: 0 1px 4px rgb(20 26 34 / 8%);
+      }
+
+      .sort-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface-soft);
+        color: var(--muted);
+        padding: 7px 9px;
+        font-size: 12px;
+        line-height: 1;
+        font-family: inherit;
+      }
+
+      .sort-btn svg {
+        width: 13px;
+        height: 13px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .media {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        border-radius: var(--radius-md);
+        background: var(--surface-soft);
+      }
+
+      .media::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 68% 32%, rgb(255 255 255 / 48%), transparent 12%),
+          linear-gradient(to top, rgb(0 0 0 / 18%), transparent 48%);
+      }
+
+      .play {
+        position: absolute;
+        right: 7px;
+        bottom: 7px;
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        border-radius: var(--radius-md);
+        background: rgb(0 0 0 / 58%);
+        color: #fff;
+        padding: 3px 7px;
+        font-size: 10px;
+      }
+
+      .play svg {
+        width: 9px;
+        height: 9px;
+        fill: currentColor;
+      }
+
+      .selected {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+      }
+
+      .selected .check {
+        position: absolute;
+        top: 7px;
+        right: 7px;
+        z-index: 3;
+        display: grid;
+        place-items: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
+      }
+
+      .selected .check svg {
+        width: 13px;
+        height: 13px;
+        stroke: currentColor;
+        stroke-width: 2.4;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .viewer-top {
+        position: absolute;
+        top: 44px;
+        left: 0;
+        right: 0;
+        z-index: 5;
+        display: grid;
+        grid-template-columns: 44px 1fr 44px;
+        align-items: center;
+        padding: 0 16px;
+      }
+
+      .viewer-top .ghost-btn {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: #fff;
+      }
+
+      .viewer-top svg {
+        width: 18px;
+        height: 18px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .counter {
+        justify-self: center;
+        width: 1px;
+        height: 1px;
+      }
+
+      .hero-photo {
+        position: absolute;
+        inset: 104px 0 118px;
+        overflow: hidden;
+        border-radius: 0;
+        background:
+          radial-gradient(circle at 75% 20%, #f6e5a8 0 9%, transparent 10%),
+          linear-gradient(150deg, #79b8a9 0 34%, #d8ebef 35% 55%, #eeb889 56% 100%);
+        box-shadow: 0 20px 50px rgb(0 0 0 / 40%);
+      }
+
+      .hero-photo::before {
+        content: "";
+        position: absolute;
+        inset: 38% -8% 0;
+        background: linear-gradient(150deg, #214f54, #79a17e 46%, #e7c077);
+        clip-path: polygon(0 88%, 28% 32%, 48% 68%, 70% 22%, 100% 82%, 100% 100%, 0 100%);
+      }
+
+      .hero-photo::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, transparent 70%, rgb(0 0 0 / 12%));
+      }
+
+      .thumb-strip {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 42px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow: hidden;
+        padding: 0 18px;
+      }
+
+      .thumb-strip span {
+        flex: 0 0 auto;
+        display: block;
+        width: 44px;
+        height: 58px;
+        border-radius: var(--radius-md);
+        background: linear-gradient(145deg, #79b8a9, #f0c28d);
+        opacity: 0.52;
+      }
+
+      .thumb-strip span.active {
+        width: 52px;
+        height: 66px;
+        border: 2px solid #fff;
+        opacity: 1;
+      }
+
+      .home-indicator {
+        position: absolute;
+        left: 50%;
+        bottom: 13px;
+        width: 128px;
+        height: 5px;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: rgb(255 255 255 / 80%);
+      }
+
+      @media (max-width: 640px) {
+        .page {
+          padding: 28px 14px 36px;
+        }
+
+        .header {
+          display: grid;
+        }
+
+        .badge {
+          width: fit-content;
+        }
+
+        .phone {
+          border-width: 8px;
+          border-radius: 28px;
+        }
+
+        .showcase {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="header">
+        <div>
+          <h1>云相册移动端设计稿</h1>
+          <p>
+            以文件夹为第一入口，打开文件夹后浏览图片和视频，预览页保持沉浸、克制，
+            只保留滑动看图所需的基础控制。
+          </p>
+        </div>
+        <div class="badge">相册：album.wbbb.plus</div>
+      </header>
+
+      <section class="showcase" aria-label="移动端设计稿">
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>1. 文件夹首页</strong>
+            <span>只展示文件夹，点击进入对应内容。</span>
+          </div>
+          <div class="phone">
+            <div class="app">
+              <div class="topbar">
+                <h2>云相册</h2>
+                <button class="icon-btn" aria-label="搜索">
+                  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+                </button>
+                <button class="icon-btn" aria-label="上传">
+                  <svg viewBox="0 0 24 24"><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M5 20h14" /></svg>
+                </button>
+                <button class="icon-btn" aria-label="新建文件夹">
+                  <svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /><path d="M12 14h6" /><path d="M15 11v6" /></svg>
+                </button>
+              </div>
+
+              <div class="view-switch" aria-label="视图切换">
+                <button class="switch-btn active" aria-label="卡片视图">
+                  <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1" /><rect x="13" y="4" width="7" height="7" rx="1" /><rect x="4" y="13" width="7" height="7" rx="1" /><rect x="13" y="13" width="7" height="7" rx="1" /></svg>
+                </button>
+                <button class="switch-btn" aria-label="列表视图">
+                  <svg viewBox="0 0 24 24"><path d="M8 6h12" /><path d="M8 12h12" /><path d="M8 18h12" /><path d="M4 6h.01" /><path d="M4 12h.01" /><path d="M4 18h.01" /></svg>
+                </button>
+              </div>
+
+              <div class="folder-grid">
+                <div class="folder-card">
+                  <div class="cover"><span class="photo-a"></span></div>
+                  <strong>旅行</strong>
+                  <small>128 项</small>
+                </div>
+                <div class="folder-card">
+                  <div class="cover"><span class="photo-d"></span></div>
+                  <strong>家庭</strong>
+                  <small>86 项</small>
+                </div>
+                <div class="folder-card">
+                  <div class="cover"><span class="photo-f"></span></div>
+                  <strong>视频</strong>
+                  <small>34 项</small>
+                </div>
+                <div class="folder-card">
+                  <div class="cover"><span class="photo-c"></span></div>
+                  <strong>截图</strong>
+                  <small>412 项</small>
+                </div>
+                <div class="folder-card">
+                  <div class="cover"><span class="photo-e"></span></div>
+                  <strong>工作</strong>
+                  <small>57 项</small>
+                </div>
+                <div class="folder-card">
+                  <div class="cover"><span class="photo-b"></span></div>
+                  <strong>收藏</strong>
+                  <small>24 项</small>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>2. 文件夹列表</strong>
+            <span>同一首页的列表视图，适合长文件夹名和快速扫读。</span>
+          </div>
+          <div class="phone">
+            <div class="app">
+              <div class="topbar">
+                <h2>云相册</h2>
+                <button class="icon-btn" aria-label="搜索">
+                  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+                </button>
+                <button class="icon-btn" aria-label="上传">
+                  <svg viewBox="0 0 24 24"><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M5 20h14" /></svg>
+                </button>
+                <button class="icon-btn" aria-label="新建文件夹">
+                  <svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /><path d="M12 14h6" /><path d="M15 11v6" /></svg>
+                </button>
+              </div>
+
+              <div class="view-switch" aria-label="视图切换">
+                <button class="switch-btn" aria-label="卡片视图">
+                  <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1" /><rect x="13" y="4" width="7" height="7" rx="1" /><rect x="4" y="13" width="7" height="7" rx="1" /><rect x="13" y="13" width="7" height="7" rx="1" /></svg>
+                </button>
+                <button class="switch-btn active" aria-label="列表视图">
+                  <svg viewBox="0 0 24 24"><path d="M8 6h12" /><path d="M8 12h12" /><path d="M8 18h12" /><path d="M4 6h.01" /><path d="M4 12h.01" /><path d="M4 18h.01" /></svg>
+                </button>
+              </div>
+
+              <div class="folder-list-preview">
+                <div class="folder-row">
+                  <div class="row-cover"><span class="photo-a"></span></div>
+                  <div>
+                    <strong>旅行</strong>
+                    <small>128 项</small>
+                  </div>
+                  <div class="row-more"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></div>
+                </div>
+                <div class="folder-row">
+                  <div class="row-cover"><span class="photo-d"></span></div>
+                  <div>
+                    <strong>家庭</strong>
+                    <small>86 项</small>
+                  </div>
+                  <div class="row-more"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></div>
+                </div>
+                <div class="folder-row">
+                  <div class="row-cover"><span class="photo-f"></span></div>
+                  <div>
+                    <strong>视频</strong>
+                    <small>34 项</small>
+                  </div>
+                  <div class="row-more"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></div>
+                </div>
+                <div class="folder-row">
+                  <div class="row-cover"><span class="photo-c"></span></div>
+                  <div>
+                    <strong>截图</strong>
+                    <small>412 项</small>
+                  </div>
+                  <div class="row-more"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></div>
+                </div>
+                <div class="folder-row">
+                  <div class="row-cover"><span class="photo-e"></span></div>
+                  <div>
+                    <strong>工作</strong>
+                    <small>57 项</small>
+                  </div>
+                  <div class="row-more"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></div>
+                </div>
+                <div class="folder-row">
+                  <div class="row-cover"><span class="photo-b"></span></div>
+                  <div>
+                    <strong>收藏</strong>
+                    <small>24 项</small>
+                  </div>
+                  <div class="row-more"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>3. 文件夹内容</strong>
+            <span>图片和视频混排，缩略图优先，视频只显示播放标识。</span>
+          </div>
+          <div class="phone">
+            <div class="app">
+              <div class="topbar">
+                <button class="icon-btn" aria-label="返回">
+                  <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
+                </button>
+                <div class="title-stack">
+                  <h2>旅行</h2>
+                </div>
+                <button class="icon-btn" aria-label="搜索">
+                  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+                </button>
+                <button class="icon-btn" aria-label="上传">
+                  <svg viewBox="0 0 24 24"><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M5 20h14" /></svg>
+                </button>
+              </div>
+
+              <div class="filter-row" aria-label="排序和筛选">
+                <div class="segmented" aria-label="类型筛选">
+                  <button class="chip active">全部</button>
+                  <button class="chip">图片</button>
+                  <button class="chip">视频</button>
+                </div>
+                <button class="sort-btn" aria-label="排序">
+                  最新
+                  <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" /></svg>
+                </button>
+              </div>
+
+              <div class="media-grid">
+                <div class="media photo-a"></div>
+                <div class="media photo-b"><span class="play"><svg viewBox="0 0 12 12"><path d="M3 2v8l7-4Z" /></svg>0:42</span></div>
+                <div class="media photo-c"></div>
+                <div class="media selected photo-d">
+                  <span class="check"><svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-8" /></svg></span>
+                </div>
+                <div class="media photo-e"></div>
+                <div class="media photo-f"><span class="play"><svg viewBox="0 0 12 12"><path d="M3 2v8l7-4Z" /></svg>2:18</span></div>
+                <div class="media photo-a"></div>
+                <div class="media photo-c"></div>
+                <div class="media photo-b"></div>
+                <div class="media photo-e"></div>
+                <div class="media photo-f"></div>
+                <div class="media photo-d"><span class="play"><svg viewBox="0 0 12 12"><path d="M3 2v8l7-4Z" /></svg>0:09</span></div>
+                <div class="media photo-c"></div>
+                <div class="media photo-a"></div>
+                <div class="media photo-e"></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>4. 沉浸预览</strong>
+            <span>左右滑动切换，不放箭头和复杂信息面板。</span>
+          </div>
+          <div class="phone">
+            <div class="app dark">
+              <div class="viewer-top">
+                <button class="ghost-btn" aria-label="返回">
+                  <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
+                </button>
+                <div class="counter" aria-hidden="true"></div>
+                <button class="ghost-btn" aria-label="更多">
+                  <svg viewBox="0 0 24 24"><path d="M12 12h.01" /><path d="M19 12h.01" /><path d="M5 12h.01" /></svg>
+                </button>
+              </div>
+              <div class="hero-photo"></div>
+              <div class="thumb-strip" aria-hidden="true">
+                <span></span>
+                <span class="active"></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <div class="home-indicator"></div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
