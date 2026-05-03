@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>云相册移动端设计稿</title>
+    <script src="https://unpkg.com/lucide@1.14.0/dist/umd/lucide.min.js"></script>
+    <script src="https://unpkg.com/react-grab@0.1.30/dist/index.global.js" crossorigin="anonymous"></script>
     <style>
       :root {
         --page: #f4f5f6;
@@ -18,6 +20,15 @@
         --radius-sm: 8px;
         --radius-md: 10px;
         --radius-lg: 12px;
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-right: env(safe-area-inset-right, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-left: env(safe-area-inset-left, 0px);
+        --page-x: 16px;
+        --page-top: calc(var(--safe-top) + 18px);
+        --page-bottom: calc(var(--safe-bottom) + 16px);
+        --auth-top: calc(var(--safe-top) + 150px);
+        --auth-bottom: calc(var(--safe-bottom) + 24px);
       }
 
       * {
@@ -26,7 +37,7 @@
 
       body {
         margin: 0;
-        min-height: 100vh;
+        min-height: 100dvh;
         background: var(--page);
         color: var(--text);
         font-family:
@@ -53,14 +64,6 @@
         margin: 0 0 8px;
         font-size: 30px;
         line-height: 1.15;
-      }
-
-      .header p {
-        max-width: 640px;
-        margin: 0;
-        color: var(--muted);
-        font-size: 15px;
-        line-height: 1.7;
       }
 
       .badge {
@@ -96,11 +99,6 @@
         margin-bottom: 4px;
       }
 
-      .screen-title span {
-        color: var(--muted);
-        font-size: 13px;
-      }
-
       .phone {
         width: 100%;
         max-width: 340px;
@@ -132,7 +130,7 @@
       .app {
         height: 100%;
         overflow: hidden;
-        padding: 42px 16px 16px;
+        padding: var(--page-top) calc(var(--page-x) + var(--safe-right)) var(--page-bottom) calc(var(--page-x) + var(--safe-left));
         background: var(--surface);
       }
 
@@ -140,8 +138,7 @@
         height: 100%;
         background: var(--dark);
         color: #f8fafc;
-        padding-inline: 0;
-        padding-bottom: 0;
+        padding: 0;
       }
 
       .topbar {
@@ -183,9 +180,9 @@
         place-items: center;
         width: 32px;
         height: 32px;
-        border: 1px solid var(--line);
+        border: 0;
         border-radius: var(--radius-md);
-        background: var(--surface);
+        background: transparent;
         color: #2d3440;
       }
 
@@ -197,6 +194,14 @@
         fill: none;
         stroke-linecap: round;
         stroke-linejoin: round;
+      }
+
+      .topbar > .icon-btn:first-child {
+        margin-left: -7px;
+      }
+
+      .topbar > .icon-btn:last-child {
+        margin-right: -7px;
       }
 
       .view-switch {
@@ -258,13 +263,6 @@
         background: var(--surface-soft);
       }
 
-      .cover::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(to top, rgb(0 0 0 / 22%), transparent 52%);
-      }
-
       .cover span {
         display: block;
         width: 100%;
@@ -272,27 +270,27 @@
       }
 
       .photo-a {
-        background: linear-gradient(135deg, #80c8b9, #f3d58a);
+        background: #eef0f2;
       }
 
       .photo-b {
-        background: linear-gradient(135deg, #9db8e8, #f7b4a5);
+        background: #eef0f2;
       }
 
       .photo-c {
-        background: linear-gradient(135deg, #d7e2ea, #8ab6a8);
+        background: #eef0f2;
       }
 
       .photo-d {
-        background: linear-gradient(135deg, #e7b6be, #9fc9df);
+        background: #eef0f2;
       }
 
       .photo-e {
-        background: linear-gradient(135deg, #c4d7a8, #e9c89a);
+        background: #eef0f2;
       }
 
       .photo-f {
-        background: linear-gradient(135deg, #b6c5d9, #8fb0a3);
+        background: #eef0f2;
       }
 
       .folder-card strong {
@@ -381,6 +379,24 @@
         gap: 4px;
       }
 
+      .media-groups {
+        display: grid;
+        gap: 24px;
+      }
+
+      .media-group {
+        display: grid;
+        gap: 8px;
+      }
+
+      .media-group h3 {
+        margin: 0;
+        color: #303844;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.2;
+      }
+
       .filter-row {
         display: flex;
         align-items: center;
@@ -420,11 +436,10 @@
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        border: 1px solid var(--line);
-        border-radius: var(--radius-md);
-        background: var(--surface-soft);
+        border: 0;
+        background: transparent;
         color: var(--muted);
-        padding: 7px 9px;
+        padding: 0;
         font-size: 12px;
         line-height: 1;
         font-family: inherit;
@@ -449,12 +464,7 @@
       }
 
       .media::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background:
-          radial-gradient(circle at 68% 32%, rgb(255 255 255 / 48%), transparent 12%),
-          linear-gradient(to top, rgb(0 0 0 / 18%), transparent 48%);
+        content: none;
       }
 
       .play {
@@ -552,25 +562,16 @@
         inset: 104px 0 118px;
         overflow: hidden;
         border-radius: 0;
-        background:
-          radial-gradient(circle at 75% 20%, #f6e5a8 0 9%, transparent 10%),
-          linear-gradient(150deg, #79b8a9 0 34%, #d8ebef 35% 55%, #eeb889 56% 100%);
+        background: #eef0f2;
         box-shadow: 0 20px 50px rgb(0 0 0 / 40%);
       }
 
       .hero-photo::before {
-        content: "";
-        position: absolute;
-        inset: 38% -8% 0;
-        background: linear-gradient(150deg, #214f54, #79a17e 46%, #e7c077);
-        clip-path: polygon(0 88%, 28% 32%, 48% 68%, 70% 22%, 100% 82%, 100% 100%, 0 100%);
+        content: none;
       }
 
       .hero-photo::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(to bottom, transparent 70%, rgb(0 0 0 / 12%));
+        content: none;
       }
 
       .thumb-strip {
@@ -591,7 +592,7 @@
         width: 44px;
         height: 58px;
         border-radius: var(--radius-md);
-        background: linear-gradient(145deg, #79b8a9, #f0c28d);
+        background: #eef0f2;
         opacity: 0.52;
       }
 
@@ -611,6 +612,253 @@
         transform: translateX(-50%);
         border-radius: 999px;
         background: rgb(255 255 255 / 80%);
+      }
+
+      .auth-app {
+        display: grid;
+        align-content: start;
+        gap: 22px;
+        height: 100%;
+        padding: var(--auth-top) calc(22px + var(--safe-right)) var(--auth-bottom) calc(22px + var(--safe-left));
+        background: var(--surface);
+      }
+
+      .auth-copy h2 {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.2;
+      }
+
+      .form-stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .field span {
+        color: #4a5360;
+        font-size: 12px;
+      }
+
+      .input-like {
+        display: flex;
+        align-items: center;
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface-soft);
+        color: var(--text);
+        padding: 0 12px;
+        font-size: 14px;
+      }
+
+      .input-like.locked {
+        color: #596272;
+      }
+
+      .primary-btn {
+        display: inline-grid;
+        place-items: center;
+        min-height: 42px;
+        border: 0;
+        border-radius: var(--radius-md);
+        background: var(--accent);
+        color: #fff;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .space-list {
+        display: grid;
+        gap: 9px;
+      }
+
+      .space-row {
+        display: grid;
+        grid-template-columns: 36px 1fr auto;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        padding: 9px;
+      }
+
+      .space-avatar {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-md);
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .space-row strong,
+      .admin-row strong,
+      .upload-row strong {
+        display: block;
+        overflow: hidden;
+        font-size: 14px;
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .space-row small,
+      .admin-row small,
+      .upload-row small {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .status-pill {
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        padding: 4px 8px;
+        font-size: 11px;
+      }
+
+      .upload-zone {
+        display: grid;
+        place-items: center;
+        gap: 8px;
+        min-height: 112px;
+        border: 1px dashed #b9c1cc;
+        border-radius: var(--radius-lg);
+        background: var(--surface-soft);
+        color: #3d4652;
+        text-align: center;
+      }
+
+      .upload-zone svg {
+        width: 26px;
+        height: 26px;
+        stroke: var(--accent);
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .upload-zone strong {
+        font-size: 14px;
+      }
+
+      .upload-list,
+      .admin-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .upload-row {
+        display: grid;
+        grid-template-columns: 42px 1fr auto;
+        align-items: center;
+        gap: 9px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        padding: 8px;
+      }
+
+      .admin-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 9px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        padding: 9px;
+      }
+
+      .file-icon {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: var(--radius-sm);
+        background: var(--surface-soft);
+        color: var(--accent);
+      }
+
+      .file-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .progress {
+        overflow: hidden;
+        height: 5px;
+        margin-top: 7px;
+        border-radius: 999px;
+        background: #edf0f2;
+      }
+
+      .progress span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--accent);
+      }
+
+      .progress .w-100 {
+        width: 100%;
+      }
+
+      .progress .w-64 {
+        width: 64%;
+      }
+
+      .progress .w-38 {
+        width: 38%;
+      }
+
+      .mini-action {
+        border: 0;
+        border-radius: var(--radius-sm);
+        background: var(--accent-soft);
+        color: var(--accent);
+        padding: 6px 8px;
+        font-family: inherit;
+        font-size: 11px;
+      }
+
+      .danger-action {
+        background: #fff1f1;
+        color: #c24141;
+      }
+
+      .admin-tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      .admin-tabs .chip {
+        border: 1px solid var(--line);
+        background: var(--surface-soft);
+      }
+
+      .admin-tabs .chip.active {
+        border-color: transparent;
       }
 
       @media (max-width: 640px) {
@@ -642,10 +890,6 @@
       <header class="header">
         <div>
           <h1>云相册移动端设计稿</h1>
-          <p>
-            以文件夹为第一入口，打开文件夹后浏览图片和视频，预览页保持沉浸、克制，
-            只保留滑动看图所需的基础控制。
-          </p>
         </div>
         <div class="badge">相册：album.wbbb.plus</div>
       </header>
@@ -653,30 +897,134 @@
       <section class="showcase" aria-label="移动端设计稿">
         <article class="screen-wrap">
           <div class="screen-title">
-            <strong>1. 文件夹首页</strong>
-            <span>只展示文件夹，点击进入对应内容。</span>
+            <strong>1. 登录</strong>
+          </div>
+          <div class="phone">
+            <div class="auth-app">
+              <div class="auth-copy">
+                <h2>云相册</h2>
+              </div>
+              <div class="form-stack">
+                <label class="field">
+                  <span>手机号</span>
+                  <div class="input-like">138 0000 0000</div>
+                </label>
+                <label class="field">
+                  <span>密码</span>
+                  <div class="input-like">••••••••••</div>
+                </label>
+                <button class="primary-btn">登录</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>2. 邀请注册</strong>
+          </div>
+          <div class="phone">
+            <div class="auth-app">
+              <div class="auth-copy">
+                <h2>完成注册</h2>
+              </div>
+              <div class="form-stack">
+                <label class="field">
+                  <span>手机号</span>
+                  <div class="input-like locked">139 1234 5678</div>
+                </label>
+                <label class="field">
+                  <span>昵称</span>
+                  <div class="input-like">李阿姨</div>
+                </label>
+                <label class="field">
+                  <span>设置密码</span>
+                  <div class="input-like">••••••••••</div>
+                </label>
+                <label class="field">
+                  <span>确认密码</span>
+                  <div class="input-like">••••••••••</div>
+                </label>
+                <button class="primary-btn">创建账号</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>3. 空间入口</strong>
           </div>
           <div class="phone">
             <div class="app">
               <div class="topbar">
-                <h2>云相册</h2>
-                <button class="icon-btn" aria-label="搜索">
-                  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+                <h2>空间</h2>
+                <button class="icon-btn" aria-label="管理后台">
+                  <i data-lucide="settings"></i>
                 </button>
+                <button class="icon-btn" aria-label="新建空间">
+                  <i data-lucide="plus"></i>
+                </button>
+              </div>
+
+              <div class="space-list">
+                <div class="space-row">
+                  <div class="space-avatar">家</div>
+                  <div>
+                    <strong>我的家</strong>
+                    <small>6 位成员 · 18 个相册</small>
+                  </div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
+                </div>
+                <div class="space-row">
+                  <div class="space-avatar">旅</div>
+                  <div>
+                    <strong>旅行小队</strong>
+                    <small>4 位成员 · 12 个相册</small>
+                  </div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
+                </div>
+                <div class="space-row">
+                  <div class="space-avatar">爸</div>
+                  <div>
+                    <strong>爸妈家</strong>
+                    <small>3 位成员 · 8 个相册</small>
+                  </div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>4. 相册首页</strong>
+          </div>
+          <div class="phone">
+            <div class="app">
+              <div class="topbar">
+                <button class="icon-btn" aria-label="返回空间">
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <h2>我的家</h2>
                 <button class="icon-btn" aria-label="上传">
-                  <svg viewBox="0 0 24 24"><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M5 20h14" /></svg>
+                  <i data-lucide="upload"></i>
                 </button>
-                <button class="icon-btn" aria-label="新建文件夹">
-                  <svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /><path d="M12 14h6" /><path d="M15 11v6" /></svg>
+                <button class="icon-btn" aria-label="新建相册">
+                  <i data-lucide="folder-plus"></i>
+                </button>
+                <button class="icon-btn" aria-label="回收站">
+                  <i data-lucide="trash-2"></i>
                 </button>
               </div>
 
               <div class="view-switch" aria-label="视图切换">
                 <button class="switch-btn active" aria-label="卡片视图">
-                  <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1" /><rect x="13" y="4" width="7" height="7" rx="1" /><rect x="4" y="13" width="7" height="7" rx="1" /><rect x="13" y="13" width="7" height="7" rx="1" /></svg>
+                  <i data-lucide="layout-grid"></i>
                 </button>
                 <button class="switch-btn" aria-label="列表视图">
-                  <svg viewBox="0 0 24 24"><path d="M8 6h12" /><path d="M8 12h12" /><path d="M8 18h12" /><path d="M4 6h.01" /><path d="M4 12h.01" /><path d="M4 18h.01" /></svg>
+                  <i data-lucide="list"></i>
                 </button>
               </div>
 
@@ -719,30 +1067,32 @@
 
         <article class="screen-wrap">
           <div class="screen-title">
-            <strong>2. 文件夹列表</strong>
-            <span>同一首页的列表视图，适合长文件夹名和快速扫读。</span>
+            <strong>5. 相册列表</strong>
           </div>
           <div class="phone">
             <div class="app">
               <div class="topbar">
-                <h2>云相册</h2>
-                <button class="icon-btn" aria-label="搜索">
-                  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+                <button class="icon-btn" aria-label="返回空间">
+                  <i data-lucide="chevron-left"></i>
                 </button>
+                <h2>我的家</h2>
                 <button class="icon-btn" aria-label="上传">
-                  <svg viewBox="0 0 24 24"><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M5 20h14" /></svg>
+                  <i data-lucide="upload"></i>
                 </button>
-                <button class="icon-btn" aria-label="新建文件夹">
-                  <svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /><path d="M12 14h6" /><path d="M15 11v6" /></svg>
+                <button class="icon-btn" aria-label="新建相册">
+                  <i data-lucide="folder-plus"></i>
+                </button>
+                <button class="icon-btn" aria-label="回收站">
+                  <i data-lucide="trash-2"></i>
                 </button>
               </div>
 
               <div class="view-switch" aria-label="视图切换">
                 <button class="switch-btn" aria-label="卡片视图">
-                  <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1" /><rect x="13" y="4" width="7" height="7" rx="1" /><rect x="4" y="13" width="7" height="7" rx="1" /><rect x="13" y="13" width="7" height="7" rx="1" /></svg>
+                  <i data-lucide="layout-grid"></i>
                 </button>
                 <button class="switch-btn active" aria-label="列表视图">
-                  <svg viewBox="0 0 24 24"><path d="M8 6h12" /><path d="M8 12h12" /><path d="M8 18h12" /><path d="M4 6h.01" /><path d="M4 12h.01" /><path d="M4 18h.01" /></svg>
+                  <i data-lucide="list"></i>
                 </button>
               </div>
 
@@ -753,7 +1103,7 @@
                     <strong>旅行</strong>
                     <small>128 项</small>
                   </div>
-                  <div class="row-more"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
                 </div>
                 <div class="folder-row">
                   <div class="row-cover"><span class="photo-d"></span></div>
@@ -761,7 +1111,7 @@
                     <strong>家庭</strong>
                     <small>86 项</small>
                   </div>
-                  <div class="row-more"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
                 </div>
                 <div class="folder-row">
                   <div class="row-cover"><span class="photo-f"></span></div>
@@ -769,7 +1119,7 @@
                     <strong>视频</strong>
                     <small>34 项</small>
                   </div>
-                  <div class="row-more"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
                 </div>
                 <div class="folder-row">
                   <div class="row-cover"><span class="photo-c"></span></div>
@@ -777,7 +1127,7 @@
                     <strong>截图</strong>
                     <small>412 项</small>
                   </div>
-                  <div class="row-more"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
                 </div>
                 <div class="folder-row">
                   <div class="row-cover"><span class="photo-e"></span></div>
@@ -785,7 +1135,7 @@
                     <strong>工作</strong>
                     <small>57 项</small>
                   </div>
-                  <div class="row-more"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
                 </div>
                 <div class="folder-row">
                   <div class="row-cover"><span class="photo-b"></span></div>
@@ -793,7 +1143,7 @@
                     <strong>收藏</strong>
                     <small>24 项</small>
                   </div>
-                  <div class="row-more"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" /></svg></div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
                 </div>
               </div>
             </div>
@@ -802,23 +1152,19 @@
 
         <article class="screen-wrap">
           <div class="screen-title">
-            <strong>3. 文件夹内容</strong>
-            <span>图片和视频混排，缩略图优先，视频只显示播放标识。</span>
+            <strong>6. 相册内容</strong>
           </div>
           <div class="phone">
             <div class="app">
               <div class="topbar">
                 <button class="icon-btn" aria-label="返回">
-                  <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
+                  <i data-lucide="chevron-left"></i>
                 </button>
                 <div class="title-stack">
                   <h2>旅行</h2>
                 </div>
-                <button class="icon-btn" aria-label="搜索">
-                  <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-                </button>
                 <button class="icon-btn" aria-label="上传">
-                  <svg viewBox="0 0 24 24"><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M5 20h14" /></svg>
+                  <i data-lucide="upload"></i>
                 </button>
               </div>
 
@@ -829,29 +1175,44 @@
                   <button class="chip">视频</button>
                 </div>
                 <button class="sort-btn" aria-label="排序">
-                  最新
-                  <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" /></svg>
+                  拍摄时间
+                  <i data-lucide="arrow-down"></i>
                 </button>
               </div>
 
-              <div class="media-grid">
-                <div class="media photo-a"></div>
-                <div class="media photo-b"><span class="play"><svg viewBox="0 0 12 12"><path d="M3 2v8l7-4Z" /></svg>0:42</span></div>
-                <div class="media photo-c"></div>
-                <div class="media selected photo-d">
-                  <span class="check"><svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-8" /></svg></span>
-                </div>
-                <div class="media photo-e"></div>
-                <div class="media photo-f"><span class="play"><svg viewBox="0 0 12 12"><path d="M3 2v8l7-4Z" /></svg>2:18</span></div>
-                <div class="media photo-a"></div>
-                <div class="media photo-c"></div>
-                <div class="media photo-b"></div>
-                <div class="media photo-e"></div>
-                <div class="media photo-f"></div>
-                <div class="media photo-d"><span class="play"><svg viewBox="0 0 12 12"><path d="M3 2v8l7-4Z" /></svg>0:09</span></div>
-                <div class="media photo-c"></div>
-                <div class="media photo-a"></div>
-                <div class="media photo-e"></div>
+              <div class="media-groups">
+                <section class="media-group">
+                  <h3>2026?5?3?</h3>
+                  <div class="media-grid">
+                    <div class="media photo-a"></div>
+                    <div class="media photo-b"><span class="play"><i data-lucide="play"></i>0:42</span></div>
+                    <div class="media photo-c"></div>
+                    <div class="media selected photo-d">
+                      <span class="check"><i data-lucide="check"></i></span>
+                    </div>
+                    <div class="media photo-e"></div>
+                    <div class="media photo-f"><span class="play"><i data-lucide="play"></i>2:18</span></div>
+                  </div>
+                </section>
+                <section class="media-group">
+                  <h3>2026?5?2?</h3>
+                  <div class="media-grid">
+                    <div class="media photo-a"></div>
+                    <div class="media photo-c"></div>
+                    <div class="media photo-b"></div>
+                    <div class="media photo-e"></div>
+                    <div class="media photo-f"></div>
+                    <div class="media photo-d"><span class="play"><i data-lucide="play"></i>0:09</span></div>
+                  </div>
+                </section>
+                <section class="media-group">
+                  <h3>2026?4?28?</h3>
+                  <div class="media-grid">
+                    <div class="media photo-c"></div>
+                    <div class="media photo-a"></div>
+                    <div class="media photo-e"></div>
+                  </div>
+                </section>
               </div>
             </div>
           </div>
@@ -859,18 +1220,17 @@
 
         <article class="screen-wrap">
           <div class="screen-title">
-            <strong>4. 沉浸预览</strong>
-            <span>左右滑动切换，不放箭头和复杂信息面板。</span>
+            <strong>7. 沉浸预览</strong>
           </div>
           <div class="phone">
             <div class="app dark">
               <div class="viewer-top">
                 <button class="ghost-btn" aria-label="返回">
-                  <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6" /></svg>
+                  <i data-lucide="chevron-left"></i>
                 </button>
                 <div class="counter" aria-hidden="true"></div>
                 <button class="ghost-btn" aria-label="更多">
-                  <svg viewBox="0 0 24 24"><path d="M12 12h.01" /><path d="M19 12h.01" /><path d="M5 12h.01" /></svg>
+                  <i data-lucide="ellipsis"></i>
                 </button>
               </div>
               <div class="hero-photo"></div>
@@ -885,7 +1245,161 @@
             </div>
           </div>
         </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>8. 上传队列</strong>
+          </div>
+          <div class="phone">
+            <div class="app">
+              <div class="topbar">
+                <button class="icon-btn" aria-label="返回">
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <div class="title-stack">
+                  <h2>上传到旅行</h2>
+                  <p>我的家</p>
+                </div>
+              </div>
+
+              <div class="upload-zone">
+                <i data-lucide="upload"></i>
+                <strong>选择图片和视频</strong>
+              </div>
+
+              <div class="upload-list">
+                <div class="upload-row">
+                  <div class="file-icon"><i data-lucide="image"></i></div>
+                  <div>
+                    <strong>IMG_2048.HEIC</strong>
+                    <small>已完成 · 3.8 MB</small>
+                    <div class="progress"><span class="w-100"></span></div>
+                  </div>
+                  <span class="status-pill">完成</span>
+                </div>
+                <div class="upload-row">
+                  <div class="file-icon"><i data-lucide="video"></i></div>
+                  <div>
+                    <strong>VID_0512.MOV</strong>
+                    <small>分片上传中 · 1.4 GB</small>
+                    <div class="progress"><span class="w-64"></span></div>
+                  </div>
+                  <button class="mini-action">暂停</button>
+                </div>
+                <div class="upload-row">
+                  <div class="file-icon"><i data-lucide="image"></i></div>
+                  <div>
+                    <strong>IMG_2050.JPG</strong>
+                    <small>网络中断 · 可继续</small>
+                    <div class="progress"><span class="w-38"></span></div>
+                  </div>
+                  <button class="mini-action">重试</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>9. 回收站</strong>
+          </div>
+          <div class="phone">
+            <div class="app">
+              <div class="topbar">
+                <button class="icon-btn" aria-label="返回">
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <div class="title-stack">
+                  <h2>回收站</h2>
+                  <p>我的家</p>
+                </div>
+              </div>
+
+              <div class="folder-list-preview">
+                <div class="folder-row">
+                  <div class="row-cover"><span class="photo-a"></span></div>
+                  <div>
+                    <strong>春节</strong>
+                    <small>王小明 · 今天 14:20 · 26 项</small>
+                  </div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
+                </div>
+                <div class="folder-row">
+                  <div class="row-cover"><span class="photo-d"></span></div>
+                  <div>
+                    <strong>家庭</strong>
+                    <small>妈妈 · 今天 09:12 · 9 项</small>
+                  </div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
+                </div>
+                <div class="folder-row">
+                  <div class="row-cover"><span class="photo-f"></span></div>
+                  <div>
+                    <strong>视频</strong>
+                    <small>我 · 昨天 21:08 · 4 项</small>
+                  </div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>10. 全局管理</strong>
+          </div>
+          <div class="phone">
+            <div class="app">
+              <div class="topbar">
+                <button class="icon-btn" aria-label="返回空间">
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <h2>管理后台</h2>
+              </div>
+
+              <div class="admin-tabs" aria-label="管理分类">
+                <button class="chip active">邀请</button>
+                <button class="chip">账号</button>
+                <button class="chip">空间</button>
+              </div>
+
+              <div class="form-stack">
+                <label class="field">
+                  <span>手机号</span>
+                  <div class="input-like">139 1234 5678</div>
+                </label>
+                <button class="primary-btn">生成邀请链接</button>
+              </div>
+
+              <div class="admin-list">
+                <div class="admin-row">
+                  <div>
+                    <strong>139 1234 5678</strong>
+                    <small>待注册</small>
+                  </div>
+                  <button class="mini-action danger-action">撤销</button>
+                </div>
+                <div class="admin-row">
+                  <div>
+                    <strong>136 0000 1122</strong>
+                    <small>已撤销</small>
+                  </div>
+                  <span class="status-pill">已撤销</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
       </section>
     </main>
+    <script>
+      lucide.createIcons();
+      window.addEventListener("react-grab:init", (event) => {
+        event.detail?.setOptions?.({ activationMode: "hold" });
+      });
+      window.__REACT_GRAB__?.setOptions?.({ activationMode: "hold" });
+    </script>
   </body>
 </html>
