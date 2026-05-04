@@ -1,4 +1,4 @@
-import { NewSpaceClient } from "./new-space-client"
+import { NewSpaceClient } from './new-space-client'
 
 export default function NewSpacePage() {
   return <NewSpaceClient />

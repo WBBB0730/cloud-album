@@ -1,10 +1,10 @@
-"use client"
+'use client'
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import { ChevronLeft } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { ChevronLeft } from 'lucide-react'
 
-import { MobileFrame } from "@/components/app/mobile-frame"
-import { TopBar } from "@/components/app/top-bar"
+import { MobileFrame } from '@/components/app/mobile-frame'
+import { TopBar } from '@/components/app/top-bar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,10 +14,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { useFixedBackNavigation } from "@/hooks/use-fixed-back-navigation"
+} from '@/components/ui/alert-dialog'
+import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
 
-import { UploadClient } from "./upload-client"
+import { UploadClient } from './upload-client'
 
 export function UploadPageClient({
   spaceId,
@@ -46,18 +46,18 @@ export function UploadPageClient({
       }
 
       event.preventDefault()
-      event.returnValue = ""
+      event.returnValue = ''
     }
 
-    window.addEventListener("beforeunload", handleBeforeUnload)
+    window.addEventListener('beforeunload', handleBeforeUnload)
 
     return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
     }
   }, [])
 
   const handleBackClick = () => {
-    requestBack("button")
+    requestBack('button')
   }
 
   const keepUploading = useCallback(() => {
@@ -76,21 +76,27 @@ export function UploadPageClient({
           <TopBar
             title="上传"
             leading={
-              <button type="button" className="ca-icon-btn" aria-label="返回" onClick={handleBackClick}>
+              <button
+                type="button"
+                className="ca-icon-btn"
+                aria-label="返回"
+                onClick={handleBackClick}
+              >
                 <ChevronLeft />
               </button>
             }
           />
         </div>
         <div className="ca-scroll-section">
-          <UploadClient spaceId={spaceId} folderId={folderId} onBlockingChange={setHasBlockingUploads} />
+          <UploadClient
+            spaceId={spaceId}
+            folderId={folderId}
+            onBlockingChange={setHasBlockingUploads}
+          />
         </div>
       </MobileFrame>
 
-      <AlertDialog
-        open={leaveDialogOpen}
-        onOpenChange={setLeaveDialogOpen}
-      >
+      <AlertDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
         <AlertDialogContent size="sm">
           <AlertDialogHeader>
             <AlertDialogTitle>离开上传页？</AlertDialogTitle>
@@ -99,8 +105,13 @@ export function UploadPageClient({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="w-full" onClick={keepUploading}>继续上传</AlertDialogCancel>
-            <AlertDialogAction className="ca-danger-confirm-button w-full" onClick={leavePage}>
+            <AlertDialogCancel className="w-full" onClick={keepUploading}>
+              继续上传
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="ca-danger-confirm-button w-full"
+              onClick={leavePage}
+            >
               离开
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -1,9 +1,9 @@
-import { Suspense } from "react"
+import { Suspense } from 'react'
 
-import { LoadingState } from "@/components/app/loading-state"
-import { MobileFrame } from "@/components/app/mobile-frame"
+import { LoadingState } from '@/components/app/loading-state'
+import { MobileFrame } from '@/components/app/mobile-frame'
 
-import { FolderPageClient } from "./page-client"
+import { FolderPageClient } from './page-client'
 
 export default async function FolderPage({
   params,
@@ -13,7 +13,13 @@ export default async function FolderPage({
   const { spaceId, folderId } = await params
 
   return (
-    <Suspense fallback={<MobileFrame><LoadingState /></MobileFrame>}>
+    <Suspense
+      fallback={
+        <MobileFrame>
+          <LoadingState />
+        </MobileFrame>
+      }
+    >
       <FolderPageClient spaceId={spaceId} folderId={folderId} />
     </Suspense>
   )

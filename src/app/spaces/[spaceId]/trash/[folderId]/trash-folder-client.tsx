@@ -1,15 +1,15 @@
-"use client"
+'use client'
 
-import { useCallback, useMemo } from "react"
-import { toast } from "sonner"
-import { Check, ChevronLeft, Play, Trash2, Undo2, X } from "lucide-react"
+import { useCallback, useMemo } from 'react'
+import { toast } from 'sonner'
+import { Check, ChevronLeft, Play, Trash2, Undo2, X } from 'lucide-react'
 
-import { EmptyState } from "@/components/app/empty-state"
-import { useGlobalLoading } from "@/components/app/global-loading"
-import { LoadingState } from "@/components/app/loading-state"
-import { MediaThumbnail } from "@/components/app/media-thumbnail"
-import { MobileFrame } from "@/components/app/mobile-frame"
-import { TopBar } from "@/components/app/top-bar"
+import { EmptyState } from '@/components/app/empty-state'
+import { useGlobalLoading } from '@/components/app/global-loading'
+import { LoadingState } from '@/components/app/loading-state'
+import { MediaThumbnail } from '@/components/app/media-thumbnail'
+import { MobileFrame } from '@/components/app/mobile-frame'
+import { TopBar } from '@/components/app/top-bar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,20 +20,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { getTrashFolderViewAction } from "@/features/app/view-actions"
+} from '@/components/ui/alert-dialog'
+import { getTrashFolderViewAction } from '@/features/app/view-actions'
 import {
   permanentMediaBatchAction,
   restoreMediaBatchAction,
-} from "@/features/trash/actions"
-import { useFixedBackNavigation } from "@/hooks/use-fixed-back-navigation"
-import { useMediaSelection } from "@/hooks/use-media-selection"
-import { useServerAction } from "@/hooks/use-server-action"
-import { formatDuration } from "@/lib/format"
+} from '@/features/trash/actions'
+import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
+import { useMediaSelection } from '@/hooks/use-media-selection'
+import { useServerAction } from '@/hooks/use-server-action'
+import { formatDuration } from '@/lib/format'
 
 type TrashMediaItem = {
   id: string
-  type: "image" | "video"
+  type: 'image' | 'video'
   filename: string
   url: string
   duration: number | null
@@ -79,18 +79,21 @@ export function TrashFolderClient({
     onBlockedBack: clearSelection,
   })
 
-  const removeMediaFromPage = useCallback((mediaIds: string[]) => {
-    const removedIds = new Set(mediaIds)
+  const removeMediaFromPage = useCallback(
+    (mediaIds: string[]) => {
+      const removedIds = new Set(mediaIds)
 
-    mutate((current) =>
-      current
-        ? {
-            ...current,
-            media: current.media.filter((item) => !removedIds.has(item.id)),
-          }
-        : current
-    )
-  }, [mutate])
+      mutate((current) =>
+        current
+          ? {
+              ...current,
+              media: current.media.filter((item) => !removedIds.has(item.id)),
+            }
+          : current
+      )
+    },
+    [mutate]
+  )
 
   const handleRestoreSelected = useCallback(async () => {
     const ids = selectedMedia.map((item) => item.id)
@@ -99,7 +102,7 @@ export function TrashFolderClient({
       return
     }
 
-    const hideLoading = showLoading({ title: "恢复中", timeoutMs: 0 })
+    const hideLoading = showLoading({ title: '恢复中', timeoutMs: 0 })
 
     try {
       await waitForNextFrame()
@@ -115,7 +118,14 @@ export function TrashFolderClient({
     } finally {
       hideLoading()
     }
-  }, [clearSelection, folderId, removeMediaFromPage, selectedMedia, showLoading, spaceId])
+  }, [
+    clearSelection,
+    folderId,
+    removeMediaFromPage,
+    selectedMedia,
+    showLoading,
+    spaceId,
+  ])
 
   const handlePermanentSelected = useCallback(async () => {
     const ids = selectedMedia.map((item) => item.id)
@@ -124,7 +134,7 @@ export function TrashFolderClient({
       return
     }
 
-    const hideLoading = showLoading({ title: "删除中", timeoutMs: 0 })
+    const hideLoading = showLoading({ title: '删除中', timeoutMs: 0 })
 
     try {
       await waitForNextFrame()
@@ -140,16 +150,28 @@ export function TrashFolderClient({
     } finally {
       hideLoading()
     }
-  }, [clearSelection, folderId, removeMediaFromPage, selectedMedia, showLoading, spaceId])
+  }, [
+    clearSelection,
+    folderId,
+    removeMediaFromPage,
+    selectedMedia,
+    showLoading,
+    spaceId,
+  ])
 
   return (
     <MobileFrame className="ca-scroll-layout">
       <div className="ca-fixed-section">
         <TopBar
-          title={data?.folder.name ?? "回收站"}
+          title={data?.folder.name ?? '回收站'}
           subtitle="回收站"
           leading={
-            <button type="button" className="ca-icon-btn" aria-label="返回" onClick={() => requestBack("button")}>
+            <button
+              type="button"
+              className="ca-icon-btn"
+              aria-label="返回"
+              onClick={() => requestBack('button')}
+            >
               <ChevronLeft />
             </button>
           }
@@ -157,7 +179,12 @@ export function TrashFolderClient({
 
         {selectionMode ? (
           <div className="ca-selection-bar">
-            <button type="button" className="ca-selection-icon" aria-label="取消选择" onClick={clearSelection}>
+            <button
+              type="button"
+              className="ca-selection-icon"
+              aria-label="取消选择"
+              onClick={clearSelection}
+            >
               <X />
             </button>
             <span>已选择 {selectedIds.size} 项</span>
@@ -167,7 +194,7 @@ export function TrashFolderClient({
               onClick={toggleAllSelection}
               disabled={media.length === 0}
             >
-              {allSelected ? "取消全选" : "全选"}
+              {allSelected ? '取消全选' : '全选'}
             </button>
             <i className="ca-selection-spacer" aria-hidden="true" />
             <button
@@ -196,7 +223,8 @@ export function TrashFolderClient({
                 <AlertDialogHeader>
                   <AlertDialogTitle>永久删除所选媒体？</AlertDialogTitle>
                   <AlertDialogDescription>
-                    将永久删除 {selectedIds.size} 项媒体。此操作不会删除 COS 文件，但这些媒体不会再出现在回收站。
+                    将永久删除 {selectedIds.size} 项媒体。此操作不会删除 COS
+                    文件，但这些媒体不会再出现在回收站。
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -225,7 +253,10 @@ export function TrashFolderClient({
                 const selected = selectedIds.has(item.id)
 
                 return (
-                  <div key={item.id} className={`ca-media group ${selected ? "selected" : ""}`}>
+                  <div
+                    key={item.id}
+                    className={`ca-media group ${selected ? 'selected' : ''}`}
+                  >
                     <button
                       type="button"
                       className="absolute inset-0 text-left"
@@ -240,15 +271,22 @@ export function TrashFolderClient({
                         }
                       }}
                     >
-                      <MediaThumbnail src={item.url} alt={item.filename} type={item.type} sizes="33vw" />
-                      {item.type === "video" ? (
+                      <MediaThumbnail
+                        src={item.url}
+                        alt={item.filename}
+                        type={item.type}
+                        sizes="33vw"
+                      />
+                      {item.type === 'video' ? (
                         <span className="ca-play">
                           <Play className="size-[9px] fill-white" />
                           {formatDuration(item.duration)}
                         </span>
                       ) : null}
                       {selectionMode ? (
-                        <span className={`ca-select-mark ${selected ? "active" : ""}`}>
+                        <span
+                          className={`ca-select-mark ${selected ? 'active' : ''}`}
+                        >
                           {selected ? <Check /> : null}
                         </span>
                       ) : null}

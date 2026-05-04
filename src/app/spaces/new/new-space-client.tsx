@@ -1,21 +1,21 @@
-"use client"
+'use client'
 
-import { Suspense } from "react"
-import Link from "next/link"
-import { useSearchParams } from "next/navigation"
-import { ChevronLeft } from "lucide-react"
+import { Suspense } from 'react'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { ChevronLeft } from 'lucide-react'
 
-import { ErrorBanner } from "@/components/app/error-banner"
-import { LoadingState } from "@/components/app/loading-state"
-import { MobileFrame } from "@/components/app/mobile-frame"
-import { TopBar } from "@/components/app/top-bar"
-import { Input } from "@/components/ui/input"
-import { createSpaceAction } from "@/features/spaces/actions"
-import { useFixedBackNavigation } from "@/hooks/use-fixed-back-navigation"
+import { ErrorBanner } from '@/components/app/error-banner'
+import { LoadingState } from '@/components/app/loading-state'
+import { MobileFrame } from '@/components/app/mobile-frame'
+import { TopBar } from '@/components/app/top-bar'
+import { Input } from '@/components/ui/input'
+import { createSpaceAction } from '@/features/spaces/actions'
+import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
 
 function NewSpaceContent() {
   const searchParams = useSearchParams()
-  useFixedBackNavigation("/spaces")
+  useFixedBackNavigation('/spaces')
 
   return (
     <MobileFrame className="ca-scroll-layout">
@@ -23,7 +23,12 @@ function NewSpaceContent() {
         <TopBar
           title="新建空间"
           leading={
-            <Link replace href="/spaces" className="ca-icon-btn" aria-label="返回">
+            <Link
+              replace
+              href="/spaces"
+              className="ca-icon-btn"
+              aria-label="返回"
+            >
               <ChevronLeft />
             </Link>
           }
@@ -31,7 +36,7 @@ function NewSpaceContent() {
       </div>
       <div className="ca-scroll-section">
         <form action={createSpaceAction} className="ca-form-stack">
-          <ErrorBanner message={searchParams.get("error") ?? undefined} />
+          <ErrorBanner message={searchParams.get('error') ?? undefined} />
           <label className="ca-field">
             <span>空间名称</span>
             <Input name="name" className="ca-input" />
@@ -45,7 +50,13 @@ function NewSpaceContent() {
 
 export function NewSpaceClient() {
   return (
-    <Suspense fallback={<MobileFrame><LoadingState /></MobileFrame>}>
+    <Suspense
+      fallback={
+        <MobileFrame>
+          <LoadingState />
+        </MobileFrame>
+      }
+    >
       <NewSpaceContent />
     </Suspense>
   )

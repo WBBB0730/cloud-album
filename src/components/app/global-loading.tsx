@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import {
   Suspense,
@@ -10,8 +10,8 @@ import {
   useRef,
   useState,
   type ReactNode,
-} from "react"
-import { usePathname, useSearchParams } from "next/navigation"
+} from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
 
 type LoadingOptions = {
   title?: string
@@ -28,9 +28,11 @@ type GlobalLoadingContextValue = {
   hideLoading: () => void
 }
 
-const GlobalLoadingContext = createContext<GlobalLoadingContextValue | null>(null)
+const GlobalLoadingContext = createContext<GlobalLoadingContextValue | null>(
+  null
+)
 
-const DEFAULT_TITLE = "加载中"
+const DEFAULT_TITLE = '加载中'
 const DEFAULT_TIMEOUT_MS = 15000
 
 function NavigationReset({ onChange }: { onChange: () => void }) {
@@ -45,7 +47,9 @@ function NavigationReset({ onChange }: { onChange: () => void }) {
 }
 
 export function GlobalLoadingProvider({ children }: { children: ReactNode }) {
-  const [entries, setEntries] = useState<Map<number, LoadingEntry>>(() => new Map())
+  const [entries, setEntries] = useState<Map<number, LoadingEntry>>(
+    () => new Map()
+  )
   const nextIdRef = useRef(1)
 
   const hideById = useCallback((id: number) => {
@@ -119,13 +123,13 @@ export function GlobalLoadingProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      showLoading({ title: "处理中" })
+      showLoading({ title: '处理中' })
     }
 
-    document.addEventListener("submit", handleSubmit, true)
+    document.addEventListener('submit', handleSubmit, true)
 
     return () => {
-      document.removeEventListener("submit", handleSubmit, true)
+      document.removeEventListener('submit', handleSubmit, true)
     }
   }, [showLoading])
 
@@ -152,7 +156,12 @@ export function GlobalLoadingProvider({ children }: { children: ReactNode }) {
       </Suspense>
       {children}
       {latestEntry ? (
-        <div className="ca-global-loading" role="status" aria-live="polite" aria-label={latestEntry.title}>
+        <div
+          className="ca-global-loading"
+          role="status"
+          aria-live="polite"
+          aria-label={latestEntry.title}
+        >
           <div className="ca-global-loading-panel">
             <span className="ca-global-loading-spinner" aria-hidden="true" />
             <span>{latestEntry.title}</span>
@@ -167,7 +176,9 @@ export function useGlobalLoading() {
   const context = useContext(GlobalLoadingContext)
 
   if (!context) {
-    throw new Error("useGlobalLoading must be used within GlobalLoadingProvider")
+    throw new Error(
+      'useGlobalLoading must be used within GlobalLoadingProvider'
+    )
   }
 
   return context

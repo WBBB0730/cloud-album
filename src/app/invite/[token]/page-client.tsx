@@ -1,11 +1,16 @@
-"use client"
+'use client'
 
-import { useSearchParams } from "next/navigation"
+import { useSearchParams } from 'next/navigation'
 
-import { InviteClient } from "./invite-client"
+import { InviteClient } from './invite-client'
 
 export function InvitePageClient({ token }: { token: string }) {
   const searchParams = useSearchParams()
 
-  return <InviteClient token={token} error={searchParams.get("error") ?? undefined} />
+  return (
+    <InviteClient
+      token={token}
+      error={searchParams.get('error') ?? undefined}
+    />
+  )
 }

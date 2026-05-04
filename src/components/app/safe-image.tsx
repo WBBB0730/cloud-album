@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import Image from "next/image"
-import { useEffect, useState } from "react"
+import Image from 'next/image'
+import { useEffect, useState } from 'react'
 
-import { isSignedUrlUsable } from "@/lib/signed-url"
+import { isSignedUrlUsable } from '@/lib/signed-url'
 
 type SafeImageProps = {
   src: string
@@ -16,7 +16,7 @@ export function SafeImage({
   src,
   alt,
   sizes,
-  className = "object-cover",
+  className = 'object-cover',
 }: SafeImageProps) {
   const [failed, setFailed] = useState(false)
 

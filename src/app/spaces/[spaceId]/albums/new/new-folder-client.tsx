@@ -1,16 +1,16 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { ChevronLeft } from "lucide-react"
+import Link from 'next/link'
+import { ChevronLeft } from 'lucide-react'
 
-import { ErrorBanner } from "@/components/app/error-banner"
-import { LoadingState } from "@/components/app/loading-state"
-import { MobileFrame } from "@/components/app/mobile-frame"
-import { TopBar } from "@/components/app/top-bar"
-import { Input } from "@/components/ui/input"
-import { createFolderAction } from "@/features/albums/actions"
-import { getNewFolderViewAction } from "@/features/app/view-actions"
-import { useServerAction } from "@/hooks/use-server-action"
+import { ErrorBanner } from '@/components/app/error-banner'
+import { LoadingState } from '@/components/app/loading-state'
+import { MobileFrame } from '@/components/app/mobile-frame'
+import { TopBar } from '@/components/app/top-bar'
+import { Input } from '@/components/ui/input'
+import { createFolderAction } from '@/features/albums/actions'
+import { getNewFolderViewAction } from '@/features/app/view-actions'
+import { useServerAction } from '@/hooks/use-server-action'
 
 export function NewFolderClient({
   spaceId,
@@ -19,7 +19,10 @@ export function NewFolderClient({
   spaceId: string
   error?: string
 }) {
-  const { data, loading } = useServerAction(() => getNewFolderViewAction(spaceId), [spaceId])
+  const { data, loading } = useServerAction(
+    () => getNewFolderViewAction(spaceId),
+    [spaceId]
+  )
   const action = createFolderAction.bind(null, spaceId)
 
   return (
@@ -29,7 +32,12 @@ export function NewFolderClient({
           title="新建相册"
           subtitle={data?.space.name}
           leading={
-            <Link replace href={`/spaces/${spaceId}`} className="ca-icon-btn" aria-label="返回">
+            <Link
+              replace
+              href={`/spaces/${spaceId}`}
+              className="ca-icon-btn"
+              aria-label="返回"
+            >
               <ChevronLeft />
             </Link>
           }

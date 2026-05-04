@@ -3,7 +3,7 @@ export const formatBytes = (size: number) => {
     return `${size} B`
   }
 
-  const units = ["KB", "MB", "GB", "TB"]
+  const units = ['KB', 'MB', 'GB', 'TB']
   let value = size / 1024
   let index = 0
 
@@ -17,23 +17,23 @@ export const formatBytes = (size: number) => {
 
 export const formatDateTime = (date: Date | string | null | undefined) => {
   if (!date) {
-    return "未知时间"
+    return '未知时间'
   }
 
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
+  return new Intl.DateTimeFormat('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(new Date(date))
 }
 
 export const formatDuration = (duration: number | null | undefined) => {
   if (!duration) {
-    return "0:00"
+    return '0:00'
   }
 
   const minutes = Math.floor(duration / 60)
   const seconds = Math.floor(duration % 60)
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }

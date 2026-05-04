@@ -1,26 +1,31 @@
-"use server"
+'use server'
 
-import { redirect } from "next/navigation"
+import { redirect } from 'next/navigation'
 
-import { requireUser } from "@/features/auth/session"
+import { requireUser } from '@/features/auth/session'
 
-import { addMemberByPhone, createSpace, leaveSpace, removeSpaceMember } from "./service"
+import {
+  addMemberByPhone,
+  createSpace,
+  leaveSpace,
+  removeSpaceMember,
+} from './service'
 
 const withError = (path: string, error: unknown) => {
-  const message = error instanceof Error ? error.message : "操作失败"
+  const message = error instanceof Error ? error.message : '操作失败'
   redirect(`${path}?error=${encodeURIComponent(message)}`)
 }
 
 export const createSpaceAction = async (formData: FormData) => {
   const user = await requireUser()
-  const name = String(formData.get("name") ?? "")
-  let spaceId = ""
+  const name = String(formData.get('name') ?? '')
+  let spaceId = ''
 
   try {
     const space = await createSpace(user.id, name)
     spaceId = space.id
   } catch (error) {
-    withError("/spaces", error)
+    withError('/spaces', error)
   }
 
   redirect(`/spaces/${spaceId}`)
@@ -30,10 +35,14 @@ export const addMemberAction = async (spaceId: string, formData: FormData) => {
   const user = await requireUser()
 
   try {
-    const data = await addMemberByPhone(user.id, spaceId, String(formData.get("phone") ?? ""))
+    const data = await addMemberByPhone(
+      user.id,
+      spaceId,
+      String(formData.get('phone') ?? '')
+    )
     return { ok: true, data, error: null }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "操作失败"
+    const message = error instanceof Error ? error.message : '操作失败'
     return { ok: false, data: null, error: message }
   }
 }
@@ -44,20 +53,23 @@ export const leaveSpaceAction = async (spaceId: string) => {
   try {
     await leaveSpace(user.id, spaceId)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "操作失败"
+    const message = error instanceof Error ? error.message : '操作失败'
     redirect(`/spaces/${spaceId}/members?error=${encodeURIComponent(message)}`)
   }
 
-  redirect("/spaces")
+  redirect('/spaces')
 }
 
-export const removeMemberAction = async (spaceId: string, targetUserId: string) => {
+export const removeMemberAction = async (
+  spaceId: string,
+  targetUserId: string
+) => {
   const user = await requireUser()
 
   try {
     await removeSpaceMember(user.id, spaceId, targetUserId)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "操作失败"
+    const message = error instanceof Error ? error.message : '操作失败'
     redirect(`/spaces/${spaceId}/members?error=${encodeURIComponent(message)}`)
   }
 

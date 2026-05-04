@@ -1,17 +1,27 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { ArrowDown, ArrowUp, Check, ChevronLeft, Download, Play, Trash2, Upload, X } from "lucide-react"
-import { toast } from "sonner"
+import Link from 'next/link'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ArrowDown,
+  ArrowUp,
+  Check,
+  ChevronLeft,
+  Download,
+  Play,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react'
+import { toast } from 'sonner'
 
-import { EmptyState } from "@/components/app/empty-state"
-import { useGlobalLoading } from "@/components/app/global-loading"
-import { LoadingState } from "@/components/app/loading-state"
-import { MediaPreviewOverlay } from "@/components/app/media-preview-overlay"
-import { MediaThumbnail } from "@/components/app/media-thumbnail"
-import { MobileFrame } from "@/components/app/mobile-frame"
-import { TopBar } from "@/components/app/top-bar"
+import { EmptyState } from '@/components/app/empty-state'
+import { useGlobalLoading } from '@/components/app/global-loading'
+import { LoadingState } from '@/components/app/loading-state'
+import { MediaPreviewOverlay } from '@/components/app/media-preview-overlay'
+import { MediaThumbnail } from '@/components/app/media-thumbnail'
+import { MobileFrame } from '@/components/app/mobile-frame'
+import { TopBar } from '@/components/app/top-bar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,27 +32,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { deleteMediaBatchAction, setFolderCoverAction } from "@/features/albums/actions"
-import { getFolderViewAction } from "@/features/app/view-actions"
-import { useFixedBackNavigation } from "@/hooks/use-fixed-back-navigation"
-import { useMediaSelection } from "@/hooks/use-media-selection"
-import { useServerAction } from "@/hooks/use-server-action"
-import { formatDuration } from "@/lib/format"
+} from '@/components/ui/alert-dialog'
+import {
+  deleteMediaBatchAction,
+  setFolderCoverAction,
+} from '@/features/albums/actions'
+import { getFolderViewAction } from '@/features/app/view-actions'
+import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
+import { useMediaSelection } from '@/hooks/use-media-selection'
+import { useServerAction } from '@/hooks/use-server-action'
+import { formatDuration } from '@/lib/format'
 import {
   getSignedUrlExpiresAt,
   isSignedUrlUsable,
   SIGNED_URL_REFRESH_WINDOW_MS,
-} from "@/lib/signed-url"
+} from '@/lib/signed-url'
 
-const PREVIEW_HISTORY_KEY = "__cloudAlbumPreview"
-const PREVIEW_HASH = "#preview"
+const PREVIEW_HISTORY_KEY = '__cloudAlbumPreview'
+const PREVIEW_HASH = '#preview'
 const FOREGROUND_REFRESH_DEBOUNCE_MS = 10_000
 const IMAGE_PRELOAD_CONCURRENCY = 3
 
 type FolderMediaItem = {
   id: string
-  type: "image" | "video"
+  type: 'image' | 'video'
   filename: string
   url: string
   duration: number | null
@@ -52,30 +65,36 @@ type FolderMediaItem = {
 
 const formatDateGroup = (date: Date | string | null | undefined) => {
   if (!date) {
-    return "未知日期"
+    return '未知日期'
   }
 
   const value = new Date(date)
 
   if (Number.isNaN(value.getTime())) {
-    return "未知日期"
+    return '未知日期'
   }
 
-  return new Intl.DateTimeFormat("zh-CN", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   }).format(value)
 }
 
 const groupMediaByDate = (media: FolderMediaItem[]) => {
   const groups: { key: string; title: string; media: FolderMediaItem[] }[] = []
-  const groupMap = new Map<string, { key: string; title: string; media: FolderMediaItem[] }>()
+  const groupMap = new Map<
+    string,
+    { key: string; title: string; media: FolderMediaItem[] }
+  >()
 
   for (const item of media) {
     const rawDate = item.takenAt ?? item.createdAt
     const value = rawDate ? new Date(rawDate) : null
-    const key = value && !Number.isNaN(value.getTime()) ? value.toISOString().slice(0, 10) : "unknown"
+    const key =
+      value && !Number.isNaN(value.getTime())
+        ? value.toISOString().slice(0, 10)
+        : 'unknown'
     const title = formatDateGroup(value)
     let group = groupMap.get(key)
 
@@ -108,20 +127,21 @@ const keepStableMediaUrls = (
 
     return {
       ...item,
-      url: previousUrl && isSignedUrlUsable(previousUrl) ? previousUrl : item.url,
+      url:
+        previousUrl && isSignedUrlUsable(previousUrl) ? previousUrl : item.url,
     }
   })
 }
 
 const getVisibleMedia = (
   media: FolderMediaItem[],
-  type: "all" | "image" | "video",
-  sort: "desc" | "asc"
+  type: 'all' | 'image' | 'video',
+  sort: 'desc' | 'asc'
 ) =>
   media
-    .filter((item) => type === "all" || item.type === type)
+    .filter((item) => type === 'all' || item.type === type)
     .toSorted((a, b) => {
-      const direction = sort === "asc" ? 1 : -1
+      const direction = sort === 'asc' ? 1 : -1
       const timeDelta = getMediaTime(a) - getMediaTime(b)
 
       if (timeDelta !== 0) {
@@ -140,7 +160,8 @@ const getNextSignedUrlRefreshDelay = (media: FolderMediaItem[]) => {
     return null
   }
 
-  const nextRefreshAt = Math.min(...expiresAtList) - SIGNED_URL_REFRESH_WINDOW_MS
+  const nextRefreshAt =
+    Math.min(...expiresAtList) - SIGNED_URL_REFRESH_WINDOW_MS
 
   return Math.max(0, nextRefreshAt - Date.now())
 }
@@ -152,9 +173,9 @@ const preloadImage = (url: string) =>
   new Promise<void>((resolve, reject) => {
     const image = new Image()
 
-    image.decoding = "async"
+    image.decoding = 'async'
     image.onload = () => resolve()
-    image.onerror = () => reject(new Error("图片预加载失败"))
+    image.onerror = () => reject(new Error('图片预加载失败'))
     image.src = url
   })
 
@@ -187,28 +208,33 @@ const runImagePreloadQueue = async (
   }
 
   await Promise.all(
-    Array.from({ length: Math.min(IMAGE_PRELOAD_CONCURRENCY, items.length) }, runWorker)
+    Array.from(
+      { length: Math.min(IMAGE_PRELOAD_CONCURRENCY, items.length) },
+      runWorker
+    )
   )
 }
 
-const downloadMediaItem = async (item: Pick<FolderMediaItem, "filename" | "url">) => {
+const downloadMediaItem = async (
+  item: Pick<FolderMediaItem, 'filename' | 'url'>
+) => {
   try {
     const response = await fetch(item.url)
 
     if (!response.ok) {
-      throw new Error("下载失败")
+      throw new Error('下载失败')
     }
 
     const blob = await response.blob()
     const objectUrl = URL.createObjectURL(blob)
-    const link = document.createElement("a")
+    const link = document.createElement('a')
 
     link.href = objectUrl
     link.download = item.filename
     link.click()
     URL.revokeObjectURL(objectUrl)
   } catch {
-    window.open(item.url, "_blank", "noopener,noreferrer")
+    window.open(item.url, '_blank', 'noopener,noreferrer')
   }
 }
 
@@ -225,8 +251,8 @@ export function FolderClient({
 }: {
   spaceId: string
   folderId: string
-  type: "all" | "image" | "video"
-  sort: "desc" | "asc"
+  type: 'all' | 'image' | 'video'
+  sort: 'desc' | 'asc'
 }) {
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
   const [previewMedia, setPreviewMedia] = useState<FolderMediaItem[]>([])
@@ -243,8 +269,8 @@ export function FolderClient({
     () => getFolderViewAction(spaceId, folderId),
     [spaceId, folderId]
   )
-  const nextSort = sort === "desc" ? "asc" : "desc"
-  const SortIcon = sort === "desc" ? ArrowDown : ArrowUp
+  const nextSort = sort === 'desc' ? 'asc' : 'desc'
+  const SortIcon = sort === 'desc' ? ArrowDown : ArrowUp
 
   useEffect(() => {
     stableMediaRef.current = stableMedia
@@ -270,7 +296,7 @@ export function FolderClient({
       const previousItem = previousById.get(item.id)
 
       return (
-        item.type === "image" &&
+        item.type === 'image' &&
         previousItem?.url &&
         previousItem.url !== item.url &&
         isSignedUrlUsable(previousItem.url) &&
@@ -287,7 +313,9 @@ export function FolderClient({
         (item) => {
           setStableMedia((currentMedia) =>
             currentMedia.map((currentItem) => {
-              const latestItem = latestMediaRef.current.find((latest) => latest.id === currentItem.id)
+              const latestItem = latestMediaRef.current.find(
+                (latest) => latest.id === currentItem.id
+              )
 
               return currentItem.id === item.id && latestItem?.url === item.url
                 ? { ...currentItem, url: item.url }
@@ -307,7 +335,9 @@ export function FolderClient({
   }, [data])
 
   const refreshMediaUrl = useCallback((mediaId: string) => {
-    const latestItem = latestMediaRef.current.find((item) => item.id === mediaId)
+    const latestItem = latestMediaRef.current.find(
+      (item) => item.id === mediaId
+    )
 
     if (!latestItem) {
       return
@@ -331,7 +361,10 @@ export function FolderClient({
   const refreshExpiredUrlsWithDebounce = useCallback(() => {
     const now = Date.now()
 
-    if (now - lastForegroundRefreshRef.current < FOREGROUND_REFRESH_DEBOUNCE_MS) {
+    if (
+      now - lastForegroundRefreshRef.current <
+      FOREGROUND_REFRESH_DEBOUNCE_MS
+    ) {
       return
     }
 
@@ -350,8 +383,14 @@ export function FolderClient({
 
     return getVisibleMedia(stableMedia, type, sort)
   }, [data, sort, stableMedia, type])
-  const mediaGroups = useMemo(() => groupMediaByDate(visibleMedia), [visibleMedia])
-  const mediaSelectionIds = useMemo(() => visibleMedia.map((item) => item.id), [visibleMedia])
+  const mediaGroups = useMemo(
+    () => groupMediaByDate(visibleMedia),
+    [visibleMedia]
+  )
+  const mediaSelectionIds = useMemo(
+    () => visibleMedia.map((item) => item.id),
+    [visibleMedia]
+  )
   const {
     allSelected: allVisibleSelected,
     clearSelection,
@@ -375,43 +414,56 @@ export function FolderClient({
     blocking: selectionMode,
     onBlockedBack: clearSelection,
   })
-  const handleDeleteMedia = useCallback(async (mediaIds: string[]) => {
-    const uniqueIds = Array.from(new Set(mediaIds))
+  const handleDeleteMedia = useCallback(
+    async (mediaIds: string[]) => {
+      const uniqueIds = Array.from(new Set(mediaIds))
 
-    if (uniqueIds.length === 0) {
-      return false
-    }
-
-    const deletedIds = new Set(uniqueIds)
-    const hideLoading = showLoading({ title: "删除中", timeoutMs: 0 })
-
-    try {
-      await waitForNextFrame()
-      const result = await deleteMediaBatchAction(spaceId, folderId, uniqueIds)
-
-      if (!result.ok) {
-        toast.error(result.error)
+      if (uniqueIds.length === 0) {
         return false
       }
 
-      latestMediaRef.current = latestMediaRef.current.filter((item) => !deletedIds.has(item.id))
-      mutate((current) =>
-        current
-          ? {
-              ...current,
-              media: current.media.filter((item) => !deletedIds.has(item.id)),
-            }
-          : current
-      )
-      setStableMedia((currentMedia) => currentMedia.filter((item) => !deletedIds.has(item.id)))
-      setPreviewMedia((currentMedia) => currentMedia.filter((item) => !deletedIds.has(item.id)))
-      setSelectedIds(new Set())
-      setSelectionMode(false)
-      return true
-    } finally {
-      hideLoading()
-    }
-  }, [folderId, mutate, showLoading, spaceId])
+      const deletedIds = new Set(uniqueIds)
+      const hideLoading = showLoading({ title: '删除中', timeoutMs: 0 })
+
+      try {
+        await waitForNextFrame()
+        const result = await deleteMediaBatchAction(
+          spaceId,
+          folderId,
+          uniqueIds
+        )
+
+        if (!result.ok) {
+          toast.error(result.error)
+          return false
+        }
+
+        latestMediaRef.current = latestMediaRef.current.filter(
+          (item) => !deletedIds.has(item.id)
+        )
+        mutate((current) =>
+          current
+            ? {
+                ...current,
+                media: current.media.filter((item) => !deletedIds.has(item.id)),
+              }
+            : current
+        )
+        setStableMedia((currentMedia) =>
+          currentMedia.filter((item) => !deletedIds.has(item.id))
+        )
+        setPreviewMedia((currentMedia) =>
+          currentMedia.filter((item) => !deletedIds.has(item.id))
+        )
+        setSelectedIds(new Set())
+        setSelectionMode(false)
+        return true
+      } finally {
+        hideLoading()
+      }
+    },
+    [folderId, mutate, showLoading, spaceId]
+  )
   const handleDeleteSelected = useCallback(() => {
     const ids = selectedMedia.map((item) => item.id)
 
@@ -422,7 +474,7 @@ export function FolderClient({
       return
     }
 
-    const hideLoading = showLoading({ title: "下载中", timeoutMs: 0 })
+    const hideLoading = showLoading({ title: '下载中', timeoutMs: 0 })
 
     try {
       await waitForNextFrame()
@@ -436,65 +488,79 @@ export function FolderClient({
       hideLoading()
     }
   }, [clearSelection, selectedMedia, showLoading])
-  const handleSetCover = useCallback(async (mediaId: string) => {
-    const hideLoading = showLoading({ title: "设置中", timeoutMs: 0 })
+  const handleSetCover = useCallback(
+    async (mediaId: string) => {
+      const hideLoading = showLoading({ title: '设置中', timeoutMs: 0 })
 
-    try {
-      const result = await setFolderCoverAction(spaceId, folderId, mediaId)
+      try {
+        const result = await setFolderCoverAction(spaceId, folderId, mediaId)
 
-      if (!result.ok) {
-        toast.error(result.error)
+        if (!result.ok) {
+          toast.error(result.error)
+          return
+        }
+
+        await refresh()
+      } finally {
+        hideLoading()
+      }
+    },
+    [folderId, refresh, showLoading, spaceId]
+  )
+  const openPreview = useCallback(
+    async (index: number) => {
+      let previewList = visibleMedia
+      let previewStartIndex = index
+      const targetItem = previewList[index]
+
+      if (targetItem && !isSignedUrlUsable(targetItem.url)) {
+        const refreshedData = await refreshExpiredUrls()
+
+        if (refreshedData) {
+          latestMediaRef.current = refreshedData.media
+
+          const nextStableMedia = keepStableMediaUrls(
+            refreshedData.media,
+            stableMedia
+          )
+          const nextVisibleMedia = getVisibleMedia(nextStableMedia, type, sort)
+          const nextIndex = nextVisibleMedia.findIndex(
+            (item) => item.id === targetItem.id
+          )
+
+          setStableMedia(nextStableMedia)
+          previewList = nextVisibleMedia
+          previewStartIndex =
+            nextIndex >= 0
+              ? nextIndex
+              : Math.min(index, nextVisibleMedia.length - 1)
+        }
+      }
+
+      if (previewStartIndex < 0 || previewList.length === 0) {
         return
       }
 
-      await refresh()
-    } finally {
-      hideLoading()
-    }
-  }, [folderId, refresh, showLoading, spaceId])
-  const openPreview = useCallback(async (index: number) => {
-    let previewList = visibleMedia
-    let previewStartIndex = index
-    const targetItem = previewList[index]
+      if (previewIndexRef.current === null) {
+        const url = new URL(window.location.href)
+        url.hash = PREVIEW_HASH.slice(1)
 
-    if (targetItem && !isSignedUrlUsable(targetItem.url)) {
-      const refreshedData = await refreshExpiredUrls()
-
-      if (refreshedData) {
-        latestMediaRef.current = refreshedData.media
-
-        const nextStableMedia = keepStableMediaUrls(refreshedData.media, stableMedia)
-        const nextVisibleMedia = getVisibleMedia(nextStableMedia, type, sort)
-        const nextIndex = nextVisibleMedia.findIndex((item) => item.id === targetItem.id)
-
-        setStableMedia(nextStableMedia)
-        previewList = nextVisibleMedia
-        previewStartIndex = nextIndex >= 0 ? nextIndex : Math.min(index, nextVisibleMedia.length - 1)
+        window.history.pushState(
+          {
+            ...(window.history.state ?? {}),
+            [PREVIEW_HISTORY_KEY]: true,
+          },
+          '',
+          url
+        )
       }
-    }
 
-    if (previewStartIndex < 0 || previewList.length === 0) {
-      return
-    }
-
-    if (previewIndexRef.current === null) {
-      const url = new URL(window.location.href)
-      url.hash = PREVIEW_HASH.slice(1)
-
-      window.history.pushState(
-        {
-          ...(window.history.state ?? {}),
-          [PREVIEW_HISTORY_KEY]: true,
-        },
-        "",
-        url
-      )
-    }
-
-    setPreviewMedia(previewList)
-    previewIndexRef.current = previewStartIndex
-    setPreviewIndex(previewStartIndex)
-  }, [refreshExpiredUrls, sort, stableMedia, type, visibleMedia])
+      setPreviewMedia(previewList)
+      previewIndexRef.current = previewStartIndex
+      setPreviewIndex(previewStartIndex)
+    },
+    [refreshExpiredUrls, sort, stableMedia, type, visibleMedia]
+  )
   const closePreview = useCallback(() => {
     if (previewIndexRef.current === null) {
       return
@@ -510,26 +576,34 @@ export function FolderClient({
       window.setTimeout(() => window.history.back(), 0)
     }
   }, [])
-  const handleDeletePreviewItem = useCallback(async (mediaId: string) => {
-    const currentPreviewMedia = previewMedia
-    const currentPreviewIndex = previewIndexRef.current ?? 0
-    const remainingPreviewMedia = currentPreviewMedia.filter((item) => item.id !== mediaId)
-    const deleted = await handleDeleteMedia([mediaId])
+  const handleDeletePreviewItem = useCallback(
+    async (mediaId: string) => {
+      const currentPreviewMedia = previewMedia
+      const currentPreviewIndex = previewIndexRef.current ?? 0
+      const remainingPreviewMedia = currentPreviewMedia.filter(
+        (item) => item.id !== mediaId
+      )
+      const deleted = await handleDeleteMedia([mediaId])
 
-    if (!deleted) {
-      return
-    }
+      if (!deleted) {
+        return
+      }
 
-    if (remainingPreviewMedia.length === 0) {
-      closePreview()
-      return
-    }
+      if (remainingPreviewMedia.length === 0) {
+        closePreview()
+        return
+      }
 
-    const nextIndex = Math.min(currentPreviewIndex, remainingPreviewMedia.length - 1)
+      const nextIndex = Math.min(
+        currentPreviewIndex,
+        remainingPreviewMedia.length - 1
+      )
 
-    previewIndexRef.current = nextIndex
-    setPreviewIndex(nextIndex)
-  }, [closePreview, handleDeleteMedia, previewMedia])
+      previewIndexRef.current = nextIndex
+      setPreviewIndex(nextIndex)
+    },
+    [closePreview, handleDeleteMedia, previewMedia]
+  )
 
   useEffect(() => {
     previewIndexRef.current = previewIndex
@@ -567,17 +641,17 @@ export function FolderClient({
 
   useEffect(() => {
     const handleForeground = () => {
-      if (document.visibilityState === "visible") {
+      if (document.visibilityState === 'visible') {
         refreshExpiredUrlsWithDebounce()
       }
     }
 
-    window.addEventListener("focus", refreshExpiredUrlsWithDebounce)
-    document.addEventListener("visibilitychange", handleForeground)
+    window.addEventListener('focus', refreshExpiredUrlsWithDebounce)
+    document.addEventListener('visibilitychange', handleForeground)
 
     return () => {
-      window.removeEventListener("focus", refreshExpiredUrlsWithDebounce)
-      document.removeEventListener("visibilitychange", handleForeground)
+      window.removeEventListener('focus', refreshExpiredUrlsWithDebounce)
+      document.removeEventListener('visibilitychange', handleForeground)
     }
   }, [refreshExpiredUrlsWithDebounce])
 
@@ -596,22 +670,32 @@ export function FolderClient({
       }
     }
 
-    window.addEventListener("popstate", handlePopState, { capture: true })
-    return () => window.removeEventListener("popstate", handlePopState, { capture: true })
+    window.addEventListener('popstate', handlePopState, { capture: true })
+    return () =>
+      window.removeEventListener('popstate', handlePopState, { capture: true })
   }, [])
 
   return (
     <MobileFrame className="ca-scroll-layout relative">
       <div className="ca-fixed-section">
         <TopBar
-          title={data?.folder.name ?? "相册"}
+          title={data?.folder.name ?? '相册'}
           leading={
-            <button type="button" className="ca-icon-btn" aria-label="返回" onClick={() => requestBack("button")}>
+            <button
+              type="button"
+              className="ca-icon-btn"
+              aria-label="返回"
+              onClick={() => requestBack('button')}
+            >
               <ChevronLeft />
             </button>
           }
           actions={
-            <Link href={`/spaces/${spaceId}/albums/${folderId}/upload`} className="ca-icon-btn" aria-label="上传">
+            <Link
+              href={`/spaces/${spaceId}/albums/${folderId}/upload`}
+              className="ca-icon-btn"
+              aria-label="上传"
+            >
               <Upload />
             </Link>
           }
@@ -620,16 +704,23 @@ export function FolderClient({
         <div className="ca-filter-row" aria-label="排序和筛选">
           <div className="ca-segmented" aria-label="类型筛选">
             {[
-              ["all", "全部"],
-              ["image", "图片"],
-              ["video", "视频"],
+              ['all', '全部'],
+              ['image', '图片'],
+              ['video', '视频'],
             ].map(([value, label]) => (
-              <Link key={value} href={`/spaces/${spaceId}/albums/${folderId}?type=${value}&sort=${sort}`} className={`ca-chip ${type === value ? "active" : ""}`}>
+              <Link
+                key={value}
+                href={`/spaces/${spaceId}/albums/${folderId}?type=${value}&sort=${sort}`}
+                className={`ca-chip ${type === value ? 'active' : ''}`}
+              >
                 {label}
               </Link>
             ))}
           </div>
-          <Link href={`/spaces/${spaceId}/albums/${folderId}?type=${type}&sort=${nextSort}`} className="ca-sort-btn">
+          <Link
+            href={`/spaces/${spaceId}/albums/${folderId}?type=${type}&sort=${nextSort}`}
+            className="ca-sort-btn"
+          >
             拍摄时间
             <SortIcon />
           </Link>
@@ -637,7 +728,12 @@ export function FolderClient({
 
         {selectionMode ? (
           <div className="ca-selection-bar">
-            <button type="button" className="ca-selection-icon" aria-label="取消选择" onClick={clearSelection}>
+            <button
+              type="button"
+              className="ca-selection-icon"
+              aria-label="取消选择"
+              onClick={clearSelection}
+            >
               <X />
             </button>
             <span>已选择 {selectedIds.size} 项</span>
@@ -647,7 +743,7 @@ export function FolderClient({
               onClick={toggleAllSelection}
               disabled={visibleMedia.length === 0}
             >
-              {allVisibleSelected ? "取消全选" : "全选"}
+              {allVisibleSelected ? '取消全选' : '全选'}
             </button>
             <i className="ca-selection-spacer" aria-hidden="true" />
             <button
@@ -710,19 +806,30 @@ export function FolderClient({
                       <button
                         type="button"
                         className="ca-group-select-btn"
-                        onClick={() => toggleGroupSelection(group.media.map((item) => item.id))}
+                        onClick={() =>
+                          toggleGroupSelection(
+                            group.media.map((item) => item.id)
+                          )
+                        }
                       >
-                        {group.media.every((item) => selectedIds.has(item.id)) ? "取消全选" : "全选"}
+                        {group.media.every((item) => selectedIds.has(item.id))
+                          ? '取消全选'
+                          : '全选'}
                       </button>
                     ) : null}
                   </div>
                   <div className="ca-media-grid">
                     {group.media.map((item) => {
-                      const index = visibleMedia.findIndex((media) => media.id === item.id)
+                      const index = visibleMedia.findIndex(
+                        (media) => media.id === item.id
+                      )
                       const selected = selectedIds.has(item.id)
 
                       return (
-                        <div key={item.id} className={`ca-media group ${selected ? "selected" : ""}`}>
+                        <div
+                          key={item.id}
+                          className={`ca-media group ${selected ? 'selected' : ''}`}
+                        >
                           <button
                             type="button"
                             className="absolute inset-0 text-left"
@@ -747,14 +854,16 @@ export function FolderClient({
                               sizes="33vw"
                               onError={() => refreshMediaUrl(item.id)}
                             />
-                            {item.type === "video" ? (
+                            {item.type === 'video' ? (
                               <span className="ca-play">
                                 <Play className="size-[9px] fill-white" />
                                 {formatDuration(item.duration)}
                               </span>
                             ) : null}
                             {selectionMode ? (
-                              <span className={`ca-select-mark ${selected ? "active" : ""}`}>
+                              <span
+                                className={`ca-select-mark ${selected ? 'active' : ''}`}
+                              >
                                 {selected ? <Check /> : null}
                               </span>
                             ) : null}

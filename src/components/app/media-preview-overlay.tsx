@@ -1,14 +1,21 @@
-"use client"
+'use client'
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   TransformComponent,
   TransformWrapper,
   type ReactZoomPanPinchContentRef,
-} from "react-zoom-pan-pinch"
-import { ChevronLeft, Download, ImageIcon, MoreHorizontal, Play, Trash2 } from "lucide-react"
+} from 'react-zoom-pan-pinch'
+import {
+  ChevronLeft,
+  Download,
+  ImageIcon,
+  MoreHorizontal,
+  Play,
+  Trash2,
+} from 'lucide-react'
 
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,20 +26,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from '@/components/ui/alert-dialog'
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet"
-import { isSignedUrlUsable } from "@/lib/signed-url"
-import { MediaThumbnail } from "./media-thumbnail"
+} from '@/components/ui/sheet'
+import { isSignedUrlUsable } from '@/lib/signed-url'
+import { MediaThumbnail } from './media-thumbnail'
 
 type PreviewMediaItem = {
   id: string
-  type: "image" | "video"
+  type: 'image' | 'video'
   filename: string
   url: string
 }
@@ -115,7 +122,7 @@ function ZoomableImage({
     const { scale, positionX, positionY } = wrapper.state
 
     if (scale >= IMAGE_DOUBLE_CLICK_SCALE) {
-      wrapper.resetTransform(180, "easeOut")
+      wrapper.resetTransform(180, 'easeOut')
       return true
     }
 
@@ -146,7 +153,7 @@ function ZoomableImage({
       boundedY,
       IMAGE_DOUBLE_CLICK_SCALE,
       180,
-      "easeOut"
+      'easeOut'
     )
 
     return true
@@ -256,7 +263,8 @@ function ZoomableImage({
         const viewportWidth = viewport.getBoundingClientRect().width
         const scaledWidth = contentWidth * state.scale
         const minX = Math.min(0, viewportWidth - scaledWidth)
-        const maxX = scaledWidth <= viewportWidth ? (viewportWidth - scaledWidth) / 2 : 0
+        const maxX =
+          scaledWidth <= viewportWidth ? (viewportWidth - scaledWidth) / 2 : 0
 
         onTransformStateChange({
           atLeftEdge: state.positionX >= maxX - 2,
@@ -272,11 +280,11 @@ function ZoomableImage({
       >
         <TransformComponent
           wrapperClass="!h-full !w-full"
-          wrapperStyle={{ height: "100%", width: "100%" }}
+          wrapperStyle={{ height: '100%', width: '100%' }}
           contentStyle={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <img
@@ -285,9 +293,9 @@ function ZoomableImage({
             alt={alt}
             className="max-h-full max-w-full object-contain"
             style={{
-              WebkitTouchCallout: "default",
-              pointerEvents: "auto",
-              userSelect: "auto",
+              WebkitTouchCallout: 'default',
+              pointerEvents: 'auto',
+              userSelect: 'auto',
             }}
             onContextMenu={(event) => event.stopPropagation()}
             onError={() => setFailed(true)}
@@ -333,10 +341,13 @@ function VideoPreview({
     }
   }, [clearLongPressTimer])
 
-  const setVideoRef = useCallback((element: HTMLVideoElement | null) => {
-    videoRef.current = element
-    registerVideo(item.id, element)
-  }, [item.id, registerVideo])
+  const setVideoRef = useCallback(
+    (element: HTMLVideoElement | null) => {
+      videoRef.current = element
+      registerVideo(item.id, element)
+    },
+    [item.id, registerVideo]
+  )
 
   useEffect(() => {
     if (!active) {
@@ -344,13 +355,16 @@ function VideoPreview({
     }
   }, [active, stopSpeed])
 
-  useEffect(() => () => {
-    registerVideo(item.id, null)
-    stopSpeed()
-  }, [item.id, registerVideo, stopSpeed])
+  useEffect(
+    () => () => {
+      registerVideo(item.id, null)
+      stopSpeed()
+    },
+    [item.id, registerVideo, stopSpeed]
+  )
 
   return (
-    <div className="relative flex h-full w-full items-center justify-center px-0 pb-[calc(var(--ca-safe-bottom)+110px)] pt-[calc(var(--ca-safe-top)+72px)]">
+    <div className="relative flex h-full w-full items-center justify-center px-0 pt-[calc(var(--ca-safe-top)+72px)] pb-[calc(var(--ca-safe-bottom)+110px)]">
       <video
         ref={setVideoRef}
         data-media-id={item.id}
@@ -407,7 +421,11 @@ function VideoPreview({
             return
           }
 
-          if (videoRef.current && !videoRef.current.paused && !videoRef.current.ended) {
+          if (
+            videoRef.current &&
+            !videoRef.current.paused &&
+            !videoRef.current.ended
+          ) {
             event.preventDefault()
           }
 
@@ -422,7 +440,11 @@ function VideoPreview({
         onPointerCancel={stopSpeed}
         onPointerLeave={stopSpeed}
         onContextMenu={(event) => {
-          if (videoRef.current && !videoRef.current.paused && !videoRef.current.ended) {
+          if (
+            videoRef.current &&
+            !videoRef.current.paused &&
+            !videoRef.current.ended
+          ) {
             event.preventDefault()
           }
         }}
@@ -445,7 +467,7 @@ function VideoPreview({
         }}
       />
       {speeding ? (
-        <div className="pointer-events-none absolute left-1/2 top-[calc(var(--ca-safe-top)+92px)] -translate-x-1/2 rounded-full bg-white/18 px-3 py-1 text-xs font-medium text-white backdrop-blur">
+        <div className="pointer-events-none absolute top-[calc(var(--ca-safe-top)+92px)] left-1/2 -translate-x-1/2 rounded-full bg-white/18 px-3 py-1 text-xs font-medium text-white backdrop-blur">
           2x 快进
         </div>
       ) : null}
@@ -482,26 +504,30 @@ export function MediaPreviewOverlay({
   const [controlsVisible, setControlsVisible] = useState(true)
   const [videoPlaying, setVideoPlaying] = useState(false)
   const [actionsOpen, setActionsOpen] = useState(false)
-  const [imageTransformState, setImageTransformState] = useState<ImageTransformState>({
-    atLeftEdge: true,
-    atRightEdge: true,
-    scale: 1,
-  })
+  const [imageTransformState, setImageTransformState] =
+    useState<ImageTransformState>({
+      atLeftEdge: true,
+      atRightEdge: true,
+      scale: 1,
+    })
   const currentItem = media[currentIndex] ?? media[0]
 
-  const registerVideo = useCallback((mediaId: string, element: HTMLVideoElement | null) => {
-    if (element) {
-      videoRefs.current.set(mediaId, element)
-      return
-    }
+  const registerVideo = useCallback(
+    (mediaId: string, element: HTMLVideoElement | null) => {
+      if (element) {
+        videoRefs.current.set(mediaId, element)
+        return
+      }
 
-    videoRefs.current.delete(mediaId)
-  }, [])
+      videoRefs.current.delete(mediaId)
+    },
+    []
+  )
 
   const pauseAllVideosNow = useCallback(() => {
     const videos = new Set<HTMLVideoElement>(videoRefs.current.values())
 
-    previewRef.current?.querySelectorAll("video").forEach((video) => {
+    previewRef.current?.querySelectorAll('video').forEach((video) => {
       videos.add(video)
     })
 
@@ -543,30 +569,34 @@ export function MediaPreviewOverlay({
     pendingControlsTapRef.current = null
   }, [])
 
-  const scheduleControlsToggle = useCallback((clientX: number, clientY: number) => {
-    if (currentItem?.type !== "image") {
-      setControlsVisible((visible) => !visible)
-      return
-    }
+  const scheduleControlsToggle = useCallback(
+    (clientX: number, clientY: number) => {
+      if (currentItem?.type !== 'image') {
+        setControlsVisible((visible) => !visible)
+        return
+      }
 
-    const pendingTap = pendingControlsTapRef.current
+      const pendingTap = pendingControlsTapRef.current
 
-    if (
-      pendingTap &&
-      Math.hypot(clientX - pendingTap.x, clientY - pendingTap.y) <= IMAGE_DOUBLE_TAP_DISTANCE
-    ) {
+      if (
+        pendingTap &&
+        Math.hypot(clientX - pendingTap.x, clientY - pendingTap.y) <=
+          IMAGE_DOUBLE_TAP_DISTANCE
+      ) {
+        clearPendingControlsTap()
+        return
+      }
+
       clearPendingControlsTap()
-      return
-    }
-
-    clearPendingControlsTap()
-    pendingControlsTapRef.current = { x: clientX, y: clientY }
-    controlsTapTimerRef.current = window.setTimeout(() => {
-      controlsTapTimerRef.current = null
-      pendingControlsTapRef.current = null
-      setControlsVisible((visible) => !visible)
-    }, IMAGE_DOUBLE_TAP_INTERVAL)
-  }, [clearPendingControlsTap, currentItem?.type])
+      pendingControlsTapRef.current = { x: clientX, y: clientY }
+      controlsTapTimerRef.current = window.setTimeout(() => {
+        controlsTapTimerRef.current = null
+        pendingControlsTapRef.current = null
+        setControlsVisible((visible) => !visible)
+      }, IMAGE_DOUBLE_TAP_INTERVAL)
+    },
+    [clearPendingControlsTap, currentItem?.type]
+  )
 
   const openIndex = (index: number) => {
     const nextIndex = Math.min(Math.max(index, 0), media.length - 1)
@@ -592,14 +622,14 @@ export function MediaPreviewOverlay({
       const response = await fetch(currentItem.url)
       const blob = await response.blob()
       const objectUrl = URL.createObjectURL(blob)
-      const link = document.createElement("a")
+      const link = document.createElement('a')
 
       link.href = objectUrl
       link.download = currentItem.filename
       link.click()
       URL.revokeObjectURL(objectUrl)
     } catch {
-      window.open(currentItem.url, "_blank", "noopener,noreferrer")
+      window.open(currentItem.url, '_blank', 'noopener,noreferrer')
     }
   }
 
@@ -648,18 +678,21 @@ export function MediaPreviewOverlay({
     pauseInactiveVideos(currentItem?.id ?? null)
   }, [currentItem?.id, pauseInactiveVideos])
 
-  useEffect(() => () => {
-    if (pauseFrameRef.current !== null) {
-      window.cancelAnimationFrame(pauseFrameRef.current)
-    }
+  useEffect(
+    () => () => {
+      if (pauseFrameRef.current !== null) {
+        window.cancelAnimationFrame(pauseFrameRef.current)
+      }
 
-    clearPendingControlsTap()
-    pauseAllVideosNow()
-  }, [clearPendingControlsTap, pauseAllVideosNow])
+      clearPendingControlsTap()
+      pauseAllVideosNow()
+    },
+    [clearPendingControlsTap, pauseAllVideosNow]
+  )
 
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
+      if (document.visibilityState === 'hidden') {
         pauseAllVideos()
       }
     }
@@ -668,12 +701,12 @@ export function MediaPreviewOverlay({
       pauseAllVideos()
     }
 
-    document.addEventListener("visibilitychange", handleVisibilityChange)
-    window.addEventListener("pagehide", handlePageHide)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('pagehide', handlePageHide)
 
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
-      window.removeEventListener("pagehide", handlePageHide)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('pagehide', handlePageHide)
     }
   }, [pauseAllVideos])
 
@@ -689,21 +722,21 @@ export function MediaPreviewOverlay({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         onClose()
       }
 
-      if (event.key === "ArrowLeft") {
+      if (event.key === 'ArrowLeft') {
         openIndex(currentIndex - 1)
       }
 
-      if (event.key === "ArrowRight") {
+      if (event.key === 'ArrowRight') {
         openIndex(currentIndex + 1)
       }
     }
 
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [currentIndex, onClose])
 
   if (!currentItem) {
@@ -715,8 +748,10 @@ export function MediaPreviewOverlay({
   return (
     <div className="fixed inset-0 z-50 h-[var(--ca-viewport-height)] overflow-hidden bg-[#05080d] text-white">
       <header
-        className={`absolute left-0 right-0 top-0 z-10 grid grid-cols-[2.5rem_1fr_2.5rem] items-center bg-black/42 px-[calc(1rem+var(--ca-safe-left))] pb-3 pt-[calc(var(--ca-safe-top)+20px)] pr-[calc(1rem+var(--ca-safe-right))] transition-opacity duration-200 ${
-          previewControlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
+        className={`absolute top-0 right-0 left-0 z-10 grid grid-cols-[2.5rem_1fr_2.5rem] items-center bg-black/42 px-[calc(1rem+var(--ca-safe-left))] pt-[calc(var(--ca-safe-top)+20px)] pr-[calc(1rem+var(--ca-safe-right))] pb-3 transition-opacity duration-200 ${
+          previewControlsVisible
+            ? 'opacity-100'
+            : 'pointer-events-none opacity-0'
         }`}
         onPointerDown={(event) => event.stopPropagation()}
       >
@@ -871,7 +906,9 @@ export function MediaPreviewOverlay({
         }}
         onPointerUp={(event) => {
           const shouldToggleControls =
-            !videoPlaying && !pointerMovedRef.current && !suppressNextTapRef.current
+            !videoPlaying &&
+            !pointerMovedRef.current &&
+            !suppressNextTapRef.current
 
           finishDrag(event.clientX)
 
@@ -889,13 +926,13 @@ export function MediaPreviewOverlay({
           style={{
             transform: `translate3d(calc(${-currentIndex * 100}% + ${dragOffset}px), 0, 0)`,
             transition: isDragging
-              ? "none"
-              : "transform 240ms cubic-bezier(0.22, 0.8, 0.22, 1)",
+              ? 'none'
+              : 'transform 240ms cubic-bezier(0.22, 0.8, 0.22, 1)',
           }}
         >
           {media.map((item, index) => (
             <div key={item.id} className="relative h-full w-full shrink-0">
-              {item.type === "video" ? (
+              {item.type === 'video' ? (
                 <VideoPreview
                   item={item}
                   active={index === currentIndex}
@@ -930,8 +967,10 @@ export function MediaPreviewOverlay({
       </div>
 
       <div
-        className={`absolute inset-x-0 bottom-0 overflow-hidden bg-black/38 px-[calc(1rem+var(--ca-safe-left))] pr-[calc(1rem+var(--ca-safe-right))] py-2 pb-[calc(var(--ca-safe-bottom)+18px)] transition-opacity duration-200 ${
-          previewControlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
+        className={`absolute inset-x-0 bottom-0 overflow-hidden bg-black/38 px-[calc(1rem+var(--ca-safe-left))] py-2 pr-[calc(1rem+var(--ca-safe-right))] pb-[calc(var(--ca-safe-bottom)+18px)] transition-opacity duration-200 ${
+          previewControlsVisible
+            ? 'opacity-100'
+            : 'pointer-events-none opacity-0'
         }`}
         onPointerDown={(event) => event.stopPropagation()}
       >
@@ -947,14 +986,19 @@ export function MediaPreviewOverlay({
               key={item.id}
               className={`relative shrink-0 overflow-hidden border transition-[height,width,opacity,border-radius] duration-150 ${
                 item.id === currentItem.id
-                  ? "h-[58px] w-11 rounded border-white"
-                  : "h-12 w-[34px] rounded-sm opacity-60 border-transparent"
+                  ? 'h-[58px] w-11 rounded border-white'
+                  : 'h-12 w-[34px] rounded-sm border-transparent opacity-60'
               }`}
               onClick={() => openIndex(index)}
             >
-              <MediaThumbnail src={item.url} alt="" type={item.type} sizes="48px" />
-              {item.type === "video" ? (
-                <Play className="absolute bottom-1 right-1 size-3 fill-white" />
+              <MediaThumbnail
+                src={item.url}
+                alt=""
+                type={item.type}
+                sizes="48px"
+              />
+              {item.type === 'video' ? (
+                <Play className="absolute right-1 bottom-1 size-3 fill-white" />
               ) : null}
             </button>
           ))}

@@ -1,9 +1,9 @@
-"use server"
+'use server'
 
-import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 
-import { requireUser } from "@/features/auth/session"
+import { requireUser } from '@/features/auth/session'
 
 import {
   permanentlyDeleteFolder,
@@ -12,9 +12,12 @@ import {
   restoreFolderFromTrash,
   restoreMediaBatchFromTrash,
   restoreMediaFromTrash,
-} from "./service"
+} from './service'
 
-export const restoreFolderAction = async (spaceId: string, folderId: string) => {
+export const restoreFolderAction = async (
+  spaceId: string,
+  folderId: string
+) => {
   const user = await requireUser()
   await restoreFolderFromTrash(spaceId, folderId, user.id)
   revalidatePath(`/spaces/${spaceId}/trash`)
@@ -44,7 +47,7 @@ export const restoreMediaBatchAction = async (
   try {
     await restoreMediaBatchFromTrash(spaceId, mediaIds, user.id)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "恢复失败"
+    const message = error instanceof Error ? error.message : '恢复失败'
     return { ok: false, error: message }
   }
 
@@ -76,7 +79,7 @@ export const permanentMediaBatchAction = async (
   try {
     await permanentlyDeleteMediaBatch(spaceId, mediaIds, user.id)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "永久删除失败"
+    const message = error instanceof Error ? error.message : '永久删除失败'
     return { ok: false, error: message }
   }
 
@@ -85,7 +88,10 @@ export const permanentMediaBatchAction = async (
   return { ok: true, error: null }
 }
 
-export const permanentFolderAction = async (spaceId: string, folderId: string) => {
+export const permanentFolderAction = async (
+  spaceId: string,
+  folderId: string
+) => {
   const user = await requireUser()
   await permanentlyDeleteFolder(spaceId, folderId, user.id)
   revalidatePath(`/spaces/${spaceId}/trash`)

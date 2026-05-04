@@ -1,26 +1,27 @@
-import "server-only"
+import 'server-only'
 
-import { and, eq } from "drizzle-orm"
+import { and, eq } from 'drizzle-orm'
 
-import { db } from "@/db/client"
-import { accountInvites, folders, media, sessions, users } from "@/db/schema"
-import { env } from "@/lib/env"
-import { hashInviteToken, normalizePhone, randomToken } from "@/lib/security"
+import { db } from '@/db/client'
+import { accountInvites, folders, media, sessions, users } from '@/db/schema'
+import { env } from '@/lib/env'
+import { hashInviteToken, normalizePhone, randomToken } from '@/lib/security'
 
 import {
   listInvites,
   listPermanentFolders,
   listPermanentMedia,
   listUsers,
-} from "./queries"
+} from './queries'
 
 export const getAdminDashboard = async (adminId: string) => {
-  const [invites, userRows, permanentMedia, permanentFolders] = await Promise.all([
-    listInvites(),
-    listUsers(),
-    listPermanentMedia(),
-    listPermanentFolders(),
-  ])
+  const [invites, userRows, permanentMedia, permanentFolders] =
+    await Promise.all([
+      listInvites(),
+      listUsers(),
+      listPermanentMedia(),
+      listPermanentFolders(),
+    ])
 
   return {
     currentAdminId: adminId,
@@ -29,8 +30,8 @@ export const getAdminDashboard = async (adminId: string) => {
       phone: invite.phone,
       status: invite.status,
       inviteLink:
-        invite.status === "pending" && invite.token
-          ? `${env.appUrl.replace(/\/$/, "")}/invite/${invite.token}`
+        invite.status === 'pending' && invite.token
+          ? `${env.appUrl.replace(/\/$/, '')}/invite/${invite.token}`
           : null,
       acceptedAt: invite.acceptedAt,
       createdAt: invite.createdAt,
@@ -40,13 +41,13 @@ export const getAdminDashboard = async (adminId: string) => {
     permanentRecords: [
       ...permanentMedia.map((item) => ({
         ...item,
-        recordType: "media" as const,
-        kind: item.kind === "video" ? "视频" : "图片",
+        recordType: 'media' as const,
+        kind: item.kind === 'video' ? '视频' : '图片',
       })),
       ...permanentFolders.map((item) => ({
         ...item,
-        recordType: "folder" as const,
-        kind: "相册",
+        recordType: 'folder' as const,
+        kind: '相册',
       })),
     ].sort((a, b) => {
       const left = a.permanentlyDeletedAt?.getTime() ?? 0
@@ -60,23 +61,32 @@ export const createInvite = async (adminId: string, phone: string) => {
   const finalPhone = normalizePhone(phone)
 
   if (!finalPhone) {
-    throw new Error("请填写手机号")
+    throw new Error('请填写手机号')
   }
 
-  const [existingUser] = await db.select().from(users).where(eq(users.phone, finalPhone)).limit(1)
+  const [existingUser] = await db
+    .select()
+    .from(users)
+    .where(eq(users.phone, finalPhone))
+    .limit(1)
 
   if (existingUser) {
-    throw new Error("该手机号已经注册")
+    throw new Error('该手机号已经注册')
   }
 
   const [pendingInvite] = await db
     .select()
     .from(accountInvites)
-    .where(and(eq(accountInvites.phone, finalPhone), eq(accountInvites.status, "pending")))
+    .where(
+      and(
+        eq(accountInvites.phone, finalPhone),
+        eq(accountInvites.status, 'pending')
+      )
+    )
     .limit(1)
 
   if (pendingInvite) {
-    throw new Error("该手机号已经有待处理邀请")
+    throw new Error('该手机号已经有待处理邀请')
   }
 
   const token = randomToken()
@@ -89,30 +99,36 @@ export const createInvite = async (adminId: string, phone: string) => {
     invitedBy: adminId,
   })
 
-  return `${env.appUrl.replace(/\/$/, "")}/invite/${token}`
+  return `${env.appUrl.replace(/\/$/, '')}/invite/${token}`
 }
 
 export const revokeInvite = async (adminId: string, inviteId: string) => {
   await db
     .update(accountInvites)
     .set({
-      status: "revoked",
+      status: 'revoked',
       revokedBy: adminId,
       revokedAt: new Date(),
       updatedAt: new Date(),
     })
-    .where(and(eq(accountInvites.id, inviteId), eq(accountInvites.status, "pending")))
+    .where(
+      and(eq(accountInvites.id, inviteId), eq(accountInvites.status, 'pending'))
+    )
 }
 
 export const disableUserAccount = async (adminId: string, userId: string) => {
   if (adminId === userId) {
-    throw new Error("不能禁用当前登录账号")
+    throw new Error('不能禁用当前登录账号')
   }
 
-  const [target] = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+  const [target] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1)
 
   if (!target) {
-    throw new Error("账号不存在")
+    throw new Error('账号不存在')
   }
 
   if (target.disabledAt) {
@@ -134,10 +150,10 @@ export const disableUserAccount = async (adminId: string, userId: string) => {
 }
 
 export const adminRestorePermanentRecord = async (
-  kind: "media" | "folder",
+  kind: 'media' | 'folder',
   recordId: string
 ) => {
-  if (kind === "media") {
+  if (kind === 'media') {
     await db
       .update(media)
       .set({
@@ -152,7 +168,11 @@ export const adminRestorePermanentRecord = async (
     return
   }
 
-  const [folder] = await db.select().from(folders).where(eq(folders.id, recordId)).limit(1)
+  const [folder] = await db
+    .select()
+    .from(folders)
+    .where(eq(folders.id, recordId))
+    .limit(1)
 
   if (!folder) {
     return

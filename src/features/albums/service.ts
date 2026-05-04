@@ -1,19 +1,19 @@
-import "server-only"
+import 'server-only'
 
-import { and, desc, eq, inArray, isNull } from "drizzle-orm"
+import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 
-import { db } from "@/db/client"
-import { deleteBatches, folders, media } from "@/db/schema"
-import { requireSpaceMember } from "@/features/spaces/service"
-import { getSignedReadUrl } from "@/lib/cos"
-import { safeName } from "@/lib/security"
+import { db } from '@/db/client'
+import { deleteBatches, folders, media } from '@/db/schema'
+import { requireSpaceMember } from '@/features/spaces/service'
+import { getSignedReadUrl } from '@/lib/cos'
+import { safeName } from '@/lib/security'
 
 import {
   getActiveMediaById,
   getFolderById,
   listActiveFolders,
   listActiveMedia,
-} from "./queries"
+} from './queries'
 
 export const getAlbumHome = async (spaceId: string, userId: string) => {
   const space = await requireSpaceMember(spaceId, userId)
@@ -29,12 +29,16 @@ export const getAlbumHome = async (spaceId: string, userId: string) => {
   }
 }
 
-export const createFolder = async (spaceId: string, userId: string, name: string) => {
+export const createFolder = async (
+  spaceId: string,
+  userId: string,
+  name: string
+) => {
   await requireSpaceMember(spaceId, userId)
   const finalName = safeName(name)
 
   if (!finalName) {
-    throw new Error("请输入相册名称")
+    throw new Error('请输入相册名称')
   }
 
   const [folder] = await db
@@ -54,7 +58,7 @@ export const getFolderDetail = async (
   const folder = await getFolderById(spaceId, folderId)
 
   if (!folder || folder.deletedAt || folder.permanentlyDeletedAt) {
-    throw new Error("相册不存在")
+    throw new Error('相册不存在')
   }
 
   const items = await listActiveMedia(spaceId, folderId)
@@ -69,8 +73,12 @@ export const getFolderDetail = async (
   }
 }
 
-export const deleteMedia = async (spaceId: string, mediaId: string, userId: string) => {
-  await deleteActiveMedia(spaceId, [mediaId], userId, "媒体不存在")
+export const deleteMedia = async (
+  spaceId: string,
+  mediaId: string,
+  userId: string
+) => {
+  await deleteActiveMedia(spaceId, [mediaId], userId, '媒体不存在')
 }
 
 export const deleteMediaBatch = async (
@@ -78,7 +86,7 @@ export const deleteMediaBatch = async (
   mediaIds: string[],
   userId: string
 ) => {
-  await deleteActiveMedia(spaceId, mediaIds, userId, "部分媒体不存在")
+  await deleteActiveMedia(spaceId, mediaIds, userId, '部分媒体不存在')
 }
 
 const deleteActiveMedia = async (
@@ -91,14 +99,14 @@ const deleteActiveMedia = async (
   const uniqueIds = Array.from(new Set(mediaIds.filter(Boolean)))
 
   if (uniqueIds.length === 0) {
-    throw new Error("请选择要删除的媒体")
+    throw new Error('请选择要删除的媒体')
   }
 
   await db.transaction(async (tx) => {
     const now = new Date()
     const [batch] = await tx
       .insert(deleteBatches)
-      .values({ spaceId, deletedBy: userId, reason: "delete_media" })
+      .values({ spaceId, deletedBy: userId, reason: 'delete_media' })
       .returning()
 
     const deletedItems = await tx
@@ -113,7 +121,7 @@ const deleteActiveMedia = async (
         and(
           eq(media.spaceId, spaceId),
           inArray(media.id, uniqueIds),
-          eq(media.status, "ready"),
+          eq(media.status, 'ready'),
           isNull(media.deletedAt),
           isNull(media.permanentlyDeletedAt)
         )
@@ -144,7 +152,7 @@ const deleteActiveMedia = async (
           and(
             eq(media.spaceId, spaceId),
             eq(media.folderId, folder.id),
-            eq(media.status, "ready"),
+            eq(media.status, 'ready'),
             isNull(media.deletedAt),
             isNull(media.permanentlyDeletedAt)
           )
@@ -173,13 +181,13 @@ export const setFolderCover = async (
   const folder = await getFolderById(spaceId, folderId)
 
   if (!folder || folder.deletedAt || folder.permanentlyDeletedAt) {
-    throw new Error("相册不存在")
+    throw new Error('相册不存在')
   }
 
   const item = await getActiveMediaById(spaceId, mediaId)
 
   if (!item || item.folderId !== folder.id) {
-    throw new Error("媒体不存在")
+    throw new Error('媒体不存在')
   }
 
   await db
@@ -191,18 +199,22 @@ export const setFolderCover = async (
     .where(and(eq(folders.id, folder.id), eq(folders.spaceId, spaceId)))
 }
 
-export const deleteFolder = async (spaceId: string, folderId: string, userId: string) => {
+export const deleteFolder = async (
+  spaceId: string,
+  folderId: string,
+  userId: string
+) => {
   await requireSpaceMember(spaceId, userId)
   const folder = await getFolderById(spaceId, folderId)
 
   if (!folder || folder.deletedAt || folder.permanentlyDeletedAt) {
-    throw new Error("相册不存在")
+    throw new Error('相册不存在')
   }
 
   await db.transaction(async (tx) => {
     const [batch] = await tx
       .insert(deleteBatches)
-      .values({ spaceId, deletedBy: userId, reason: "delete_folder" })
+      .values({ spaceId, deletedBy: userId, reason: 'delete_folder' })
       .returning()
 
     await tx
@@ -243,7 +255,7 @@ export const getMediaPreview = async (
   const index = detail.media.findIndex((item) => item.id === mediaId)
 
   if (index < 0) {
-    throw new Error("媒体不存在")
+    throw new Error('媒体不存在')
   }
 
   return { ...detail, index, item: detail.media[index] }

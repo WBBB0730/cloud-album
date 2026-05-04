@@ -1,14 +1,14 @@
-import "server-only"
+import 'server-only'
 
-import { and, eq, gt, isNull } from "drizzle-orm"
-import { cookies } from "next/headers"
-import { redirect } from "next/navigation"
+import { and, eq, gt, isNull } from 'drizzle-orm'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 
-import { db } from "@/db/client"
-import { sessions, users } from "@/db/schema"
-import { hashSessionToken, randomToken } from "@/lib/security"
+import { db } from '@/db/client'
+import { sessions, users } from '@/db/schema'
+import { hashSessionToken, randomToken } from '@/lib/security'
 
-export const sessionCookieName = "cloud_album_session"
+export const sessionCookieName = 'cloud_album_session'
 
 export type CurrentUser = typeof users.$inferSelect
 
@@ -27,9 +27,9 @@ export const createSession = async (userId: string) => {
   const cookieStore = await cookies()
   cookieStore.set(sessionCookieName, token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
     maxAge: sessionMaxAge,
   })
 }
@@ -39,7 +39,9 @@ export const destroySession = async () => {
   const token = cookieStore.get(sessionCookieName)?.value
 
   if (token) {
-    await db.delete(sessions).where(eq(sessions.tokenHash, hashSessionToken(token)))
+    await db
+      .delete(sessions)
+      .where(eq(sessions.tokenHash, hashSessionToken(token)))
   }
 
   cookieStore.delete(sessionCookieName)
@@ -73,7 +75,7 @@ export const requireUser = async () => {
   const user = await getCurrentUser()
 
   if (!user) {
-    redirect("/login")
+    redirect('/login')
   }
 
   return user
@@ -83,7 +85,7 @@ export const requireAdmin = async () => {
   const user = await requireUser()
 
   if (!user.isGlobalAdmin) {
-    redirect("/")
+    redirect('/')
   }
 
   return user

@@ -1,12 +1,17 @@
-import "server-only"
+import 'server-only'
 
-import { and, eq } from "drizzle-orm"
+import { and, eq } from 'drizzle-orm'
 
-import { db } from "@/db/client"
-import { spaceMembers, spaces, users } from "@/db/schema"
-import { normalizePhone, safeName } from "@/lib/security"
+import { db } from '@/db/client'
+import { spaceMembers, spaces, users } from '@/db/schema'
+import { normalizePhone, safeName } from '@/lib/security'
 
-import { getMembership, getSpace, listSpaceMembers, listUserSpaces } from "./queries"
+import {
+  getMembership,
+  getSpace,
+  listSpaceMembers,
+  listUserSpaces,
+} from './queries'
 
 export const requireSpaceMember = async (spaceId: string, userId: string) => {
   const [space, membership] = await Promise.all([
@@ -15,7 +20,7 @@ export const requireSpaceMember = async (spaceId: string, userId: string) => {
   ])
 
   if (!space || !membership) {
-    throw new Error("无权访问该空间")
+    throw new Error('无权访问该空间')
   }
 
   return space
@@ -38,7 +43,7 @@ export const createSpace = async (userId: string, name: string) => {
   const finalName = safeName(name)
 
   if (!finalName) {
-    throw new Error("请输入空间名称")
+    throw new Error('请输入空间名称')
   }
 
   const space = await db.transaction(async (tx) => {
@@ -71,7 +76,7 @@ export const addMemberByPhone = async (
   ])
 
   if (!target) {
-    throw new Error("该手机号还没有注册账号")
+    throw new Error('该手机号还没有注册账号')
   }
 
   await db
@@ -90,13 +95,15 @@ export const leaveSpace = async (userId: string, spaceId: string) => {
   const space = await requireSpaceMember(spaceId, userId)
 
   if (space.createdBy === userId) {
-    throw new Error("创建者不能退出空间")
+    throw new Error('创建者不能退出空间')
   }
 
   await db.transaction(async (tx) => {
     await tx
       .delete(spaceMembers)
-      .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, userId)))
+      .where(
+        and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, userId))
+      )
 
     await tx
       .update(users)
@@ -113,27 +120,32 @@ export const removeSpaceMember = async (
   const space = await requireSpaceMember(spaceId, actorId)
 
   if (actorId === targetUserId) {
-    throw new Error("请使用退出空间")
+    throw new Error('请使用退出空间')
   }
 
   if (space.createdBy !== actorId) {
-    throw new Error("只有创建者可以移除成员")
+    throw new Error('只有创建者可以移除成员')
   }
 
   if (space.createdBy === targetUserId) {
-    throw new Error("创建者不能被移除")
+    throw new Error('创建者不能被移除')
   }
 
   const targetMembership = await getMembership(spaceId, targetUserId)
 
   if (!targetMembership) {
-    throw new Error("成员不存在")
+    throw new Error('成员不存在')
   }
 
   await db.transaction(async (tx) => {
     await tx
       .delete(spaceMembers)
-      .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, targetUserId)))
+      .where(
+        and(
+          eq(spaceMembers.spaceId, spaceId),
+          eq(spaceMembers.userId, targetUserId)
+        )
+      )
 
     await tx
       .update(users)

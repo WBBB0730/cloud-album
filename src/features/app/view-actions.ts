@@ -1,20 +1,32 @@
-"use server"
+'use server'
 
-import { getAdminDashboard } from "@/features/admin/service"
-import { getAlbumHome, getFolderDetail, getMediaPreview } from "@/features/albums/service"
-import { getInviteForToken } from "@/features/auth/service"
-import { getCurrentUser, requireAdmin, requireUser } from "@/features/auth/session"
-import { getSpaceMembers, getSpacesForUser, requireSpaceMember } from "@/features/spaces/service"
-import { getTrashFolder, getTrashHome } from "@/features/trash/service"
+import { getAdminDashboard } from '@/features/admin/service'
+import {
+  getAlbumHome,
+  getFolderDetail,
+  getMediaPreview,
+} from '@/features/albums/service'
+import { getInviteForToken } from '@/features/auth/service'
+import {
+  getCurrentUser,
+  requireAdmin,
+  requireUser,
+} from '@/features/auth/session'
+import {
+  getSpaceMembers,
+  getSpacesForUser,
+  requireSpaceMember,
+} from '@/features/spaces/service'
+import { getTrashFolder, getTrashHome } from '@/features/trash/service'
 
 export const getRootDestinationAction = async () => {
   const user = await getCurrentUser()
 
   if (!user) {
-    return "/login"
+    return '/login'
   }
 
-  return "/spaces"
+  return '/spaces'
 }
 
 export const getInviteViewAction = async (token: string) => {
@@ -85,7 +97,10 @@ export const getTrashHomeViewAction = async (spaceId: string) => {
   return getTrashHome(spaceId, user.id)
 }
 
-export const getTrashFolderViewAction = async (spaceId: string, folderId: string) => {
+export const getTrashFolderViewAction = async (
+  spaceId: string,
+  folderId: string
+) => {
   const user = await requireUser()
   return getTrashFolder(spaceId, folderId, user.id)
 }

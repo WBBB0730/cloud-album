@@ -1,14 +1,14 @@
-"use client"
+'use client'
 
-import Image from "next/image"
-import { useEffect, useRef, useState } from "react"
+import Image from 'next/image'
+import { useEffect, useRef, useState } from 'react'
 
-import { isSignedUrlUsable } from "@/lib/signed-url"
+import { isSignedUrlUsable } from '@/lib/signed-url'
 
 type MediaThumbnailProps = {
   src: string
   alt: string
-  type: "image" | "video"
+  type: 'image' | 'video'
   sizes: string
   className?: string
   priority?: boolean
@@ -16,14 +16,14 @@ type MediaThumbnailProps = {
   lazyRootMargin?: string
 }
 
-const DEFAULT_LAZY_ROOT_MARGIN = "420px"
+const DEFAULT_LAZY_ROOT_MARGIN = '420px'
 
 export function MediaThumbnail({
   src,
   alt,
   type,
   sizes,
-  className = "object-cover",
+  className = 'object-cover',
   priority = false,
   onError,
   lazyRootMargin = DEFAULT_LAZY_ROOT_MARGIN,
@@ -58,7 +58,7 @@ export function MediaThumbnail({
       return
     }
 
-    if (!("IntersectionObserver" in window)) {
+    if (!('IntersectionObserver' in window)) {
       setShouldLoad(true)
       return
     }
@@ -95,14 +95,20 @@ export function MediaThumbnail({
   }
 
   if (!shouldLoad) {
-    return <span ref={lazyRef} className="absolute inset-0 bg-[#eef0f2]" aria-label={alt} />
+    return (
+      <span
+        ref={lazyRef}
+        className="absolute inset-0 bg-[#eef0f2]"
+        aria-label={alt}
+      />
+    )
   }
 
   if (failed || !isSignedUrlUsable(src)) {
     return <span className="absolute inset-0 bg-[#eef0f2]" aria-label={alt} />
   }
 
-  if (type === "video") {
+  if (type === 'video') {
     return (
       <video
         src={`${src}#t=0.1`}

@@ -1,11 +1,11 @@
-"use client"
+'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-const CACHE_PREFIX = "cloud-album:view:"
+const CACHE_PREFIX = 'cloud-album:view:'
 
 const getCacheKey = (loader: () => Promise<unknown>, deps: unknown[]) => {
-  let serializedDeps = ""
+  let serializedDeps = ''
 
   try {
     serializedDeps = JSON.stringify(deps)
@@ -16,7 +16,7 @@ const getCacheKey = (loader: () => Promise<unknown>, deps: unknown[]) => {
   return `${CACHE_PREFIX}${loader.toString()}:${serializedDeps}`
 }
 
-const readCache = <T,>(key: string) => {
+const readCache = <T>(key: string) => {
   try {
     const cached = window.localStorage.getItem(key)
     return cached ? (JSON.parse(cached) as T) : null
@@ -77,53 +77,61 @@ export function useServerAction<T>(loader: () => Promise<T>, deps: unknown[]) {
     }
   }, [])
 
-  const refresh = useCallback(async (options: RefreshOptions = {}) => {
-    const activeCacheKey = cacheKey
+  const refresh = useCallback(
+    async (options: RefreshOptions = {}) => {
+      const activeCacheKey = cacheKey
 
-    if (refreshKeyRef.current === activeCacheKey) {
-      return null
-    }
-
-    refreshKeyRef.current = activeCacheKey
-
-    if (options.showLoading) {
-      setLoading(true)
-    }
-
-    try {
-      const value = await loaderRef.current()
-
-      if (mountedRef.current && cacheKeyRef.current === activeCacheKey) {
-        updateData(value)
-        setError(null)
-        writeCache(activeCacheKey, value)
-      }
-
-      return value
-    } catch (reason) {
-      if (mountedRef.current && cacheKeyRef.current === activeCacheKey && !hasDataRef.current) {
-        setError(reason instanceof Error ? reason.message : "加载失败")
-      }
-
-      return null
-    } finally {
       if (refreshKeyRef.current === activeCacheKey) {
-        refreshKeyRef.current = null
+        return null
       }
 
-      if (mountedRef.current && cacheKeyRef.current === activeCacheKey) {
-        setLoading(false)
+      refreshKeyRef.current = activeCacheKey
+
+      if (options.showLoading) {
+        setLoading(true)
       }
-    }
-  }, [cacheKey])
+
+      try {
+        const value = await loaderRef.current()
+
+        if (mountedRef.current && cacheKeyRef.current === activeCacheKey) {
+          updateData(value)
+          setError(null)
+          writeCache(activeCacheKey, value)
+        }
+
+        return value
+      } catch (reason) {
+        if (
+          mountedRef.current &&
+          cacheKeyRef.current === activeCacheKey &&
+          !hasDataRef.current
+        ) {
+          setError(reason instanceof Error ? reason.message : '加载失败')
+        }
+
+        return null
+      } finally {
+        if (refreshKeyRef.current === activeCacheKey) {
+          refreshKeyRef.current = null
+        }
+
+        if (mountedRef.current && cacheKeyRef.current === activeCacheKey) {
+          setLoading(false)
+        }
+      }
+    },
+    [cacheKey]
+  )
 
   const mutate = useCallback((nextData: MutateData<T>) => {
     const activeCacheKey = cacheKeyRef.current
 
     setData((current) => {
-      const next = typeof nextData === "function"
-        ? (nextData as (current: T | null) => T | null)(current)
-        : nextData
+      const next =
+        typeof nextData === 'function'
+          ? (nextData as (current: T | null) => T | null)(current)
+          : nextData
 
       hasDataRef.current = next !== null
 

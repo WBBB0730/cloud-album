@@ -1,15 +1,17 @@
-import "server-only"
+import 'server-only'
 
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm"
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 
-import { db } from "@/db/client"
-import { folders, spaceMembers, spaces, users } from "@/db/schema"
+import { db } from '@/db/client'
+import { folders, spaceMembers, spaces, users } from '@/db/schema'
 
 export const getMembership = async (spaceId: string, userId: string) => {
   const [membership] = await db
     .select()
     .from(spaceMembers)
-    .where(and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, userId)))
+    .where(
+      and(eq(spaceMembers.spaceId, spaceId), eq(spaceMembers.userId, userId))
+    )
     .limit(1)
 
   return membership ?? null
@@ -57,8 +59,12 @@ export const listUserSpaces = async (userId: string) => {
       )
       .groupBy(folders.spaceId),
   ])
-  const memberCountBySpace = new Map(memberCounts.map((row) => [row.spaceId, row.value]))
-  const folderCountBySpace = new Map(folderCounts.map((row) => [row.spaceId, row.value]))
+  const memberCountBySpace = new Map(
+    memberCounts.map((row) => [row.spaceId, row.value])
+  )
+  const folderCountBySpace = new Map(
+    folderCounts.map((row) => [row.spaceId, row.value])
+  )
 
   return rows.map((space) => ({
     ...space,
@@ -68,7 +74,11 @@ export const listUserSpaces = async (userId: string) => {
 }
 
 export const getSpace = async (spaceId: string) => {
-  const [space] = await db.select().from(spaces).where(eq(spaces.id, spaceId)).limit(1)
+  const [space] = await db
+    .select()
+    .from(spaces)
+    .where(eq(spaces.id, spaceId))
+    .limit(1)
   return space ?? null
 }
 

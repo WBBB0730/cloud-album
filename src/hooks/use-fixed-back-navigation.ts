@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useCallback, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useCallback, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 
-type BackSource = "button" | "history"
+type BackSource = 'button' | 'history'
 
 type UseFixedBackNavigationOptions = {
   enabled?: boolean
@@ -11,7 +11,7 @@ type UseFixedBackNavigationOptions = {
   onBlockedBack?: (source: BackSource) => void
 }
 
-const FIXED_BACK_STATE_KEY = "__cloudAlbumFixedBack"
+const FIXED_BACK_STATE_KEY = '__cloudAlbumFixedBack'
 
 export const useFixedBackNavigation = (
   targetHref: string,
@@ -50,10 +50,14 @@ export const useFixedBackNavigation = (
       return
     }
 
-    window.history.pushState({
-      ...(window.history.state ?? {}),
-      [FIXED_BACK_STATE_KEY]: true,
-    }, "", window.location.href)
+    window.history.pushState(
+      {
+        ...(window.history.state ?? {}),
+        [FIXED_BACK_STATE_KEY]: true,
+      },
+      '',
+      window.location.href
+    )
     guardActiveRef.current = true
   }, [])
 
@@ -63,19 +67,22 @@ export const useFixedBackNavigation = (
     router.replace(targetHrefRef.current)
   }, [router])
 
-  const requestBack = useCallback((source: BackSource = "button") => {
-    if (!enabledRef.current) {
+  const requestBack = useCallback(
+    (source: BackSource = 'button') => {
+      if (!enabledRef.current) {
+        leaveToTarget()
+        return
+      }
+
+      if (blockingRef.current) {
+        onBlockedBackRef.current?.(source)
+        return
+      }
+
       leaveToTarget()
-      return
-    }
-
-    if (blockingRef.current) {
-      onBlockedBackRef.current?.(source)
-      return
-    }
-
-    leaveToTarget()
-  }, [leaveToTarget])
+    },
+    [leaveToTarget]
+  )
 
   useEffect(() => {
     if (!enabled) {
@@ -101,17 +108,17 @@ export const useFixedBackNavigation = (
 
       if (blockingRef.current) {
         pushGuard()
-        onBlockedBackRef.current?.("history")
+        onBlockedBackRef.current?.('history')
         return
       }
 
       leaveToTarget()
     }
 
-    window.addEventListener("popstate", handlePopState)
+    window.addEventListener('popstate', handlePopState)
 
     return () => {
-      window.removeEventListener("popstate", handlePopState)
+      window.removeEventListener('popstate', handlePopState)
     }
   }, [leaveToTarget, pushGuard])
 

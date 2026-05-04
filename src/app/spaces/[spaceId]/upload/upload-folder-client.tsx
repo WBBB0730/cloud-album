@@ -1,18 +1,21 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import Link from 'next/link'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
-import { EmptyState } from "@/components/app/empty-state"
-import { LoadingState } from "@/components/app/loading-state"
-import { MobileFrame } from "@/components/app/mobile-frame"
-import { TopBar } from "@/components/app/top-bar"
-import { getSpaceViewAction } from "@/features/app/view-actions"
-import { useFixedBackNavigation } from "@/hooks/use-fixed-back-navigation"
-import { useServerAction } from "@/hooks/use-server-action"
+import { EmptyState } from '@/components/app/empty-state'
+import { LoadingState } from '@/components/app/loading-state'
+import { MobileFrame } from '@/components/app/mobile-frame'
+import { TopBar } from '@/components/app/top-bar'
+import { getSpaceViewAction } from '@/features/app/view-actions'
+import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
+import { useServerAction } from '@/hooks/use-server-action'
 
 export function UploadFolderClient({ spaceId }: { spaceId: string }) {
-  const { data, error, loading } = useServerAction(() => getSpaceViewAction(spaceId), [spaceId])
+  const { data, error, loading } = useServerAction(
+    () => getSpaceViewAction(spaceId),
+    [spaceId]
+  )
   useFixedBackNavigation(`/spaces/${spaceId}`)
 
   return (
@@ -22,7 +25,12 @@ export function UploadFolderClient({ spaceId }: { spaceId: string }) {
           title="选择上传位置"
           subtitle={data?.space.name}
           leading={
-            <Link replace href={`/spaces/${spaceId}`} className="ca-icon-btn" aria-label="返回">
+            <Link
+              replace
+              href={`/spaces/${spaceId}`}
+              className="ca-icon-btn"
+              aria-label="返回"
+            >
               <ChevronLeft />
             </Link>
           }
@@ -37,7 +45,11 @@ export function UploadFolderClient({ spaceId }: { spaceId: string }) {
           data.folders.length > 0 ? (
             <div className="ca-list">
               {data.folders.map((folder) => (
-                <Link key={folder.id} href={`/spaces/${spaceId}/albums/${folder.id}/upload`} className="ca-folder-row">
+                <Link
+                  key={folder.id}
+                  href={`/spaces/${spaceId}/albums/${folder.id}/upload`}
+                  className="ca-folder-row"
+                >
                   <span className="ca-row-cover ca-photo-a" />
                   <span className="min-w-0">
                     <strong>{folder.name}</strong>
@@ -48,7 +60,9 @@ export function UploadFolderClient({ spaceId }: { spaceId: string }) {
               ))}
             </div>
           ) : (
-            <EmptyState title="还没有相册">先创建相册，再上传图片和视频。</EmptyState>
+            <EmptyState title="还没有相册">
+              先创建相册，再上传图片和视频。
+            </EmptyState>
           )
         ) : null}
       </div>

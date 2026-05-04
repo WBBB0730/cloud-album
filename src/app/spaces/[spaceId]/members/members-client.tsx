@@ -1,16 +1,16 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { useState, type FormEvent } from "react"
-import { ChevronLeft } from "lucide-react"
-import { toast } from "sonner"
+import Link from 'next/link'
+import { useState, type FormEvent } from 'react'
+import { ChevronLeft } from 'lucide-react'
+import { toast } from 'sonner'
 
-import { EmptyState } from "@/components/app/empty-state"
-import { ErrorBanner } from "@/components/app/error-banner"
-import { useGlobalLoading } from "@/components/app/global-loading"
-import { LoadingState } from "@/components/app/loading-state"
-import { MobileFrame } from "@/components/app/mobile-frame"
-import { TopBar } from "@/components/app/top-bar"
+import { EmptyState } from '@/components/app/empty-state'
+import { ErrorBanner } from '@/components/app/error-banner'
+import { useGlobalLoading } from '@/components/app/global-loading'
+import { LoadingState } from '@/components/app/loading-state'
+import { MobileFrame } from '@/components/app/mobile-frame'
+import { TopBar } from '@/components/app/top-bar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,12 +21,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Input } from "@/components/ui/input"
-import { getSpaceMembersViewAction } from "@/features/app/view-actions"
-import { addMemberAction, leaveSpaceAction, removeMemberAction } from "@/features/spaces/actions"
-import { useServerAction } from "@/hooks/use-server-action"
-import { formatDateTime } from "@/lib/format"
+} from '@/components/ui/alert-dialog'
+import { Input } from '@/components/ui/input'
+import { getSpaceMembersViewAction } from '@/features/app/view-actions'
+import {
+  addMemberAction,
+  leaveSpaceAction,
+  removeMemberAction,
+} from '@/features/spaces/actions'
+import { useServerAction } from '@/hooks/use-server-action'
+import { formatDateTime } from '@/lib/format'
 
 export function MembersClient({
   spaceId,
@@ -35,36 +39,40 @@ export function MembersClient({
   spaceId: string
   error?: string
 }) {
-  const { data, error: loadError, loading, mutate } = useServerAction(
-    () => getSpaceMembersViewAction(spaceId),
-    [spaceId]
-  )
+  const {
+    data,
+    error: loadError,
+    loading,
+    mutate,
+  } = useServerAction(() => getSpaceMembersViewAction(spaceId), [spaceId])
   const { hideLoading, showLoading } = useGlobalLoading()
-  const [phone, setPhone] = useState("")
+  const [phone, setPhone] = useState('')
   const [localError, setLocalError] = useState<string | null>(null)
   const leaveAction = leaveSpaceAction.bind(null, spaceId)
-  const currentUser = data?.members.find((member) => member.userId === data.currentUserId)
+  const currentUser = data?.members.find(
+    (member) => member.userId === data.currentUserId
+  )
   const currentUserIsCreator = data?.space.createdBy === data?.currentUserId
   const handleInviteSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setLocalError(null)
 
     const formData = new FormData(event.currentTarget)
-    const closeLoading = showLoading({ title: "邀请中", timeoutMs: 0 })
+    const closeLoading = showLoading({ title: '邀请中', timeoutMs: 0 })
 
     try {
       const result = await addMemberAction(spaceId, formData)
 
       if (!result.ok || !result.data) {
-        const message = result.error ?? "邀请失败"
+        const message = result.error ?? '邀请失败'
         setLocalError(message)
         toast.error(message)
         return
       }
 
       mutate(result.data)
-      setPhone("")
-      toast.success("已邀请加入空间")
+      setPhone('')
+      toast.success('已邀请加入空间')
     } finally {
       closeLoading()
       hideLoading()
@@ -78,7 +86,12 @@ export function MembersClient({
           title="成员管理"
           subtitle={data?.space.name}
           leading={
-            <Link replace href={`/spaces/${spaceId}`} className="ca-icon-btn" aria-label="返回空间">
+            <Link
+              replace
+              href={`/spaces/${spaceId}`}
+              className="ca-icon-btn"
+              aria-label="返回空间"
+            >
               <ChevronLeft />
             </Link>
           }
@@ -117,33 +130,53 @@ export function MembersClient({
                     data.space.createdBy === data.currentUserId &&
                     member.userId !== data.space.createdBy &&
                     !isSelf
-                  const removeAction = removeMemberAction.bind(null, spaceId, member.userId)
+                  const removeAction = removeMemberAction.bind(
+                    null,
+                    spaceId,
+                    member.userId
+                  )
 
                   return (
                     <div key={member.id} className="ca-member-row">
-                      <span className="ca-space-avatar">{member.name.slice(0, 1)}</span>
+                      <span className="ca-space-avatar">
+                        {member.name.slice(0, 1)}
+                      </span>
                       <span className="min-w-0">
                         <strong>{member.name}</strong>
                         <small>
-                          {member.phone} · {member.userId === data.space.createdBy ? "创建者" : member.isGlobalAdmin ? "全局管理员" : "成员"} · {formatDateTime(member.joinedAt)}
+                          {member.phone} ·{' '}
+                          {member.userId === data.space.createdBy
+                            ? '创建者'
+                            : member.isGlobalAdmin
+                              ? '全局管理员'
+                              : '成员'}{' '}
+                          · {formatDateTime(member.joinedAt)}
                         </small>
                       </span>
                       {canRemoveMember ? (
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <button type="button" className="ca-member-action danger">
+                            <button
+                              type="button"
+                              className="ca-member-action danger"
+                            >
                               移除
                             </button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>移除 {member.name}？</AlertDialogTitle>
+                              <AlertDialogTitle>
+                                移除 {member.name}？
+                              </AlertDialogTitle>
                               <AlertDialogDescription>
                                 移除后，对方将无法继续访问这个空间内的相册和媒体。
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="ca-confirm-footer">
-                              <form action={removeAction} className="ca-confirm-form">
+                              <form
+                                action={removeAction}
+                                className="ca-confirm-form"
+                              >
                                 <AlertDialogAction
                                   type="submit"
                                   className="ca-confirm-button bg-[#c24141] text-white hover:bg-[#b33333]"
@@ -151,7 +184,9 @@ export function MembersClient({
                                   移除
                                 </AlertDialogAction>
                               </form>
-                              <AlertDialogCancel className="ca-confirm-button">取消</AlertDialogCancel>
+                              <AlertDialogCancel className="ca-confirm-button">
+                                取消
+                              </AlertDialogCancel>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -186,7 +221,9 @@ export function MembersClient({
                       退出
                     </AlertDialogAction>
                   </form>
-                  <AlertDialogCancel className="ca-confirm-button">取消</AlertDialogCancel>
+                  <AlertDialogCancel className="ca-confirm-button">
+                    取消
+                  </AlertDialogCancel>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

@@ -1,4 +1,4 @@
-import { UploadFolderClient } from "./upload-folder-client"
+import { UploadFolderClient } from './upload-folder-client'
 
 export default async function ChooseUploadFolderPage({
   params,

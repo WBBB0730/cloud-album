@@ -1,23 +1,36 @@
-"use server"
+'use server'
 
-import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 
-import { requireUser } from "@/features/auth/session"
+import { requireUser } from '@/features/auth/session'
 
-import { createFolder, deleteFolder, deleteMedia, deleteMediaBatch, setFolderCover } from "./service"
+import {
+  createFolder,
+  deleteFolder,
+  deleteMedia,
+  deleteMediaBatch,
+  setFolderCover,
+} from './service'
 
 const withError = (path: string, error: unknown) => {
-  const message = error instanceof Error ? error.message : "操作失败"
+  const message = error instanceof Error ? error.message : '操作失败'
   redirect(`${path}?error=${encodeURIComponent(message)}`)
 }
 
-export const createFolderAction = async (spaceId: string, formData: FormData) => {
+export const createFolderAction = async (
+  spaceId: string,
+  formData: FormData
+) => {
   const user = await requireUser()
-  let folderId = ""
+  let folderId = ''
 
   try {
-    const folder = await createFolder(spaceId, user.id, String(formData.get("name") ?? ""))
+    const folder = await createFolder(
+      spaceId,
+      user.id,
+      String(formData.get('name') ?? '')
+    )
     folderId = folder.id
   } catch (error) {
     withError(`/spaces/${spaceId}`, error)
@@ -56,7 +69,7 @@ export const deleteMediaBatchAction = async (
   try {
     await deleteMediaBatch(spaceId, mediaIds, user.id)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "删除失败"
+    const message = error instanceof Error ? error.message : '删除失败'
     return { ok: false, error: message }
   }
 
@@ -75,7 +88,7 @@ export const setFolderCoverAction = async (
   try {
     await setFolderCover(spaceId, folderId, mediaId, user.id)
   } catch (error) {
-    const message = error instanceof Error ? error.message : "设置封面失败"
+    const message = error instanceof Error ? error.message : '设置封面失败'
     return { ok: false, error: message }
   }
 

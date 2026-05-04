@@ -1,14 +1,14 @@
-"use client"
+'use client'
 
-import Link from "next/link"
-import { useState } from "react"
-import { Check, ChevronLeft, Copy } from "lucide-react"
+import Link from 'next/link'
+import { useState } from 'react'
+import { Check, ChevronLeft, Copy } from 'lucide-react'
 
-import { EmptyState } from "@/components/app/empty-state"
-import { ErrorBanner } from "@/components/app/error-banner"
-import { LoadingState } from "@/components/app/loading-state"
-import { MobileFrame } from "@/components/app/mobile-frame"
-import { TopBar } from "@/components/app/top-bar"
+import { EmptyState } from '@/components/app/empty-state'
+import { ErrorBanner } from '@/components/app/error-banner'
+import { LoadingState } from '@/components/app/loading-state'
+import { MobileFrame } from '@/components/app/mobile-frame'
+import { TopBar } from '@/components/app/top-bar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,34 +19,39 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Input } from "@/components/ui/input"
-import { adminRestoreAction, createInviteAction, disableUserAction, revokeInviteAction } from "@/features/admin/actions"
-import { getAdminViewAction } from "@/features/app/view-actions"
-import { useFixedBackNavigation } from "@/hooks/use-fixed-back-navigation"
-import { useServerAction } from "@/hooks/use-server-action"
-import { formatDateTime } from "@/lib/format"
+} from '@/components/ui/alert-dialog'
+import { Input } from '@/components/ui/input'
+import {
+  adminRestoreAction,
+  createInviteAction,
+  disableUserAction,
+  revokeInviteAction,
+} from '@/features/admin/actions'
+import { getAdminViewAction } from '@/features/app/view-actions'
+import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
+import { useServerAction } from '@/hooks/use-server-action'
+import { formatDateTime } from '@/lib/format'
 
 const tabs = [
-  ["invites", "邀请"],
-  ["users", "账号"],
+  ['invites', '邀请'],
+  ['users', '账号'],
 ] as const
 
 const formatInviteTime = (date: Date | string | null | undefined) => {
   if (!date) {
-    return "未知时间"
+    return '未知时间'
   }
 
   const value = new Date(date)
   const now = new Date()
   const showYear = value.getFullYear() !== now.getFullYear()
 
-  return new Intl.DateTimeFormat("zh-CN", {
-    ...(showYear ? { year: "numeric" as const } : {}),
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  return new Intl.DateTimeFormat('zh-CN', {
+    ...(showYear ? { year: 'numeric' as const } : {}),
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   }).format(value)
 }
 
@@ -59,15 +64,21 @@ export function AdminClient({
   error?: string
   invite?: string
 }) {
-  const { data, error: loadError, loading } = useServerAction(() => getAdminViewAction(), [])
+  const {
+    data,
+    error: loadError,
+    loading,
+  } = useServerAction(() => getAdminViewAction(), [])
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null)
-  useFixedBackNavigation("/spaces")
+  useFixedBackNavigation('/spaces')
 
   const copyInviteLink = async (inviteId: string, inviteLink: string) => {
     await navigator.clipboard.writeText(inviteLink)
     setCopiedInviteId(inviteId)
     window.setTimeout(() => {
-      setCopiedInviteId((currentId) => (currentId === inviteId ? null : currentId))
+      setCopiedInviteId((currentId) =>
+        currentId === inviteId ? null : currentId
+      )
     }, 1400)
   }
 
@@ -77,7 +88,12 @@ export function AdminClient({
         <TopBar
           title="管理后台"
           leading={
-            <Link replace href="/spaces" className="ca-icon-btn" aria-label="返回空间">
+            <Link
+              replace
+              href="/spaces"
+              className="ca-icon-btn"
+              aria-label="返回空间"
+            >
               <ChevronLeft />
             </Link>
           }
@@ -85,7 +101,13 @@ export function AdminClient({
 
         <div className="ca-admin-tabs">
           {tabs.map(([value, label]) => (
-            <Link key={value} href={`/admin?tab=${value}`} className={`ca-chip ca-admin-tab ${tab === value ? "active" : ""}`}>{label}</Link>
+            <Link
+              key={value}
+              href={`/admin?tab=${value}`}
+              className={`ca-chip ca-admin-tab ${tab === value ? 'active' : ''}`}
+            >
+              {label}
+            </Link>
           ))}
         </div>
       </div>
@@ -94,7 +116,7 @@ export function AdminClient({
         <ErrorBanner message={error ?? loadError ?? undefined} />
         {loading ? <LoadingState /> : null}
 
-        {data && tab === "invites" ? (
+        {data && tab === 'invites' ? (
           <div className="grid gap-3">
             <form action={createInviteAction} className="ca-form-stack">
               <label className="ca-field">
@@ -104,7 +126,7 @@ export function AdminClient({
               <button className="ca-primary-btn">生成邀请链接</button>
             </form>
             {invite ? (
-              <div className="break-all rounded-lg border border-[#d5ece7] bg-[#e7f6f3] p-3 text-sm text-[#0f766e]">
+              <div className="rounded-lg border border-[#d5ece7] bg-[#e7f6f3] p-3 text-sm break-all text-[#0f766e]">
                 {invite}
               </div>
             ) : null}
@@ -120,11 +142,15 @@ export function AdminClient({
                       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
                         <span className="min-w-0">
                           <strong>{row.phone}</strong>
-                          <small>{row.status === "pending" ? "待注册" : "已注册"}</small>
+                          <small>
+                            {row.status === 'pending' ? '待注册' : '已注册'}
+                          </small>
                         </span>
-                        {row.status === "pending" ? (
+                        {row.status === 'pending' ? (
                           <form action={revokeAction}>
-                            <button className="rounded-lg bg-[#fff1f1] px-2 py-1 text-[11px] text-[#c24141]">撤销</button>
+                            <button className="rounded-lg bg-[#fff1f1] px-2 py-1 text-[11px] text-[#c24141]">
+                              撤销
+                            </button>
                           </form>
                         ) : (
                           <span className="text-[11px] text-[#747b86]">
@@ -132,10 +158,10 @@ export function AdminClient({
                           </span>
                         )}
                       </div>
-                      {row.status === "pending" ? (
+                      {row.status === 'pending' ? (
                         inviteLink ? (
                           <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg bg-[#f7f8f8] px-2 py-1.5">
-                            <span className="min-w-0 flex-1 break-all text-[11px] leading-relaxed text-[#4a5360]">
+                            <span className="min-w-0 flex-1 text-[11px] leading-relaxed break-all text-[#4a5360]">
                               {inviteLink}
                             </span>
                             <button
@@ -146,7 +172,11 @@ export function AdminClient({
                                 void copyInviteLink(row.id, inviteLink)
                               }}
                             >
-                              {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                              {copied ? (
+                                <Check className="size-4" />
+                              ) : (
+                                <Copy className="size-4" />
+                              )}
                             </button>
                           </div>
                         ) : (
@@ -161,7 +191,7 @@ export function AdminClient({
           </div>
         ) : null}
 
-        {data && tab === "users" ? (
+        {data && tab === 'users' ? (
           <div className="ca-list">
             {data.users.map((user) => {
               const disableAction = disableUserAction.bind(null, user.id)
@@ -173,17 +203,26 @@ export function AdminClient({
                   <span className="min-w-0">
                     <strong>{user.name}</strong>
                     <small>
-                      {user.phone} · {user.isGlobalAdmin ? "全局管理员" : "普通用户"} · {disabled ? `已禁用 · ${formatDateTime(user.disabledAt)}` : formatDateTime(user.createdAt)}
+                      {user.phone} ·{' '}
+                      {user.isGlobalAdmin ? '全局管理员' : '普通用户'} ·{' '}
+                      {disabled
+                        ? `已禁用 · ${formatDateTime(user.disabledAt)}`
+                        : formatDateTime(user.createdAt)}
                     </small>
                   </span>
                   {disabled ? (
-                    <span className="rounded-lg bg-[#fff1f1] px-2 py-1 text-[11px] text-[#c24141]">已禁用</span>
+                    <span className="rounded-lg bg-[#fff1f1] px-2 py-1 text-[11px] text-[#c24141]">
+                      已禁用
+                    </span>
                   ) : isCurrentAdmin ? (
                     <span className="ca-status-pill">当前账号</span>
                   ) : (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <button type="button" className="rounded-lg bg-[#c24141] px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm">
+                        <button
+                          type="button"
+                          className="rounded-lg bg-[#c24141] px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm"
+                        >
                           禁用
                         </button>
                       </AlertDialogTrigger>
@@ -197,7 +236,10 @@ export function AdminClient({
                         <AlertDialogFooter>
                           <AlertDialogCancel>取消</AlertDialogCancel>
                           <form action={disableAction}>
-                            <AlertDialogAction type="submit" className="ca-danger-confirm-button">
+                            <AlertDialogAction
+                              type="submit"
+                              className="ca-danger-confirm-button"
+                            >
                               禁用
                             </AlertDialogAction>
                           </form>
@@ -211,20 +253,34 @@ export function AdminClient({
           </div>
         ) : null}
 
-        {data && tab === "deleted" ? (
+        {data && tab === 'deleted' ? (
           <div className="ca-list">
-            {data.permanentRecords.length === 0 ? <EmptyState title="暂无永久删除记录" /> : null}
+            {data.permanentRecords.length === 0 ? (
+              <EmptyState title="暂无永久删除记录" />
+            ) : null}
             {data.permanentRecords.map((record) => {
-              const restoreAction = adminRestoreAction.bind(null, record.recordType, record.id)
+              const restoreAction = adminRestoreAction.bind(
+                null,
+                record.recordType,
+                record.id
+              )
 
               return (
-                <div key={`${record.recordType}-${record.id}`} className="ca-admin-row">
+                <div
+                  key={`${record.recordType}-${record.id}`}
+                  className="ca-admin-row"
+                >
                   <div className="min-w-0">
                     <strong>{record.name}</strong>
-                    <small>{record.kind} · {formatDateTime(record.permanentlyDeletedAt)}</small>
+                    <small>
+                      {record.kind} ·{' '}
+                      {formatDateTime(record.permanentlyDeletedAt)}
+                    </small>
                   </div>
                   <form action={restoreAction}>
-                    <button className="rounded-lg bg-[#e7f6f3] px-2 py-1 text-[11px] text-[#0f9f8f]">后台恢复</button>
+                    <button className="rounded-lg bg-[#e7f6f3] px-2 py-1 text-[11px] text-[#0f9f8f]">
+                      后台恢复
+                    </button>
                   </form>
                 </div>
               )

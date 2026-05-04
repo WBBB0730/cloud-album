@@ -1,13 +1,13 @@
-import { existsSync } from "fs"
-import { resolve } from "path"
+import { existsSync } from 'fs'
+import { resolve } from 'path'
 
-import { config } from "dotenv"
+import { config } from 'dotenv'
 
 export const loadEnv = () => {
   const nodeEnv = process.env.NODE_ENV
   const files = [
-    ".env",
-    ".env.local",
+    '.env',
+    '.env.local',
     nodeEnv ? `.env.${nodeEnv}` : null,
     nodeEnv ? `.env.${nodeEnv}.local` : null,
   ].filter((file): file is string => Boolean(file))

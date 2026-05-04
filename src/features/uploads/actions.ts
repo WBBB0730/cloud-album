@@ -1,8 +1,12 @@
-"use server"
+'use server'
 
-import { requireUser } from "@/features/auth/session"
+import { requireUser } from '@/features/auth/session'
 
-import { confirmUploadComplete, createUploadIntent, markUploadFailed } from "./service"
+import {
+  confirmUploadComplete,
+  createUploadIntent,
+  markUploadFailed,
+} from './service'
 
 export const createUploadIntentAction = async (input: {
   spaceId: string
@@ -19,7 +23,10 @@ export const createUploadIntentAction = async (input: {
   return createUploadIntent(user.id, input)
 }
 
-export const confirmUploadAction = async (spaceId: string, sessionId: string) => {
+export const confirmUploadAction = async (
+  spaceId: string,
+  sessionId: string
+) => {
   const user = await requireUser()
   await confirmUploadComplete(user.id, spaceId, sessionId)
 }

@@ -1,6 +1,6 @@
-"use client"
+'use client'
 
-import { type ReactNode, useEffect, useState } from "react"
+import { type ReactNode, useEffect, useState } from 'react'
 
 export function ClientOnlyGate({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false)

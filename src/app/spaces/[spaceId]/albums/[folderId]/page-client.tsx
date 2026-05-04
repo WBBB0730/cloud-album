@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import { useSearchParams } from "next/navigation"
+import { useSearchParams } from 'next/navigation'
 
-import { FolderClient } from "./folder-client"
+import { FolderClient } from './folder-client'
 
 export function FolderPageClient({
   spaceId,
@@ -12,10 +12,18 @@ export function FolderPageClient({
   folderId: string
 }) {
   const searchParams = useSearchParams()
-  const queryType = searchParams.get("type")
-  const querySort = searchParams.get("sort")
-  const type = queryType === "image" || queryType === "video" ? queryType : "all"
-  const sort = querySort === "asc" ? querySort : "desc"
+  const queryType = searchParams.get('type')
+  const querySort = searchParams.get('sort')
+  const type =
+    queryType === 'image' || queryType === 'video' ? queryType : 'all'
+  const sort = querySort === 'asc' ? querySort : 'desc'
 
-  return <FolderClient spaceId={spaceId} folderId={folderId} type={type} sort={sort} />
+  return (
+    <FolderClient
+      spaceId={spaceId}
+      folderId={folderId}
+      type={type}
+      sort={sort}
+    />
+  )
 }

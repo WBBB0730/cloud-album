@@ -19,45 +19,48 @@ const required = (name: string) => {
 
 export const env = {
   get appUrl() {
-    return required("APP_URL")
+    return required('APP_URL')
   },
   get databaseUrl() {
-    return required("DATABASE_URL")
+    return required('DATABASE_URL')
   },
   get sessionSecret() {
-    return required("SESSION_SECRET")
+    return required('SESSION_SECRET')
   },
   get inviteTokenSecret() {
-    return required("INVITE_TOKEN_SECRET")
+    return required('INVITE_TOKEN_SECRET')
   },
   get tencentSecretId() {
-    return required("TENCENT_CLOUD_SECRET_ID")
+    return required('TENCENT_CLOUD_SECRET_ID')
   },
   get tencentSecretKey() {
-    return required("TENCENT_CLOUD_SECRET_KEY")
+    return required('TENCENT_CLOUD_SECRET_KEY')
   },
   get cosBucket() {
-    return required("COS_BUCKET")
+    return required('COS_BUCKET')
   },
   get cosRegion() {
-    return required("COS_REGION")
+    return required('COS_REGION')
   },
   get cosUploadPrefix() {
-    return process.env.COS_UPLOAD_PREFIX ?? "cloud-album"
+    return process.env.COS_UPLOAD_PREFIX ?? 'cloud-album'
   },
   get cosSignedUrlExpiresSeconds() {
     return optionalNumber(process.env.COS_SIGNED_URL_EXPIRES_SECONDS, 900)
   },
   get cosUploadCredentialExpiresSeconds() {
-    return optionalNumber(process.env.COS_UPLOAD_CREDENTIAL_EXPIRES_SECONDS, 1800)
+    return optionalNumber(
+      process.env.COS_UPLOAD_CREDENTIAL_EXPIRES_SECONDS,
+      1800
+    )
   },
   get bootstrapAdminPhone() {
-    return required("BOOTSTRAP_ADMIN_PHONE")
+    return required('BOOTSTRAP_ADMIN_PHONE')
   },
   get bootstrapAdminName() {
-    return required("BOOTSTRAP_ADMIN_NAME")
+    return required('BOOTSTRAP_ADMIN_NAME')
   },
   get bootstrapAdminPassword() {
-    return required("BOOTSTRAP_ADMIN_PASSWORD")
+    return required('BOOTSTRAP_ADMIN_PASSWORD')
   },
 }

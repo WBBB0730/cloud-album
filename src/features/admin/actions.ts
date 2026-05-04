@@ -1,40 +1,42 @@
-"use server"
+'use server'
 
-import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
+import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 
-import { requireAdmin } from "@/features/auth/session"
+import { requireAdmin } from '@/features/auth/session'
 
-import { adminRestorePermanentRecord, createInvite, disableUserAccount, revokeInvite } from "./service"
+import {
+  adminRestorePermanentRecord,
+  createInvite,
+  disableUserAccount,
+  revokeInvite,
+} from './service'
 
 const withError = (path: string, error: unknown) => {
-  const message = error instanceof Error ? error.message : "操作失败"
-  const separator = path.includes("?") ? "&" : "?"
+  const message = error instanceof Error ? error.message : '操作失败'
+  const separator = path.includes('?') ? '&' : '?'
   redirect(`${path}${separator}error=${encodeURIComponent(message)}`)
 }
 
 export const createInviteAction = async (formData: FormData) => {
   const admin = await requireAdmin()
-  let link = ""
+  let link = ''
 
   try {
-    link = await createInvite(
-      admin.id,
-      String(formData.get("phone") ?? "")
-    )
+    link = await createInvite(admin.id, String(formData.get('phone') ?? ''))
   } catch (error) {
-    withError("/admin", error)
+    withError('/admin', error)
   }
 
-  revalidatePath("/admin")
+  revalidatePath('/admin')
   redirect(`/admin?invite=${encodeURIComponent(link)}`)
 }
 
 export const revokeInviteAction = async (inviteId: string) => {
   const admin = await requireAdmin()
   await revokeInvite(admin.id, inviteId)
-  revalidatePath("/admin")
-  redirect("/admin")
+  revalidatePath('/admin')
+  redirect('/admin')
 }
 
 export const disableUserAction = async (userId: string) => {
@@ -43,16 +45,19 @@ export const disableUserAction = async (userId: string) => {
   try {
     await disableUserAccount(admin.id, userId)
   } catch (error) {
-    withError("/admin?tab=users", error)
+    withError('/admin?tab=users', error)
   }
 
-  revalidatePath("/admin")
-  redirect("/admin?tab=users")
+  revalidatePath('/admin')
+  redirect('/admin?tab=users')
 }
 
-export const adminRestoreAction = async (kind: "media" | "folder", recordId: string) => {
+export const adminRestoreAction = async (
+  kind: 'media' | 'folder',
+  recordId: string
+) => {
   await requireAdmin()
   await adminRestorePermanentRecord(kind, recordId)
-  revalidatePath("/admin")
-  redirect("/admin")
+  revalidatePath('/admin')
+  redirect('/admin')
 }

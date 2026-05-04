@@ -1,4 +1,4 @@
-import { TrashClient } from "./trash-client"
+import { TrashClient } from './trash-client'
 
 export default async function TrashPage({
   params,

@@ -1,9 +1,9 @@
-import "server-only"
+import 'server-only'
 
-import { desc, isNotNull, ne, sql } from "drizzle-orm"
+import { desc, isNotNull, ne, sql } from 'drizzle-orm'
 
-import { db } from "@/db/client"
-import { accountInvites, folders, media, users } from "@/db/schema"
+import { db } from '@/db/client'
+import { accountInvites, folders, media, users } from '@/db/schema'
 
 export const listInvites = async () =>
   db
@@ -17,7 +17,7 @@ export const listInvites = async () =>
       updatedAt: accountInvites.updatedAt,
     })
     .from(accountInvites)
-    .where(ne(accountInvites.status, "revoked"))
+    .where(ne(accountInvites.status, 'revoked'))
     .orderBy(desc(accountInvites.createdAt))
 
 export const listUsers = async () =>

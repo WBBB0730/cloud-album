@@ -1,22 +1,22 @@
-"use client"
+'use client'
 
-import { useEffect, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
-import COS from "cos-js-sdk-v5"
-import * as exifr from "exifr"
-import { ImageIcon, RotateCw, Upload, Video } from "lucide-react"
+import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import COS from 'cos-js-sdk-v5'
+import * as exifr from 'exifr'
+import { ImageIcon, RotateCw, Upload, Video } from 'lucide-react'
 
 import {
   confirmUploadAction,
   createUploadIntentAction,
   failUploadAction,
-} from "@/features/uploads/actions"
-import { formatBytes } from "@/lib/format"
+} from '@/features/uploads/actions'
+import { formatBytes } from '@/lib/format'
 
 type UploadRow = {
   id: string
   file: File
-  status: "waiting" | "uploading" | "completed" | "failed"
+  status: 'waiting' | 'uploading' | 'completed' | 'failed'
   progress: number
   message: string
   sessionId?: string
@@ -29,7 +29,7 @@ const VIDEO_META_TIMEOUT_MS = 5000
 const getImageMeta = async (file: File) => {
   const [bitmap, exif] = await Promise.all([
     createImageBitmap(file).catch(() => null),
-    exifr.parse(file, ["DateTimeOriginal", "CreateDate"]).catch(() => null),
+    exifr.parse(file, ['DateTimeOriginal', 'CreateDate']).catch(() => null),
   ])
   const width = bitmap?.width ?? null
   const height = bitmap?.height ?? null
@@ -59,7 +59,7 @@ const getVideoMeta = async (file: File) =>
     takenAt: string | null
   }>((resolve) => {
     const url = URL.createObjectURL(file)
-    const video = document.createElement("video")
+    const video = document.createElement('video')
     let settled = false
     let timeout: ReturnType<typeof setTimeout>
 
@@ -77,13 +77,13 @@ const getVideoMeta = async (file: File) =>
       clearTimeout(timeout)
       video.onloadedmetadata = null
       video.onerror = null
-      video.removeAttribute("src")
+      video.removeAttribute('src')
       video.load()
       URL.revokeObjectURL(url)
       resolve(meta)
     }
 
-    video.preload = "metadata"
+    video.preload = 'metadata'
     video.onloadedmetadata = () => {
       settle({
         width: video.videoWidth || null,
@@ -93,10 +93,20 @@ const getVideoMeta = async (file: File) =>
       })
     }
     video.onerror = () => {
-      settle({ width: null, height: null, duration: null, takenAt: new Date(file.lastModified).toISOString() })
+      settle({
+        width: null,
+        height: null,
+        duration: null,
+        takenAt: new Date(file.lastModified).toISOString(),
+      })
     }
     timeout = setTimeout(() => {
-      settle({ width: null, height: null, duration: null, takenAt: new Date(file.lastModified).toISOString() })
+      settle({
+        width: null,
+        height: null,
+        duration: null,
+        takenAt: new Date(file.lastModified).toISOString(),
+      })
     }, VIDEO_META_TIMEOUT_MS)
     video.src = url
   })
@@ -130,7 +140,9 @@ export function UploadClient({
   }, [])
 
   useEffect(() => {
-    onBlockingChange?.(rows.some((row) => row.status === "waiting" || row.status === "uploading"))
+    onBlockingChange?.(
+      rows.some((row) => row.status === 'waiting' || row.status === 'uploading')
+    )
   }, [onBlockingChange, rows])
 
   const updateRow = (id: string, patch: Partial<UploadRow>) => {
@@ -138,28 +150,30 @@ export function UploadClient({
       return
     }
 
-    setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
+    setRows((current) =>
+      current.map((row) => (row.id === id ? { ...row, ...patch } : row))
+    )
   }
 
   const uploadRow = async (row: UploadRow) => {
-    updateRow(row.id, { status: "uploading", progress: 0, message: "上传中" })
+    updateRow(row.id, { status: 'uploading', progress: 0, message: '上传中' })
     let currentSessionId = row.sessionId
 
     try {
-      const meta = row.file.type.startsWith("video/")
+      const meta = row.file.type.startsWith('video/')
         ? await getVideoMeta(row.file)
         : await getImageMeta(row.file)
       const intent = await createUploadIntentAction({
         spaceId,
         folderId,
         filename: row.file.name,
-        mimeType: row.file.type || "application/octet-stream",
+        mimeType: row.file.type || 'application/octet-stream',
         size: row.file.size,
         ...meta,
       })
 
       currentSessionId = intent.session.id
-      updateRow(row.id, { sessionId: currentSessionId, message: "上传中" })
+      updateRow(row.id, { sessionId: currentSessionId, message: '上传中' })
 
       const credential = intent.upload.credential
       const cos = new COS({
@@ -180,7 +194,7 @@ export function UploadClient({
         Region: intent.upload.region,
         Key: intent.upload.key,
         Body: row.file,
-        ContentType: row.file.type || "application/octet-stream",
+        ContentType: row.file.type || 'application/octet-stream',
         ChunkSize: 8 * 1024 * 1024,
         AsyncLimit: COS_CHUNK_CONCURRENCY_PER_FILE,
         onProgress: (progress) => {
@@ -192,7 +206,11 @@ export function UploadClient({
       })
 
       await confirmUploadAction(spaceId, intent.session.id)
-      updateRow(row.id, { status: "completed", progress: 100, message: "已完成" })
+      updateRow(row.id, {
+        status: 'completed',
+        progress: 100,
+        message: '已完成',
+      })
       if (mountedRef.current) {
         router.refresh()
       }
@@ -201,8 +219,8 @@ export function UploadClient({
         await failUploadAction(spaceId, currentSessionId).catch(() => null)
       }
       updateRow(row.id, {
-        status: "failed",
-        message: error instanceof Error ? error.message : "上传失败，可重试",
+        status: 'failed',
+        message: error instanceof Error ? error.message : '上传失败，可重试',
       })
     }
   }
@@ -238,7 +256,10 @@ export function UploadClient({
 
   const enqueueUploadRows = (uploadRows: UploadRow[]) => {
     for (const row of uploadRows) {
-      if (queuedUploadIdsRef.current.has(row.id) || activeUploadIdsRef.current.has(row.id)) {
+      if (
+        queuedUploadIdsRef.current.has(row.id) ||
+        activeUploadIdsRef.current.has(row.id)
+      ) {
         continue
       }
 
@@ -257,9 +278,9 @@ export function UploadClient({
     const nextRows = Array.from(files).map((file) => ({
       id: crypto.randomUUID(),
       file,
-      status: "waiting" as const,
+      status: 'waiting' as const,
       progress: 0,
-      message: "等待上传",
+      message: '等待上传',
     }))
 
     setRows((current) => [...current, ...nextRows])
@@ -267,16 +288,20 @@ export function UploadClient({
   }
 
   const visibleRows = rows
-    .filter((row) => row.status !== "completed")
+    .filter((row) => row.status !== 'completed')
     .sort((first, second) => {
       if (first.status === second.status) {
         return 0
       }
 
-      return first.status === "uploading" ? -1 : second.status === "uploading" ? 1 : 0
+      return first.status === 'uploading'
+        ? -1
+        : second.status === 'uploading'
+          ? 1
+          : 0
     })
-  const completedCount = rows.filter((row) => row.status === "completed").length
-  const failedCount = rows.filter((row) => row.status === "failed").length
+  const completedCount = rows.filter((row) => row.status === 'completed').length
+  const failedCount = rows.filter((row) => row.status === 'failed').length
   const remainingCount = rows.length - completedCount
   const totalMessage =
     failedCount > 0
@@ -295,7 +320,7 @@ export function UploadClient({
         className="hidden"
         onChange={(event) => {
           uploadFiles(event.target.files)
-          event.currentTarget.value = ""
+          event.currentTarget.value = ''
         }}
       />
       <button
@@ -318,35 +343,43 @@ export function UploadClient({
           {visibleRows.map((row) => (
             <div key={row.id} className="ca-upload-row">
               <div className="ca-file-icon">
-                {row.file.type.startsWith("video/") ? <Video className="size-5" /> : <ImageIcon className="size-5" />}
+                {row.file.type.startsWith('video/') ? (
+                  <Video className="size-5" />
+                ) : (
+                  <ImageIcon className="size-5" />
+                )}
               </div>
               <div className="min-w-0">
                 <strong>{row.file.name}</strong>
                 <small>
                   {row.message} · {formatBytes(row.file.size)}
                 </small>
-                {row.status === "waiting" ? null : (
+                {row.status === 'waiting' ? null : (
                   <div className="ca-progress">
                     <span style={{ width: `${row.progress}%` }} />
                   </div>
                 )}
               </div>
               <div className="ca-upload-state">
-                {row.status === "failed" ? (
+                {row.status === 'failed' ? (
                   <button
                     type="button"
-                  className="ca-upload-action"
-                  onClick={() => {
-                    updateRow(row.id, { status: "waiting", progress: 0, message: "等待上传" })
-                    enqueueUploadRows([row])
-                  }}
-                >
+                    className="ca-upload-action"
+                    onClick={() => {
+                      updateRow(row.id, {
+                        status: 'waiting',
+                        progress: 0,
+                        message: '等待上传',
+                      })
+                      enqueueUploadRows([row])
+                    }}
+                  >
                     <RotateCw className="size-3.5" />
                     重试
                   </button>
                 ) : (
                   <span className="ca-status-pill">
-                    {row.status === "uploading" ? "上传中" : "等待"}
+                    {row.status === 'uploading' ? '上传中' : '等待'}
                   </span>
                 )}
               </div>
