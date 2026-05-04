@@ -33,9 +33,19 @@ const writeCache = (key: string, value: unknown) => {
   }
 }
 
+const removeCache = (key: string) => {
+  try {
+    window.localStorage.removeItem(key)
+  } catch {
+    // localStorage can be unavailable; in-memory state still updates.
+  }
+}
+
 type RefreshOptions = {
   showLoading?: boolean
 }
+
+type MutateData<T> = T | ((current: T | null) => T | null)
 
 export function useServerAction<T>(loader: () => Promise<T>, deps: unknown[]) {
   const cacheKey = useMemo(() => getCacheKey(loader, deps), deps)
@@ -107,6 +117,29 @@ export function useServerAction<T>(loader: () => Promise<T>, deps: unknown[]) {
     }
   }, [cacheKey])
 
+  const mutate = useCallback((nextData: MutateData<T>) => {
+    const activeCacheKey = cacheKeyRef.current
+
+    setData((current) => {
+      const next = typeof nextData === "function"
+        ? (nextData as (current: T | null) => T | null)(current)
+        : nextData
+
+      hasDataRef.current = next !== null
+
+      if (next === null) {
+        removeCache(activeCacheKey)
+      } else {
+        writeCache(activeCacheKey, next)
+      }
+
+      return next
+    })
+
+    setError(null)
+    setLoading(false)
+  }, [])
+
   useEffect(() => {
     const cached = readCache<T>(cacheKey)
 
@@ -122,5 +155,5 @@ export function useServerAction<T>(loader: () => Promise<T>, deps: unknown[]) {
     void refresh({ showLoading: cached === null })
   }, [cacheKey, refresh])
 
-  return { data, error, loading, refresh }
+  return { data, error, loading, refresh, mutate }
 }

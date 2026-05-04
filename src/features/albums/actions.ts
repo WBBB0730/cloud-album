@@ -41,6 +41,7 @@ export const deleteMediaAction = async (
 ) => {
   const user = await requireUser()
   await deleteMedia(spaceId, mediaId, user.id)
+  revalidatePath(`/spaces/${spaceId}`)
   revalidatePath(`/spaces/${spaceId}/albums/${folderId}`)
   redirect(`/spaces/${spaceId}/albums/${folderId}`)
 }
@@ -59,6 +60,7 @@ export const deleteMediaBatchAction = async (
     return { ok: false, error: message }
   }
 
+  revalidatePath(`/spaces/${spaceId}`)
   revalidatePath(`/spaces/${spaceId}/albums/${folderId}`)
   return { ok: true, error: null }
 }

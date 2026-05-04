@@ -485,11 +485,16 @@
       }
 
       .selection-bar span {
-        flex: 1 1 auto;
+        flex: 0 1 auto;
         min-width: 0;
         color: #303844;
         font-size: 13px;
         font-weight: 500;
+      }
+
+      .selection-spacer {
+        flex: 1 1 auto;
+        min-width: 0;
       }
 
       .selection-action {
@@ -515,6 +520,19 @@
         fill: none;
         stroke-linecap: round;
         stroke-linejoin: round;
+      }
+
+      .selection-text-action {
+        flex: 0 0 auto;
+        border: 0;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: var(--accent);
+        padding: 0 4px;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 30px;
       }
 
       .media {
@@ -566,8 +584,19 @@
       }
 
       .selected {
-        outline: 2px solid var(--accent);
-        outline-offset: -2px;
+        outline: none;
+      }
+
+      .selected::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        border-radius: inherit;
+        box-shadow:
+          inset 0 0 0 2px #fff,
+          inset 0 0 0 4px var(--accent);
+        pointer-events: none;
       }
 
       .selected .check {
@@ -1475,6 +1504,8 @@
                   <i data-lucide="x"></i>
                 </button>
                 <span>已选择 1 项</span>
+                <button class="selection-text-action">全选</button>
+                <i class="selection-spacer"></i>
                 <button class="selection-action" aria-label="下载所选">
                   <i data-lucide="download"></i>
                 </button>
@@ -1679,7 +1710,54 @@
 
         <article class="screen-wrap">
           <div class="screen-title">
-            <strong>11. 全局管理</strong>
+            <strong>11. 回收站相册</strong>
+          </div>
+          <div class="phone">
+            <div class="app">
+              <div class="topbar">
+                <button class="icon-btn" aria-label="返回">
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <div class="title-stack">
+                  <h2>春节</h2>
+                  <p>回收站</p>
+                </div>
+              </div>
+
+              <div class="selection-bar">
+                <button class="selection-action" aria-label="取消选择">
+                  <i data-lucide="x"></i>
+                </button>
+                <span>已选择 2 项</span>
+                <button class="selection-text-action">全选</button>
+                <i class="selection-spacer"></i>
+                <button class="selection-action" aria-label="恢复所选">
+                  <i data-lucide="undo-2"></i>
+                </button>
+                <button class="selection-action danger" aria-label="永久删除所选">
+                  <i data-lucide="trash-2"></i>
+                </button>
+              </div>
+
+              <div class="media-grid">
+                <div class="media selected photo-a">
+                  <span class="check"><i data-lucide="check"></i></span>
+                </div>
+                <div class="media photo-b"><span class="play"><i data-lucide="play"></i>0:42</span></div>
+                <div class="media selected photo-c">
+                  <span class="check"><i data-lucide="check"></i></span>
+                </div>
+                <div class="media photo-d"></div>
+                <div class="media photo-e"></div>
+                <div class="media photo-f"><span class="play"><i data-lucide="play"></i>2:18</span></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>12. 全局管理</strong>
           </div>
           <div class="phone">
             <div class="app">

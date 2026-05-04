@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, eq, isNotNull, isNull } from "drizzle-orm"
+import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm"
 
 import { db } from "@/db/client"
 import { folders, media } from "@/db/schema"
@@ -110,9 +110,23 @@ export const restoreMediaFromTrash = async (
   mediaId: string,
   userId: string
 ) => {
-  await requireSpaceMember(spaceId, userId)
+  await restoreMediaBatchFromTrash(spaceId, [mediaId], userId, "媒体不存在")
+}
 
-  await db
+export const restoreMediaBatchFromTrash = async (
+  spaceId: string,
+  mediaIds: string[],
+  userId: string,
+  missingMessage = "部分媒体不存在"
+) => {
+  await requireSpaceMember(spaceId, userId)
+  const uniqueIds = Array.from(new Set(mediaIds.filter(Boolean)))
+
+  if (uniqueIds.length === 0) {
+    throw new Error("请选择要恢复的媒体")
+  }
+
+  const restoredItems = await db
     .update(media)
     .set({
       deletedAt: null,
@@ -122,12 +136,17 @@ export const restoreMediaFromTrash = async (
     })
     .where(
       and(
-        eq(media.id, mediaId),
         eq(media.spaceId, spaceId),
+        inArray(media.id, uniqueIds),
         isNotNull(media.deletedAt),
         isNull(media.permanentlyDeletedAt)
       )
     )
+    .returning({ id: media.id })
+
+  if (restoredItems.length !== uniqueIds.length) {
+    throw new Error(missingMessage)
+  }
 }
 
 export const permanentlyDeleteMedia = async (
@@ -135,16 +154,42 @@ export const permanentlyDeleteMedia = async (
   mediaId: string,
   userId: string
 ) => {
-  await requireSpaceMember(spaceId, userId)
+  await permanentlyDeleteMediaBatch(spaceId, [mediaId], userId, "媒体不存在")
+}
 
-  await db
+export const permanentlyDeleteMediaBatch = async (
+  spaceId: string,
+  mediaIds: string[],
+  userId: string,
+  missingMessage = "部分媒体不存在"
+) => {
+  await requireSpaceMember(spaceId, userId)
+  const uniqueIds = Array.from(new Set(mediaIds.filter(Boolean)))
+
+  if (uniqueIds.length === 0) {
+    throw new Error("请选择要永久删除的媒体")
+  }
+
+  const deletedItems = await db
     .update(media)
     .set({
       permanentlyDeletedAt: new Date(),
       permanentlyDeletedBy: userId,
       updatedAt: new Date(),
     })
-    .where(and(eq(media.id, mediaId), eq(media.spaceId, spaceId), isNotNull(media.deletedAt)))
+    .where(
+      and(
+        eq(media.spaceId, spaceId),
+        inArray(media.id, uniqueIds),
+        isNotNull(media.deletedAt),
+        isNull(media.permanentlyDeletedAt)
+      )
+    )
+    .returning({ id: media.id })
+
+  if (deletedItems.length !== uniqueIds.length) {
+    throw new Error(missingMessage)
+  }
 }
 
 export const permanentlyDeleteFolder = async (

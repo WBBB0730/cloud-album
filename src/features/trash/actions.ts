@@ -8,7 +8,9 @@ import { requireUser } from "@/features/auth/session"
 import {
   permanentlyDeleteFolder,
   permanentlyDeleteMedia,
+  permanentlyDeleteMediaBatch,
   restoreFolderFromTrash,
+  restoreMediaBatchFromTrash,
   restoreMediaFromTrash,
 } from "./service"
 
@@ -26,8 +28,31 @@ export const restoreMediaAction = async (
 ) => {
   const user = await requireUser()
   await restoreMediaFromTrash(spaceId, mediaId, user.id)
+  revalidatePath(`/spaces/${spaceId}`)
+  revalidatePath(`/spaces/${spaceId}/albums/${folderId}`)
   revalidatePath(`/spaces/${spaceId}/trash/${folderId}`)
   redirect(`/spaces/${spaceId}/trash/${folderId}`)
+}
+
+export const restoreMediaBatchAction = async (
+  spaceId: string,
+  folderId: string,
+  mediaIds: string[]
+) => {
+  const user = await requireUser()
+
+  try {
+    await restoreMediaBatchFromTrash(spaceId, mediaIds, user.id)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "恢复失败"
+    return { ok: false, error: message }
+  }
+
+  revalidatePath(`/spaces/${spaceId}`)
+  revalidatePath(`/spaces/${spaceId}/albums/${folderId}`)
+  revalidatePath(`/spaces/${spaceId}/trash`)
+  revalidatePath(`/spaces/${spaceId}/trash/${folderId}`)
+  return { ok: true, error: null }
 }
 
 export const permanentMediaAction = async (
@@ -39,6 +64,25 @@ export const permanentMediaAction = async (
   await permanentlyDeleteMedia(spaceId, mediaId, user.id)
   revalidatePath(`/spaces/${spaceId}/trash/${folderId}`)
   redirect(`/spaces/${spaceId}/trash/${folderId}`)
+}
+
+export const permanentMediaBatchAction = async (
+  spaceId: string,
+  folderId: string,
+  mediaIds: string[]
+) => {
+  const user = await requireUser()
+
+  try {
+    await permanentlyDeleteMediaBatch(spaceId, mediaIds, user.id)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "永久删除失败"
+    return { ok: false, error: message }
+  }
+
+  revalidatePath(`/spaces/${spaceId}/trash`)
+  revalidatePath(`/spaces/${spaceId}/trash/${folderId}`)
+  return { ok: true, error: null }
 }
 
 export const permanentFolderAction = async (spaceId: string, folderId: string) => {

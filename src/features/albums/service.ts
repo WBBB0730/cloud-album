@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, eq, isNull } from "drizzle-orm"
+import { and, desc, eq, inArray, isNull } from "drizzle-orm"
 
 import { db } from "@/db/client"
 import { deleteBatches, folders, media } from "@/db/schema"
@@ -70,35 +70,22 @@ export const getFolderDetail = async (
 }
 
 export const deleteMedia = async (spaceId: string, mediaId: string, userId: string) => {
-  await requireSpaceMember(spaceId, userId)
-  const item = await getActiveMediaById(spaceId, mediaId)
-
-  if (!item) {
-    throw new Error("媒体不存在")
-  }
-
-  await db.transaction(async (tx) => {
-    const [batch] = await tx
-      .insert(deleteBatches)
-      .values({ spaceId, deletedBy: userId, reason: "delete_media" })
-      .returning()
-
-    await tx
-      .update(media)
-      .set({
-        deletedAt: new Date(),
-        deletedBy: userId,
-        deleteBatchId: batch.id,
-        updatedAt: new Date(),
-      })
-      .where(eq(media.id, item.id))
-  })
+  await deleteActiveMedia(spaceId, [mediaId], userId, "媒体不存在")
 }
 
 export const deleteMediaBatch = async (
   spaceId: string,
   mediaIds: string[],
   userId: string
+) => {
+  await deleteActiveMedia(spaceId, mediaIds, userId, "部分媒体不存在")
+}
+
+const deleteActiveMedia = async (
+  spaceId: string,
+  mediaIds: string[],
+  userId: string,
+  missingMessage: string
 ) => {
   await requireSpaceMember(spaceId, userId)
   const uniqueIds = Array.from(new Set(mediaIds.filter(Boolean)))
@@ -107,34 +94,71 @@ export const deleteMediaBatch = async (
     throw new Error("请选择要删除的媒体")
   }
 
-  const items = await Promise.all(
-    uniqueIds.map((mediaId) => getActiveMediaById(spaceId, mediaId))
-  )
-
-  if (items.some((item) => !item)) {
-    throw new Error("部分媒体不存在")
-  }
-
   await db.transaction(async (tx) => {
+    const now = new Date()
     const [batch] = await tx
       .insert(deleteBatches)
       .values({ spaceId, deletedBy: userId, reason: "delete_media" })
       .returning()
 
-    for (const item of items) {
-      if (!item) {
-        continue
-      }
+    const deletedItems = await tx
+      .update(media)
+      .set({
+        deletedAt: now,
+        deletedBy: userId,
+        deleteBatchId: batch.id,
+        updatedAt: now,
+      })
+      .where(
+        and(
+          eq(media.spaceId, spaceId),
+          inArray(media.id, uniqueIds),
+          eq(media.status, "ready"),
+          isNull(media.deletedAt),
+          isNull(media.permanentlyDeletedAt)
+        )
+      )
+      .returning({ id: media.id })
+
+    if (deletedItems.length !== uniqueIds.length) {
+      throw new Error(missingMessage)
+    }
+
+    const affectedFolders = await tx
+      .select({ id: folders.id })
+      .from(folders)
+      .where(
+        and(
+          eq(folders.spaceId, spaceId),
+          inArray(folders.coverMediaId, uniqueIds),
+          isNull(folders.deletedAt),
+          isNull(folders.permanentlyDeletedAt)
+        )
+      )
+
+    for (const folder of affectedFolders) {
+      const [latestCover] = await tx
+        .select({ id: media.id })
+        .from(media)
+        .where(
+          and(
+            eq(media.spaceId, spaceId),
+            eq(media.folderId, folder.id),
+            eq(media.status, "ready"),
+            isNull(media.deletedAt),
+            isNull(media.permanentlyDeletedAt)
+          )
+        )
+        .orderBy(desc(media.takenAt), desc(media.createdAt))
+        .limit(1)
 
       await tx
-        .update(media)
+        .update(folders)
         .set({
-          deletedAt: new Date(),
-          deletedBy: userId,
-          deleteBatchId: batch.id,
-          updatedAt: new Date(),
+          coverMediaId: latestCover?.id ?? null,
+          updatedAt: now,
         })
-        .where(eq(media.id, item.id))
+        .where(and(eq(folders.id, folder.id), eq(folders.spaceId, spaceId)))
     }
   })
 }

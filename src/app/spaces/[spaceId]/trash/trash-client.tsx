@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ChevronLeft, RotateCcw, Trash2 } from "lucide-react"
+import { ChevronLeft, Trash2, Undo2 } from "lucide-react"
 
 import { EmptyState } from "@/components/app/empty-state"
 import { LoadingState } from "@/components/app/loading-state"
@@ -55,7 +55,7 @@ export function TrashClient({ spaceId }: { spaceId: string }) {
                     <div className="flex gap-1">
                       <form action={restoreAction}>
                         <button className="ca-icon-btn" aria-label="恢复相册">
-                          <RotateCcw className="size-4" />
+                          <Undo2 className="size-4" />
                         </button>
                       </form>
                       <form action={permanentAction}>
