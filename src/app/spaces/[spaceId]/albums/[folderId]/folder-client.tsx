@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { deleteMediaBatchAction } from "@/features/albums/actions"
 import { getFolderViewAction } from "@/features/app/view-actions"
+import { useFixedBackNavigation } from "@/hooks/use-fixed-back-navigation"
 import { useServerAction } from "@/hooks/use-server-action"
 import { formatDuration } from "@/lib/format"
 import {
@@ -227,6 +228,7 @@ export function FolderClient({
 }) {
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
   const [previewMedia, setPreviewMedia] = useState<FolderMediaItem[]>([])
+  const [closingPreviewHistory, setClosingPreviewHistory] = useState(false)
   const [stableMedia, setStableMedia] = useState<FolderMediaItem[]>([])
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
@@ -273,6 +275,9 @@ export function FolderClient({
     () => getFolderViewAction(spaceId, folderId),
     [spaceId, folderId]
   )
+  useFixedBackNavigation(`/spaces/${spaceId}`, {
+    enabled: previewIndex === null && !closingPreviewHistory,
+  })
   const nextSort = sort === "desc" ? "asc" : "desc"
   const SortIcon = sort === "desc" ? ArrowDown : ArrowUp
 
@@ -756,6 +761,7 @@ export function FolderClient({
 
     if (window.history.state?.[PREVIEW_HISTORY_KEY]) {
       closingPreviewRef.current = true
+      setClosingPreviewHistory(true)
       window.setTimeout(() => window.history.back(), 0)
     }
   }, [])
@@ -833,6 +839,7 @@ export function FolderClient({
     const handlePopState = () => {
       if (closingPreviewRef.current) {
         closingPreviewRef.current = false
+        setClosingPreviewHistory(false)
         return
       }
 
@@ -853,7 +860,7 @@ export function FolderClient({
         <TopBar
           title={data?.folder.name ?? "相册"}
           leading={
-            <Link href={`/spaces/${spaceId}`} className="ca-icon-btn" aria-label="返回">
+            <Link replace href={`/spaces/${spaceId}`} className="ca-icon-btn" aria-label="返回">
               <ChevronLeft />
             </Link>
           }

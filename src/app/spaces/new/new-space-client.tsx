@@ -11,9 +11,11 @@ import { MobileFrame } from "@/components/app/mobile-frame"
 import { TopBar } from "@/components/app/top-bar"
 import { Input } from "@/components/ui/input"
 import { createSpaceAction } from "@/features/spaces/actions"
+import { useFixedBackNavigation } from "@/hooks/use-fixed-back-navigation"
 
 function NewSpaceContent() {
   const searchParams = useSearchParams()
+  useFixedBackNavigation("/spaces")
 
   return (
     <MobileFrame className="ca-scroll-layout">
@@ -21,7 +23,7 @@ function NewSpaceContent() {
         <TopBar
           title="新建空间"
           leading={
-            <Link href="/spaces" className="ca-icon-btn" aria-label="返回">
+            <Link replace href="/spaces" className="ca-icon-btn" aria-label="返回">
               <ChevronLeft />
             </Link>
           }

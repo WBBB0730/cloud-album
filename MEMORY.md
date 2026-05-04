@@ -33,6 +33,7 @@
 - COS 浏览器直传使用 COS JS SDK；服务端通过 `qcloud-cos-sts` 下发临时上传凭证。
 - COS 分片上传临时凭证使用腾讯云 STS SDK 同款 resource：`qcs::cos:{region}:uid/{appid}:prefix//{appid}/{shortBucketName}/{cosKey}`，并且动作必须包含 `name/cos:ListMultipartUploads`；`cos-js-sdk-v5` 的 `sliceUploadFile` 开始上传前会固定请求 `GET /?uploads&prefix={Key}`。
 - COS object key 不能带前导 `/`；否则 STS policy 会按 `/space/...` 授权，但 `cos-js-sdk-v5` 请求 `?uploads&prefix=space/...` 时会去掉前导 `/`，导致 403。
+- 上传页使用单一上传队列调度器，按文件维度最多 5 并发；每个文件内部的 COS 分片并发保持克制，避免少数大文件抢占浏览器连接；总进度按完成文件数 / 队列文件总数计算，并显示剩余数量；成功项从可见队列隐藏但保留在总进度统计中；本地视频 metadata object URL 和图片 ImageBitmap 需要及时释放。上传页存在等待或上传中文件时需要离开保护：页面内返回走自定义确认，刷新/关闭走 `beforeunload`，浏览器返回走 history guard；确认离开前先关闭本地 guard，避免按钮确认和系统级拦截重复触发。
 - 私有媒体读取通过 `src/lib/cos.ts` 生成短期 COS GET 签名 URL。
 - 媒体预览是相册页内 overlay 行为，不使用独立预览路由；图片预览缩放使用 `react-zoom-pan-pinch`，桌面双击和移动端双击触摸都固定放大到 2.5 倍并按点击位置定位。
 - 媒体预览上下 UI 是半透明浮层，不占用图片布局空间；单击媒体区域显示/隐藏，显示后 5 秒自动隐藏。
@@ -46,5 +47,7 @@
 - `useServerAction` 暴露手动 `refresh()`；相册详情不做固定轮询，而是根据当前媒体签名 URL 的最近过期时间设置一次性 timer，提前 60 秒刷新。相册页 focus 或从后台切回前台时会检查 URL 是否即将过期，并用 10 秒防抖避免重复请求。相关 timer 和事件监听必须在依赖变化或卸载时清理。
 - 相册页收到同一图片的新签名 URL 时，如果旧 URL 仍可用，会继续显示旧 URL，并以 3 并发后台预加载新 URL；预加载成功后再替换当前页面 URL。视频暂不做这种预加载。
 - PWA 只保留基础浏览器配置：`public/manifest.webmanifest` 使用 `display: "standalone"`，根布局声明 manifest、图标和 Apple Web App metadata；不注册 service worker，不做自定义安装弹窗或 Fullscreen API。
+- 有明确上级的应用内页面使用固定返回目标，不依赖浏览器真实访问历史；顶部返回使用 replace 语义，避免把返回动作写入历史栈；物理返回键和浏览器自带返回通过 `useFixedBackNavigation` 回到固定上级。相册预览打开时需要暂停页面固定返回，让返回键优先关闭预览；上传页存在等待或上传中文件时，固定返回进入离开确认。
 - 空间入口页标题使用“选择空间”。空间详情页只放成员管理、新建相册、回收站入口，不放上传入口；成员入口图标使用成员语义而不是加号。成员管理是独立页面 `/spaces/[spaceId]/members`，页面内展示成员列表并通过手机号邀请已注册用户加入空间，按钮文案为“邀请加入空间”。成员页只有创建者可以移除其他成员，且创建者不能被移除；非创建者可在页面底部单独一行退出空间，创建者不能退出空间，服务层也必须拒绝。成员移除和退出操作前二次确认。相册页长按媒体进入多选态，支持拖动范围快速选择、批量下载和批量删除；拖选按开始项到手指当前位置之间的范围实时重算，开始项未选中时选中范围、开始项已选中时取消选中范围，往回拖会收缩范围，且不能影响普通纵向滑动。媒体预览更多菜单支持删除。所有媒体删除入口都必须二次确认。
 - 相册媒体缩略图区域的长按是产品多选手势，必须禁用该区域的原生长按菜单、拖拽和文本/图片选中；微信内置浏览器里还需要让网格缩略图内的真实 `img/video` 不接收指针事件，避免微信识别图片/视频长按菜单；这个限制只作用于相册网格缩略图，不作用于媒体预览里的原生视频控件。
+- 动态路由壳使用 layout 级 `generateStaticParams() { return [] }` 转为首次访问生成的 SSG 壳；`revalidate = false` 表示无限期缓存壳，不做定时 ISR。`[spaceId]` layout 覆盖空间下普通动态页，嵌套 `[folderId]` 仍需要在各自动态段 layout 单独声明。查询参数不要传入 Server Page，继续放在 client wrapper 中读取。

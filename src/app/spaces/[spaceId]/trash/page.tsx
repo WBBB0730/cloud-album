@@ -1,11 +1,11 @@
-"use client"
-
-import { useParams } from "next/navigation"
-
 import { TrashClient } from "./trash-client"
 
-export default function TrashPage() {
-  const params = useParams<{ spaceId: string }>()
+export default async function TrashPage({
+  params,
+}: {
+  params: Promise<{ spaceId: string }>
+}) {
+  const { spaceId } = await params
 
-  return <TrashClient spaceId={params.spaceId} />
+  return <TrashClient spaceId={spaceId} />
 }

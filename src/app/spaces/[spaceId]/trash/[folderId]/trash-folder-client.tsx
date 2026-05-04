@@ -10,6 +10,7 @@ import { MobileFrame } from "@/components/app/mobile-frame"
 import { TopBar } from "@/components/app/top-bar"
 import { getTrashFolderViewAction } from "@/features/app/view-actions"
 import { permanentMediaAction, restoreMediaAction } from "@/features/trash/actions"
+import { useFixedBackNavigation } from "@/hooks/use-fixed-back-navigation"
 import { useServerAction } from "@/hooks/use-server-action"
 import { formatDuration } from "@/lib/format"
 
@@ -24,6 +25,7 @@ export function TrashFolderClient({
     () => getTrashFolderViewAction(spaceId, folderId),
     [spaceId, folderId]
   )
+  useFixedBackNavigation(`/spaces/${spaceId}/trash`)
 
   return (
     <MobileFrame className="ca-scroll-layout">
@@ -32,7 +34,7 @@ export function TrashFolderClient({
           title={data?.folder.name ?? "回收站"}
           subtitle="回收站"
           leading={
-            <Link href={`/spaces/${spaceId}/trash`} className="ca-icon-btn" aria-label="返回">
+            <Link replace href={`/spaces/${spaceId}/trash`} className="ca-icon-btn" aria-label="返回">
               <ChevronLeft />
             </Link>
           }

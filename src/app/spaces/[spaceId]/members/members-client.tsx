@@ -48,7 +48,7 @@ export function MembersClient({
           title="成员管理"
           subtitle={data?.space.name}
           leading={
-            <Link href={`/spaces/${spaceId}`} className="ca-icon-btn" aria-label="返回空间">
+            <Link replace href={`/spaces/${spaceId}`} className="ca-icon-btn" aria-label="返回空间">
               <ChevronLeft />
             </Link>
           }

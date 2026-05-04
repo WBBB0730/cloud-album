@@ -29,7 +29,7 @@ export function NewFolderClient({
           title="新建相册"
           subtitle={data?.space.name}
           leading={
-            <Link href={`/spaces/${spaceId}`} className="ca-icon-btn" aria-label="返回">
+            <Link replace href={`/spaces/${spaceId}`} className="ca-icon-btn" aria-label="返回">
               <ChevronLeft />
             </Link>
           }

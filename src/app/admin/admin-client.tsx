@@ -23,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { adminRestoreAction, createInviteAction, disableUserAction, revokeInviteAction } from "@/features/admin/actions"
 import { getAdminViewAction } from "@/features/app/view-actions"
+import { useFixedBackNavigation } from "@/hooks/use-fixed-back-navigation"
 import { useServerAction } from "@/hooks/use-server-action"
 import { formatDateTime } from "@/lib/format"
 
@@ -60,6 +61,7 @@ export function AdminClient({
 }) {
   const { data, error: loadError, loading } = useServerAction(() => getAdminViewAction(), [])
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null)
+  useFixedBackNavigation("/spaces")
 
   const copyInviteLink = async (inviteId: string, inviteLink: string) => {
     await navigator.clipboard.writeText(inviteLink)
@@ -75,7 +77,7 @@ export function AdminClient({
         <TopBar
           title="管理后台"
           leading={
-            <Link href="/spaces" className="ca-icon-btn" aria-label="返回空间">
+            <Link replace href="/spaces" className="ca-icon-btn" aria-label="返回空间">
               <ChevronLeft />
             </Link>
           }

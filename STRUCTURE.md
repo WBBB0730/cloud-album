@@ -48,7 +48,7 @@
 - `/spaces/[spaceId]/members`：成员管理页，展示空间成员，通过手机号邀请已注册用户加入，支持创建者移除其他成员和非创建者退出当前空间。
 - `/spaces/[spaceId]/upload`：选择上传文件夹。
 - `/spaces/[spaceId]/albums/[folderId]`：相册媒体网格，支持类型筛选、页内预览、长按多选、拖动快速选择、批量下载和批量删除。
-- `/spaces/[spaceId]/albums/[folderId]/upload`：COS 分片上传队列。
+- `/spaces/[spaceId]/albums/[folderId]/upload`：COS 分片上传队列，显示总进度，最多 5 个文件并发上传。
 - `/spaces/[spaceId]/trash`：回收站文件夹列表。
 - `/spaces/[spaceId]/trash/[folderId]`：回收站文件夹媒体列表。
 - `/admin`：全局管理后台，按 tab 展示邀请、账号和永久删除记录。
@@ -58,7 +58,9 @@
 - 页面不再在 Server Component 中读取数据库、cookie 或 COS 签名来渲染业务内容。
 - 页面渲染客户端壳，业务数据进入浏览器后通过 `src/features/app/view-actions.ts` 中的 Server Action 获取。
 - mutation 仍使用各模块原有 Server Action，例如登录、注册、创建空间、上传确认、删除、恢复等。
-- 动态路由在 Next 构建输出中仍可能显示为按需路由壳，但业务数据不做 SSR。
+- 动态路由使用动态段 layout 的 `generateStaticParams()` 返回空数组，让未知路径在首次访问时生成静态客户端壳；`revalidate = false` 用于无限期缓存壳，不做定时再验证。
+- `/invite/[token]` 在 `[token]` layout 处理动态段；`/spaces/[spaceId]` 及其普通子页在 `[spaceId]` layout 处理动态段；相册详情和回收站详情的 `[folderId]` 分别在对应动态段 layout 处理。
+- 页面级 `page.tsx` 保持 Server Wrapper，只解析 `params` 并把参数传给相邻 client wrapper 或业务 client 组件；查询参数继续在 client wrapper 中通过 `useSearchParams()` 读取，避免把 `searchParams` 引入 Server Page。
 
 空间是数据隔离单位。`folders`、`media`、`upload_sessions`、`delete_batches` 等业务表都必须关联 `space_id`。所有查询、上传签名、读取 URL、删除和恢复操作都必须先校验当前用户属于目标空间；全局管理员是应用级权限，不等同于空间内角色。
 
@@ -71,3 +73,5 @@
 ## UI 导航补充
 
 移动端头部操作统一由 `TopBar` 渲染，视觉对齐规则在 `src/styles/global.css` 的 `.ca-topbar`、`.ca-icon-btn` 中维护，并同步到 `docs/design/index.html`。空间列表右上角提供管理后台入口，空间详情右上角提供上传、新建文件夹、回收站入口；返回按钮在子页面头部左侧提供返回上级页面通路。
+
+有明确上级的应用内页面使用 `src/hooks/use-fixed-back-navigation.ts` 固定物理返回和浏览器返回的目标，避免按真实访问历史跳到错误层级。相册预览打开时暂停页面固定返回，上传页存在等待或上传中文件时先确认再离开。

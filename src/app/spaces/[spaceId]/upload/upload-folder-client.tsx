@@ -8,10 +8,12 @@ import { LoadingState } from "@/components/app/loading-state"
 import { MobileFrame } from "@/components/app/mobile-frame"
 import { TopBar } from "@/components/app/top-bar"
 import { getSpaceViewAction } from "@/features/app/view-actions"
+import { useFixedBackNavigation } from "@/hooks/use-fixed-back-navigation"
 import { useServerAction } from "@/hooks/use-server-action"
 
 export function UploadFolderClient({ spaceId }: { spaceId: string }) {
   const { data, error, loading } = useServerAction(() => getSpaceViewAction(spaceId), [spaceId])
+  useFixedBackNavigation(`/spaces/${spaceId}`)
 
   return (
     <MobileFrame className="ca-scroll-layout">
@@ -20,7 +22,7 @@ export function UploadFolderClient({ spaceId }: { spaceId: string }) {
           title="选择上传位置"
           subtitle={data?.space.name}
           leading={
-            <Link href={`/spaces/${spaceId}`} className="ca-icon-btn" aria-label="返回">
+            <Link replace href={`/spaces/${spaceId}`} className="ca-icon-btn" aria-label="返回">
               <ChevronLeft />
             </Link>
           }

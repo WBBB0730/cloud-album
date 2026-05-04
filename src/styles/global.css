@@ -879,6 +879,28 @@
   line-height: 1.15;
 }
 
+.ca-upload-panel {
+  display: grid;
+}
+
+.ca-upload-panel .ca-upload-zone {
+  margin-bottom: 18px;
+}
+
+.ca-upload-summary {
+  display: flex;
+  align-items: center;
+  min-height: 18px;
+  margin-bottom: 6px;
+  color: var(--album-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.ca-upload-list {
+  margin-top: 0;
+}
+
 .ca-progress {
   overflow: hidden;
   height: 5px;

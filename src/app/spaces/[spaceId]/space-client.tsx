@@ -26,7 +26,7 @@ export function SpaceClient({
         <TopBar
           title={data?.space.name ?? "空间"}
           leading={
-            <Link href="/spaces" className="ca-icon-btn" aria-label="返回空间">
+            <Link replace href="/spaces" className="ca-icon-btn" aria-label="返回空间">
               <ChevronLeft />
             </Link>
           }

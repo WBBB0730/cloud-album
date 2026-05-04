@@ -10,11 +10,13 @@ import { SafeImage } from "@/components/app/safe-image"
 import { TopBar } from "@/components/app/top-bar"
 import { getTrashHomeViewAction } from "@/features/app/view-actions"
 import { permanentFolderAction, restoreFolderAction } from "@/features/trash/actions"
+import { useFixedBackNavigation } from "@/hooks/use-fixed-back-navigation"
 import { useServerAction } from "@/hooks/use-server-action"
 import { formatDateTime } from "@/lib/format"
 
 export function TrashClient({ spaceId }: { spaceId: string }) {
   const { data, error, loading } = useServerAction(() => getTrashHomeViewAction(spaceId), [spaceId])
+  useFixedBackNavigation(`/spaces/${spaceId}`)
 
   return (
     <MobileFrame className="ca-scroll-layout">
@@ -23,7 +25,7 @@ export function TrashClient({ spaceId }: { spaceId: string }) {
           title="回收站"
           subtitle={data?.space.name}
           leading={
-            <Link href={`/spaces/${spaceId}`} className="ca-icon-btn" aria-label="返回">
+            <Link replace href={`/spaces/${spaceId}`} className="ca-icon-btn" aria-label="返回">
               <ChevronLeft />
             </Link>
           }

@@ -1,24 +1,20 @@
-"use client"
-
 import { Suspense } from "react"
-import { useParams, useSearchParams } from "next/navigation"
 
 import { LoadingState } from "@/components/app/loading-state"
 import { MobileFrame } from "@/components/app/mobile-frame"
 
-import { NewFolderClient } from "./new-folder-client"
+import { NewFolderPageClient } from "./page-client"
 
-function NewFolderPageContent() {
-  const params = useParams<{ spaceId: string }>()
-  const searchParams = useSearchParams()
+export default async function NewFolderPage({
+  params,
+}: {
+  params: Promise<{ spaceId: string }>
+}) {
+  const { spaceId } = await params
 
-  return <NewFolderClient spaceId={params.spaceId} error={searchParams.get("error") ?? undefined} />
-}
-
-export default function NewFolderPage() {
   return (
     <Suspense fallback={<MobileFrame><LoadingState /></MobileFrame>}>
-        <NewFolderPageContent />
-      </Suspense>
+      <NewFolderPageClient spaceId={spaceId} />
+    </Suspense>
   )
 }

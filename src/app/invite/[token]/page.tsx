@@ -1,24 +1,20 @@
-"use client"
-
 import { Suspense } from "react"
-import { useParams, useSearchParams } from "next/navigation"
 
 import { LoadingState } from "@/components/app/loading-state"
 import { MobileFrame } from "@/components/app/mobile-frame"
 
-import { InviteClient } from "./invite-client"
+import { InvitePageClient } from "./page-client"
 
-function InvitePageContent() {
-  const params = useParams<{ token: string }>()
-  const searchParams = useSearchParams()
+export default async function InvitePage({
+  params,
+}: {
+  params: Promise<{ token: string }>
+}) {
+  const { token } = await params
 
-  return <InviteClient token={params.token} error={searchParams.get("error") ?? undefined} />
-}
-
-export default function InvitePage() {
   return (
     <Suspense fallback={<MobileFrame variant="auth"><LoadingState /></MobileFrame>}>
-        <InvitePageContent />
-      </Suspense>
+      <InvitePageClient token={token} />
+    </Suspense>
   )
 }

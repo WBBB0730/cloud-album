@@ -44,6 +44,7 @@ type ImageTransformState = {
 }
 
 const IMAGE_DOUBLE_CLICK_SCALE = 2.5
+const IMAGE_MAX_SCALE = 10
 const IMAGE_DOUBLE_TAP_INTERVAL = 280
 const IMAGE_DOUBLE_TAP_DISTANCE = 28
 const VIDEO_LONG_PRESS_SPEED_MS = 350
@@ -221,7 +222,7 @@ function ZoomableImage({
       ref={wrapperRef}
       key={src}
       minScale={1}
-      maxScale={5}
+      maxScale={IMAGE_MAX_SCALE}
       centerOnInit
       centerZoomedOut
       limitToBounds

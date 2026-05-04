@@ -1,11 +1,11 @@
-"use client"
-
-import { useParams } from "next/navigation"
-
 import { UploadFolderClient } from "./upload-folder-client"
 
-export default function ChooseUploadFolderPage() {
-  const params = useParams<{ spaceId: string }>()
+export default async function ChooseUploadFolderPage({
+  params,
+}: {
+  params: Promise<{ spaceId: string }>
+}) {
+  const { spaceId } = await params
 
-  return <UploadFolderClient spaceId={params.spaceId} />
+  return <UploadFolderClient spaceId={spaceId} />
 }

@@ -221,6 +221,33 @@
 - 限制只作用于相册媒体网格和 `MediaThumbnail`，不影响预览页原生视频控件。
 - `docs/design/index.html` 和 `MEMORY.md` 已同步。
 
+## 2026-05-04 上传并发和总进度
+- 图片预览最大缩放倍数从 5 倍提高到 10 倍，双击快速缩放仍保持 2.5 倍。
+- 上传页新增总进度区域，按完成文件数 / 队列文件总数计算整体进度，并显示剩余数量。
+- 上传成功的文件从可见队列隐藏，但继续计入总进度和完成数量。
+- 上传队列改为最多 5 个文件并发上传。
+- 选择新文件时只追加到现有队列，不清理或重置已有队列状态；完成项隐藏由可见队列实时过滤处理。
+- 上传列表显示时将正在上传的文件排在最前面，其它状态保持原本相对顺序。
+- 上传 UI 不展示“并发”“分片”等实现细节文案，只展示完成、剩余、上传中、失败等用户状态。
+- 总进度 UI 改为轻量单行文本，不使用卡片、标题或总进度条。
+- 总进度行上方间距加大、下方间距减小，避免贴近上传按钮且远离文件列表。
+- 上传调度改为单一全局队列：所有选择批次追加到同一个队列，始终保持最多 5 个活跃文件任务，任一任务结束立即补位。
+- 每个文件内部 COS 分片并发下调为 1，避免少数文件抢占浏览器连接导致文件级并发体感异常。
+- 图片 metadata 读取后关闭 `ImageBitmap`；视频 metadata 读取增加 5 秒兜底并释放 object URL；组件卸载时清空待上传队列并阻止后续状态回写。
+- 等待上传的文件行不显示进度条。
+- 上传页存在等待或上传中文件时增加离开保护：顶部返回按钮使用自定义确认；刷新/关闭使用 `beforeunload`；浏览器返回使用 history guard；确认离开时关闭本地 guard，避免按钮确认和系统级拦截重复触发。
+- `docs/PRD.md`、`docs/TECHNICAL_DESIGN.md`、`docs/design/index.html`、`STRUCTURE.md` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 固定返回层级
+- 新增 `useFixedBackNavigation`，有明确上级的页面在物理返回键和浏览器自带返回时进入固定上级，不再依赖真实访问历史。
+- 已接入新建空间、空间详情、成员管理、新建相册、相册详情、选择上传位置、上传队列、回收站、回收站相册和管理后台。
+- 顶部返回链接改为 replace 语义，避免点击返回后在历史栈里留下子页面记录。
+- 相册预览打开时暂停页面固定返回，让返回键优先关闭预览；预览左上关闭触发的 history 返回也不会误跳到上级页。
+- 上传页复用固定返回 hook 的阻塞能力，等待或上传中文件存在时先弹离开确认，再决定是否返回固定上级。
+- 登录页、邀请页和空间列表没有明确应用内上级，未做固定返回拦截。
+- `docs/TECHNICAL_DESIGN.md` 和 `MEMORY.md` 已同步。
+
 ## 2026-05-04 预览图片长按保存
 - 预览大图移除 `select-none` 和禁用拖拽设置，并显式允许 `-webkit-touch-callout`，保留微信内置浏览器长按保存图片能力。
 - 已删除“1 倍时禁用单指 panning”的错误尝试。
@@ -273,3 +300,10 @@
 - 已注册邀请右侧显示低强调注册时间，避免重复状态胶囊和卡片右侧空置。
 - 已注册邀请时间使用中文日期格式；今年显示“5月4日 21:36”，非今年显示“2025年5月4日 21:36”。
 - `docs/design/index.html` 已同步。
+
+## 2026-05-04 动态路由静态客户端壳
+- 动态路由页改为 Server Wrapper，业务内容仍由客户端组件渲染，业务数据仍在浏览器进入后通过 `src/features/app/view-actions.ts` 的 Server Action 拉取。
+- 查询参数读取移入相邻 `page-client.tsx`，避免在 Server Page 中读取 `searchParams` 导致页面动态渲染。
+- 动态段配置提升到 layout：`/invite/[token]`、`/spaces/[spaceId]`、`/spaces/[spaceId]/albums/[folderId]`、`/spaces/[spaceId]/trash/[folderId]` 使用 `generateStaticParams()` 返回空数组；`[token]` 和 `[spaceId]` layout 显式 `revalidate = false`，表示无限期缓存客户端壳。
+- `pnpm.cmd typecheck` 通过。
+- `pnpm.cmd build` 通过；构建输出中相关动态路由从 `ƒ Dynamic server-rendered on demand` 变为 `● SSG prerendered as static HTML (uses generateStaticParams)`。
