@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/app/empty-state'
 import { LoadingState } from '@/components/app/loading-state'
 import { MediaThumbnail } from '@/components/app/media-thumbnail'
 import { MobileFrame } from '@/components/app/mobile-frame'
+import { PullToRefresh } from '@/components/app/pull-to-refresh'
 import { TopBar } from '@/components/app/top-bar'
 import { getSpaceViewAction } from '@/features/app/view-actions'
 import { useServerAction } from '@/hooks/use-server-action'
@@ -30,6 +31,7 @@ export function SpaceClient({
     data,
     error: loadError,
     loading,
+    refresh,
   } = useServerAction(() => getSpaceViewAction(spaceId), [spaceId])
 
   return (
@@ -92,7 +94,7 @@ export function SpaceClient({
         </div>
       </div>
 
-      <div className="ca-scroll-section">
+      <PullToRefresh onRefresh={refresh}>
         {loading ? <LoadingState /> : null}
         {loadError ? <EmptyState title={loadError} /> : null}
 
@@ -156,7 +158,7 @@ export function SpaceClient({
             </div>
           )
         ) : null}
-      </div>
+      </PullToRefresh>
     </MobileFrame>
   )
 }

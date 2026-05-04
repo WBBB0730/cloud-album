@@ -9,6 +9,7 @@ import { useGlobalLoading } from '@/components/app/global-loading'
 import { LoadingState } from '@/components/app/loading-state'
 import { MediaThumbnail } from '@/components/app/media-thumbnail'
 import { MobileFrame } from '@/components/app/mobile-frame'
+import { PullToRefresh } from '@/components/app/pull-to-refresh'
 import { TopBar } from '@/components/app/top-bar'
 import {
   AlertDialog,
@@ -52,7 +53,7 @@ export function TrashFolderClient({
   folderId: string
 }) {
   const { showLoading } = useGlobalLoading()
-  const { data, error, loading, mutate } = useServerAction(
+  const { data, error, loading, mutate, refresh } = useServerAction(
     () => getTrashFolderViewAction(spaceId, folderId),
     [spaceId, folderId]
   )
@@ -243,7 +244,11 @@ export function TrashFolderClient({
           </div>
         ) : null}
       </div>
-      <div ref={scrollSectionRef} className="ca-scroll-section">
+      <PullToRefresh
+        scrollRef={scrollSectionRef}
+        disabled={selectionMode}
+        onRefresh={refresh}
+      >
         {loading ? <LoadingState /> : null}
         {error ? <EmptyState title={error} /> : null}
         {data ? (
@@ -299,7 +304,7 @@ export function TrashFolderClient({
             <EmptyState title="这个相册没有已删除媒体" />
           )
         ) : null}
-      </div>
+      </PullToRefresh>
     </MobileFrame>
   )
 }

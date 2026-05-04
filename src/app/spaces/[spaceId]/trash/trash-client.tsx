@@ -6,6 +6,7 @@ import { ChevronLeft, Trash2, Undo2 } from 'lucide-react'
 import { EmptyState } from '@/components/app/empty-state'
 import { LoadingState } from '@/components/app/loading-state'
 import { MobileFrame } from '@/components/app/mobile-frame'
+import { PullToRefresh } from '@/components/app/pull-to-refresh'
 import { SafeImage } from '@/components/app/safe-image'
 import { TopBar } from '@/components/app/top-bar'
 import { getTrashHomeViewAction } from '@/features/app/view-actions'
@@ -18,7 +19,7 @@ import { useServerAction } from '@/hooks/use-server-action'
 import { formatDateTime } from '@/lib/format'
 
 export function TrashClient({ spaceId }: { spaceId: string }) {
-  const { data, error, loading } = useServerAction(
+  const { data, error, loading, refresh } = useServerAction(
     () => getTrashHomeViewAction(spaceId),
     [spaceId]
   )
@@ -42,7 +43,7 @@ export function TrashClient({ spaceId }: { spaceId: string }) {
           }
         />
       </div>
-      <div className="ca-scroll-section">
+      <PullToRefresh onRefresh={refresh}>
         {loading ? <LoadingState /> : null}
         {error ? <EmptyState title={error} /> : null}
         {data ? (
@@ -106,7 +107,7 @@ export function TrashClient({ spaceId }: { spaceId: string }) {
             </EmptyState>
           )
         ) : null}
-      </div>
+      </PullToRefresh>
     </MobileFrame>
   )
 }

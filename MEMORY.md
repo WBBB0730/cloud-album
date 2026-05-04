@@ -64,3 +64,4 @@
 - 动态路由壳使用 layout 级 `generateStaticParams() { return [] }` 转为首次访问生成的 SSG 壳；`revalidate = false` 表示无限期缓存壳，不做定时 ISR。`[spaceId]` layout 覆盖空间下普通动态页，嵌套 `[folderId]` 仍需要在各自动态段 layout 单独声明。查询参数不要传入 Server Page，继续放在 client wrapper 中读取。
 - 性能排查发现：成员邀请、后台操作等表单 Server Action 成功后用 `redirect` 会造成整页重新导航和视图数据重取；对需要即时反馈的页面操作，应优先返回结构化结果并在客户端 `mutate` 本地缓存。空间列表、相册列表、回收站首页存在 N+1 查询风险，后续优化应改成聚合查询、批量查询或 lateral/window 查询；管理后台全量加载应分页或按 tab 拆分。
 - 管理后台用户列表只允许返回页面展示需要的账号字段，不能 `select()` 用户表全字段下发到客户端，尤其不能携带 `passwordHash`。
+- 重要数据页的下拉刷新统一使用 `src/components/app/pull-to-refresh.tsx` 包裹内部滚动区域，并调用 `useServerAction().refresh()`；复杂手势页必须按状态禁用：相册预览打开、多选状态、回收站多选状态都不能接管下拉刷新。

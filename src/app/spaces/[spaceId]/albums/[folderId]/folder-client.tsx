@@ -21,6 +21,7 @@ import { LoadingState } from '@/components/app/loading-state'
 import { MediaPreviewOverlay } from '@/components/app/media-preview-overlay'
 import { MediaThumbnail } from '@/components/app/media-thumbnail'
 import { MobileFrame } from '@/components/app/mobile-frame'
+import { PullToRefresh } from '@/components/app/pull-to-refresh'
 import { TopBar } from '@/components/app/top-bar'
 import {
   AlertDialog,
@@ -790,7 +791,11 @@ export function FolderClient({
         ) : null}
       </div>
 
-      <div ref={scrollSectionRef} className="ca-scroll-section">
+      <PullToRefresh
+        scrollRef={scrollSectionRef}
+        disabled={selectionMode || previewIndex !== null}
+        onRefresh={refresh}
+      >
         {loading ? (
           <LoadingState />
         ) : error ? (
@@ -879,7 +884,7 @@ export function FolderClient({
             <EmptyState title="这里还没有媒体，上传图片或视频后会按拍摄时间排列。" />
           )
         ) : null}
-      </div>
+      </PullToRefresh>
 
       {data && previewIndex !== null ? (
         <MediaPreviewOverlay

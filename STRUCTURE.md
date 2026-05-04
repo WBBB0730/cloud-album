@@ -77,3 +77,5 @@
 移动端头部操作统一由 `TopBar` 渲染，视觉对齐规则在 `src/styles/global.css` 的 `.ca-topbar`、`.ca-icon-btn` 中维护，并同步到 `docs/design/index.html`。空间列表右上角提供管理后台入口，空间详情右上角提供上传、新建文件夹、回收站入口；返回按钮在子页面头部左侧提供返回上级页面通路。
 
 有明确上级的应用内页面使用 `src/hooks/use-fixed-back-navigation.ts` 固定物理返回和浏览器返回的目标，避免按真实访问历史跳到错误层级。相册预览打开时暂停页面固定返回，上传页存在等待或上传中文件时先确认再离开。
+
+重要数据页的内部滚动区域使用 `src/components/app/pull-to-refresh.tsx` 提供下拉刷新，刷新动作复用当前页面 `useServerAction().refresh()`。相册详情和回收站相册这类复杂手势页需要在预览、多选等状态下禁用下拉刷新，避免和缩放、左右滑动、长按多选或拖动快速选择冲突。

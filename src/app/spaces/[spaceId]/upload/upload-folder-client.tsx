@@ -6,13 +6,14 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { EmptyState } from '@/components/app/empty-state'
 import { LoadingState } from '@/components/app/loading-state'
 import { MobileFrame } from '@/components/app/mobile-frame'
+import { PullToRefresh } from '@/components/app/pull-to-refresh'
 import { TopBar } from '@/components/app/top-bar'
 import { getSpaceViewAction } from '@/features/app/view-actions'
 import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
 import { useServerAction } from '@/hooks/use-server-action'
 
 export function UploadFolderClient({ spaceId }: { spaceId: string }) {
-  const { data, error, loading } = useServerAction(
+  const { data, error, loading, refresh } = useServerAction(
     () => getSpaceViewAction(spaceId),
     [spaceId]
   )
@@ -37,7 +38,7 @@ export function UploadFolderClient({ spaceId }: { spaceId: string }) {
         />
       </div>
 
-      <div className="ca-scroll-section">
+      <PullToRefresh onRefresh={refresh}>
         {loading ? <LoadingState /> : null}
         {error ? <EmptyState title={error} /> : null}
 
@@ -65,7 +66,7 @@ export function UploadFolderClient({ spaceId }: { spaceId: string }) {
             </EmptyState>
           )
         ) : null}
-      </div>
+      </PullToRefresh>
     </MobileFrame>
   )
 }

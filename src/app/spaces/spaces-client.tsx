@@ -6,12 +6,13 @@ import { ChevronRight, Plus, Settings } from 'lucide-react'
 import { EmptyState } from '@/components/app/empty-state'
 import { LoadingState } from '@/components/app/loading-state'
 import { MobileFrame } from '@/components/app/mobile-frame'
+import { PullToRefresh } from '@/components/app/pull-to-refresh'
 import { TopBar } from '@/components/app/top-bar'
 import { getSpacesViewAction } from '@/features/app/view-actions'
 import { useServerAction } from '@/hooks/use-server-action'
 
 export function SpacesClient() {
-  const { data, error, loading } = useServerAction(
+  const { data, error, loading, refresh } = useServerAction(
     () => getSpacesViewAction(),
     []
   )
@@ -44,7 +45,7 @@ export function SpacesClient() {
         />
       </div>
 
-      <div className="ca-scroll-section">
+      <PullToRefresh onRefresh={refresh}>
         {loading ? <LoadingState /> : null}
         {error ? <EmptyState title={error} /> : null}
 
@@ -78,7 +79,7 @@ export function SpacesClient() {
             )}
           </div>
         ) : null}
-      </div>
+      </PullToRefresh>
     </MobileFrame>
   )
 }

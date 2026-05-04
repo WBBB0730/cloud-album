@@ -10,6 +10,7 @@ import { ErrorBanner } from '@/components/app/error-banner'
 import { useGlobalLoading } from '@/components/app/global-loading'
 import { LoadingState } from '@/components/app/loading-state'
 import { MobileFrame } from '@/components/app/mobile-frame'
+import { PullToRefresh } from '@/components/app/pull-to-refresh'
 import { TopBar } from '@/components/app/top-bar'
 import {
   AlertDialog,
@@ -44,6 +45,7 @@ export function MembersClient({
     error: loadError,
     loading,
     mutate,
+    refresh,
   } = useServerAction(() => getSpaceMembersViewAction(spaceId), [spaceId])
   const { hideLoading, showLoading } = useGlobalLoading()
   const [phone, setPhone] = useState('')
@@ -98,7 +100,7 @@ export function MembersClient({
         />
       </div>
 
-      <div className="ca-scroll-section">
+      <PullToRefresh onRefresh={refresh}>
         <div className="grid gap-4">
           <ErrorBanner message={localError ?? inviteError ?? undefined} />
           <form onSubmit={handleInviteSubmit} className="ca-form-stack">
@@ -229,7 +231,7 @@ export function MembersClient({
             </AlertDialog>
           ) : null}
         </div>
-      </div>
+      </PullToRefresh>
     </MobileFrame>
   )
 }

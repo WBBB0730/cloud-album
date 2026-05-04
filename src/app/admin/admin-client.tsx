@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/app/empty-state'
 import { ErrorBanner } from '@/components/app/error-banner'
 import { LoadingState } from '@/components/app/loading-state'
 import { MobileFrame } from '@/components/app/mobile-frame'
+import { PullToRefresh } from '@/components/app/pull-to-refresh'
 import { TopBar } from '@/components/app/top-bar'
 import {
   AlertDialog,
@@ -68,6 +69,7 @@ export function AdminClient({
     data,
     error: loadError,
     loading,
+    refresh,
   } = useServerAction(() => getAdminViewAction(), [])
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null)
   useFixedBackNavigation('/spaces')
@@ -112,7 +114,7 @@ export function AdminClient({
         </div>
       </div>
 
-      <div className="ca-scroll-section">
+      <PullToRefresh onRefresh={refresh}>
         <ErrorBanner message={error ?? loadError ?? undefined} />
         {loading ? <LoadingState /> : null}
 
@@ -287,7 +289,7 @@ export function AdminClient({
             })}
           </div>
         ) : null}
-      </div>
+      </PullToRefresh>
     </MobileFrame>
   )
 }
