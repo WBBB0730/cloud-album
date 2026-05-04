@@ -47,7 +47,7 @@
 - `/spaces/[spaceId]`：相册首页，支持卡片/列表视图、创建相册、进入成员管理、进入回收站。
 - `/spaces/[spaceId]/members`：成员管理页，展示空间成员，通过手机号邀请已注册用户加入，支持创建者移除其他成员和非创建者退出当前空间。
 - `/spaces/[spaceId]/upload`：选择上传文件夹。
-- `/spaces/[spaceId]/albums/[folderId]`：相册媒体网格，支持类型筛选、页内预览、长按多选、拖动快速选择、批量下载和批量删除。
+- `/spaces/[spaceId]/albums/[folderId]`：相册媒体网格，支持类型筛选、页内预览、长按多选、拖动快速选择、批量下载、批量删除和选择相册封面。
 - `/spaces/[spaceId]/albums/[folderId]/upload`：COS 分片上传队列，显示总进度，最多 5 个文件并发上传。
 - `/spaces/[spaceId]/trash`：回收站文件夹列表。
 - `/spaces/[spaceId]/trash/[folderId]`：回收站文件夹媒体列表。
@@ -65,6 +65,8 @@
 空间是数据隔离单位。`folders`、`media`、`upload_sessions`、`delete_batches` 等业务表都必须关联 `space_id`。所有查询、上传签名、读取 URL、删除和恢复操作都必须先校验当前用户属于目标空间；全局管理员是应用级权限，不等同于空间内角色。
 
 删除使用逻辑删除。普通删除写入 `deleted_at`、`deleted_by` 和 `delete_batch_id`；永久删除写入 `permanently_deleted_at`、`permanently_deleted_by`，但不删除 COS 文件。删除文件夹时，文件夹和其中媒体共享同一个删除批次；恢复文件夹时恢复同批次媒体。
+
+文件夹封面使用 `folders.cover_media_id` 保存手动选择的媒体。空间文件夹列表优先读取该媒体作为封面；如果封面媒体已删除、永久删除或不可用，则回退到文件夹内最新可用媒体。
 
 回收站保持和普通相册一致的一级文件夹结构。回收站首页按文件夹展示，不直接混排所有已删除媒体；进入回收站文件夹后展示该文件夹下已删除的图片和视频。
 

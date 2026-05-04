@@ -5,8 +5,8 @@ import { ChevronLeft, ChevronRight, FolderPlus, Grid2X2, List, Trash2, Users } f
 
 import { EmptyState } from "@/components/app/empty-state"
 import { LoadingState } from "@/components/app/loading-state"
+import { MediaThumbnail } from "@/components/app/media-thumbnail"
 import { MobileFrame } from "@/components/app/mobile-frame"
-import { SafeImage } from "@/components/app/safe-image"
 import { TopBar } from "@/components/app/top-bar"
 import { getSpaceViewAction } from "@/features/app/view-actions"
 import { useServerAction } from "@/hooks/use-server-action"
@@ -67,7 +67,14 @@ export function SpaceClient({
               {data.folders.map((folder, index) => (
                 <Link key={folder.id} href={`/spaces/${spaceId}/albums/${folder.id}`} className="ca-folder-card">
                   <div className={`ca-cover ca-photo-${["a", "d", "f", "c", "e", "b"][index % 6]}`}>
-                    {folder.coverUrl ? <SafeImage src={folder.coverUrl} alt="" sizes="180px" /> : null}
+                    {folder.coverUrl && folder.coverType ? (
+                      <MediaThumbnail
+                        src={folder.coverUrl}
+                        alt=""
+                        type={folder.coverType}
+                        sizes="180px"
+                      />
+                    ) : null}
                   </div>
                   <strong>{folder.name}</strong>
                   <small>{folder.mediaCount} 项</small>
@@ -79,7 +86,14 @@ export function SpaceClient({
               {data.folders.map((folder, index) => (
                 <Link key={folder.id} href={`/spaces/${spaceId}/albums/${folder.id}`} className="ca-folder-row">
                   <span className={`ca-row-cover ca-photo-${["a", "d", "f", "c", "e", "b"][index % 6]}`}>
-                    {folder.coverUrl ? <SafeImage src={folder.coverUrl} alt="" sizes="56px" /> : null}
+                    {folder.coverUrl && folder.coverType ? (
+                      <MediaThumbnail
+                        src={folder.coverUrl}
+                        alt=""
+                        type={folder.coverType}
+                        sizes="56px"
+                      />
+                    ) : null}
                   </span>
                   <span className="min-w-0">
                     <strong>{folder.name}</strong>

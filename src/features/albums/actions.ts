@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 
 import { requireUser } from "@/features/auth/session"
 
-import { createFolder, deleteFolder, deleteMedia, deleteMediaBatch } from "./service"
+import { createFolder, deleteFolder, deleteMedia, deleteMediaBatch, setFolderCover } from "./service"
 
 const withError = (path: string, error: unknown) => {
   const message = error instanceof Error ? error.message : "操作失败"
@@ -59,6 +59,25 @@ export const deleteMediaBatchAction = async (
     return { ok: false, error: message }
   }
 
+  revalidatePath(`/spaces/${spaceId}/albums/${folderId}`)
+  return { ok: true, error: null }
+}
+
+export const setFolderCoverAction = async (
+  spaceId: string,
+  folderId: string,
+  mediaId: string
+) => {
+  const user = await requireUser()
+
+  try {
+    await setFolderCover(spaceId, folderId, mediaId, user.id)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "设置封面失败"
+    return { ok: false, error: message }
+  }
+
+  revalidatePath(`/spaces/${spaceId}`)
   revalidatePath(`/spaces/${spaceId}/albums/${folderId}`)
   return { ok: true, error: null }
 }

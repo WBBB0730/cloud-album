@@ -474,8 +474,7 @@
       }
 
       .selection-bar {
-        display: grid;
-        grid-template-columns: 30px 1fr 30px 30px;
+        display: flex;
         align-items: center;
         gap: 8px;
         margin: -4px 0 14px;
@@ -486,6 +485,7 @@
       }
 
       .selection-bar span {
+        flex: 1 1 auto;
         min-width: 0;
         color: #303844;
         font-size: 13px;
@@ -1566,6 +1566,10 @@
                 <button class="preview-action">
                   <i data-lucide="download"></i>
                   下载
+                </button>
+                <button class="preview-action">
+                  <i data-lucide="image"></i>
+                  设为封面
                 </button>
                 <button class="preview-action danger">
                   <i data-lucide="trash-2"></i>

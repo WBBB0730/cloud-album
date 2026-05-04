@@ -91,7 +91,7 @@ export function UploadPageClient({
         open={leaveDialogOpen}
         onOpenChange={setLeaveDialogOpen}
       >
-        <AlertDialogContent>
+        <AlertDialogContent size="sm">
           <AlertDialogHeader>
             <AlertDialogTitle>离开上传页？</AlertDialogTitle>
             <AlertDialogDescription>
@@ -99,8 +99,8 @@ export function UploadPageClient({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={keepUploading}>继续上传</AlertDialogCancel>
-            <AlertDialogAction className="ca-danger-confirm-button" onClick={leavePage}>
+            <AlertDialogCancel className="w-full" onClick={keepUploading}>继续上传</AlertDialogCancel>
+            <AlertDialogAction className="ca-danger-confirm-button w-full" onClick={leavePage}>
               离开
             </AlertDialogAction>
           </AlertDialogFooter>

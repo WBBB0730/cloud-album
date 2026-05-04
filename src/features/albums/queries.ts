@@ -35,19 +35,45 @@ export const listActiveFolders = async (spaceId: string) => {
             isNull(media.permanentlyDeletedAt)
           )
         )
-      const [cover] = await db
-        .select()
-        .from(media)
-        .where(
-          and(
-            eq(media.folderId, folder.id),
-            eq(media.status, "ready"),
-            isNull(media.deletedAt),
-            isNull(media.permanentlyDeletedAt)
+      let cover = null
+
+      if (folder.coverMediaId) {
+        const [selectedCover] = await db
+          .select()
+          .from(media)
+          .where(
+            and(
+              eq(media.spaceId, spaceId),
+              eq(media.folderId, folder.id),
+              eq(media.id, folder.coverMediaId),
+              eq(media.status, "ready"),
+              isNull(media.deletedAt),
+              isNull(media.permanentlyDeletedAt)
+            )
           )
-        )
-        .orderBy(desc(media.takenAt))
-        .limit(1)
+          .limit(1)
+
+        cover = selectedCover ?? null
+      }
+
+      if (!cover) {
+        const [latestCover] = await db
+          .select()
+          .from(media)
+          .where(
+            and(
+              eq(media.spaceId, spaceId),
+              eq(media.folderId, folder.id),
+              eq(media.status, "ready"),
+              isNull(media.deletedAt),
+              isNull(media.permanentlyDeletedAt)
+            )
+          )
+          .orderBy(desc(media.takenAt))
+          .limit(1)
+
+        cover = latestCover ?? null
+      }
 
       return { ...folder, mediaCount: mediaCount?.value ?? 0, cover: cover ?? null }
     })

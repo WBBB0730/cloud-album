@@ -307,3 +307,26 @@
 - 动态段配置提升到 layout：`/invite/[token]`、`/spaces/[spaceId]`、`/spaces/[spaceId]/albums/[folderId]`、`/spaces/[spaceId]/trash/[folderId]` 使用 `generateStaticParams()` 返回空数组；`[token]` 和 `[spaceId]` layout 显式 `revalidate = false`，表示无限期缓存客户端壳。
 - `pnpm.cmd typecheck` 通过。
 - `pnpm.cmd build` 通过；构建输出中相关动态路由从 `ƒ Dynamic server-rendered on demand` 变为 `● SSG prerendered as static HTML (uses generateStaticParams)`。
+
+## 2026-05-04 相册缩略图懒加载
+- 相册媒体网格缩略图改为基于 `IntersectionObserver` 懒加载，默认提前 420px 开始加载。
+- 未进入加载范围的图片和视频只渲染灰色占位，不挂载真实 `Image` 或 `video`，避免大量视频同时请求 metadata。
+- 缩略图一旦进入加载范围，后续签名 URL 更新不会回退到占位，继续配合原有稳定 URL 和图片预加载机制减少闪烁。
+- 本次不做虚拟滚动，DOM 结构和现有长按多选、拖动快速选择保持一致。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 上传离开确认弹窗
+- 上传页离开确认弹窗改为移动端双列按钮布局，“继续上传”和“离开”均分一行并占满各自列宽。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 选择相册封面
+- 新增设置相册封面的 Server Action，写入 `folders.cover_media_id`，并校验当前用户属于空间、目标相册存在、目标媒体属于该相册且可用。
+- 空间页相册封面优先使用手动选择的媒体；如果手动封面被删除或不可用，自动回退到相册内最新可用媒体。
+- 预览更多菜单支持把当前媒体设为封面。
+- `docs/PRD.md`、`docs/TECHNICAL_DESIGN.md`、`STRUCTURE.md` 和 `docs/design/index.html` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 预览性能副作用回滚
+- 回退预览主区域窗口化渲染、rAF 写 CSS 变量拖动、底部缩略图居中测量和平移，以及 `next.config.ts` 的 Next Image 小尺寸候选配置。
+- 保留相册封面功能和已有预览交互；当前工作区不再包含这次性能尝试的代码改动。
+- `pnpm.cmd typecheck` 通过。

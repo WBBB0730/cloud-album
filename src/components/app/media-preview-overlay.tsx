@@ -6,7 +6,7 @@ import {
   TransformWrapper,
   type ReactZoomPanPinchContentRef,
 } from "react-zoom-pan-pinch"
-import { ChevronLeft, Download, MoreHorizontal, Play, Trash2 } from "lucide-react"
+import { ChevronLeft, Download, ImageIcon, MoreHorizontal, Play, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -457,11 +457,13 @@ export function MediaPreviewOverlay({
   media,
   initialIndex,
   onClose,
+  onSetCover,
   onDelete,
 }: {
   media: PreviewMediaItem[]
   initialIndex: number
   onClose: () => void
+  onSetCover?: (mediaId: string) => void | Promise<void>
   onDelete?: (mediaId: string) => void | Promise<void>
 }) {
   const previewRef = useRef<HTMLDivElement | null>(null)
@@ -760,6 +762,19 @@ export function MediaPreviewOverlay({
                 <Download className="size-5 text-[#111827]" />
                 下载
               </button>
+              {onSetCover ? (
+                <button
+                  type="button"
+                  className="flex items-center gap-3 py-4 text-left"
+                  onClick={() => {
+                    setActionsOpen(false)
+                    void onSetCover(currentItem.id)
+                  }}
+                >
+                  <ImageIcon className="size-5 text-[#111827]" />
+                  设为封面
+                </button>
+              ) : null}
               {onDelete ? (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>

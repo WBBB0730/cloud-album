@@ -24,6 +24,7 @@ export const getAlbumHome = async (spaceId: string, userId: string) => {
     folders: folderRows.map((folder) => ({
       ...folder,
       coverUrl: folder.cover ? getSignedReadUrl(folder.cover.cosKey) : null,
+      coverType: folder.cover?.type ?? null,
     })),
   }
 }
@@ -136,6 +137,34 @@ export const deleteMediaBatch = async (
         .where(eq(media.id, item.id))
     }
   })
+}
+
+export const setFolderCover = async (
+  spaceId: string,
+  folderId: string,
+  mediaId: string,
+  userId: string
+) => {
+  await requireSpaceMember(spaceId, userId)
+  const folder = await getFolderById(spaceId, folderId)
+
+  if (!folder || folder.deletedAt || folder.permanentlyDeletedAt) {
+    throw new Error("相册不存在")
+  }
+
+  const item = await getActiveMediaById(spaceId, mediaId)
+
+  if (!item || item.folderId !== folder.id) {
+    throw new Error("媒体不存在")
+  }
+
+  await db
+    .update(folders)
+    .set({
+      coverMediaId: item.id,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(folders.id, folder.id), eq(folders.spaceId, spaceId)))
 }
 
 export const deleteFolder = async (spaceId: string, folderId: string, userId: string) => {

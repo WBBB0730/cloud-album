@@ -13,7 +13,10 @@ type MediaThumbnailProps = {
   className?: string
   priority?: boolean
   onError?: () => void
+  lazyRootMargin?: string
 }
+
+const DEFAULT_LAZY_ROOT_MARGIN = "420px"
 
 export function MediaThumbnail({
   src,
@@ -23,8 +26,11 @@ export function MediaThumbnail({
   className = "object-cover",
   priority = false,
   onError,
+  lazyRootMargin = DEFAULT_LAZY_ROOT_MARGIN,
 }: MediaThumbnailProps) {
   const [failed, setFailed] = useState(false)
+  const [shouldLoad, setShouldLoad] = useState(priority)
+  const lazyRef = useRef<HTMLSpanElement | null>(null)
   const onErrorRef = useRef(onError)
 
   useEffect(() => {
@@ -36,15 +42,60 @@ export function MediaThumbnail({
   }, [src])
 
   useEffect(() => {
-    if (!isSignedUrlUsable(src)) {
+    if (priority) {
+      setShouldLoad(true)
+    }
+  }, [priority])
+
+  useEffect(() => {
+    if (shouldLoad || priority) {
+      return
+    }
+
+    const element = lazyRef.current
+
+    if (!element) {
+      return
+    }
+
+    if (!("IntersectionObserver" in window)) {
+      setShouldLoad(true)
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) {
+          return
+        }
+
+        setShouldLoad(true)
+        observer.disconnect()
+      },
+      {
+        rootMargin: lazyRootMargin,
+      }
+    )
+
+    observer.observe(element)
+
+    return () => observer.disconnect()
+  }, [lazyRootMargin, priority, shouldLoad])
+
+  useEffect(() => {
+    if (shouldLoad && !isSignedUrlUsable(src)) {
       setFailed(true)
       onErrorRef.current?.()
     }
-  }, [src])
+  }, [shouldLoad, src])
 
   const handleError = () => {
     setFailed(true)
     onErrorRef.current?.()
+  }
+
+  if (!shouldLoad) {
+    return <span ref={lazyRef} className="absolute inset-0 bg-[#eef0f2]" aria-label={alt} />
   }
 
   if (failed || !isSignedUrlUsable(src)) {

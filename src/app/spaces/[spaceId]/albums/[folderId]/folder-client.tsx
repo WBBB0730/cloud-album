@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { deleteMediaBatchAction } from "@/features/albums/actions"
+import { deleteMediaBatchAction, setFolderCoverAction } from "@/features/albums/actions"
 import { getFolderViewAction } from "@/features/app/view-actions"
 import { useFixedBackNavigation } from "@/hooks/use-fixed-back-navigation"
 import { useServerAction } from "@/hooks/use-server-action"
@@ -707,6 +707,23 @@ export function FolderClient({
       hideLoading()
     }
   }, [selectedMedia, showLoading])
+  const handleSetCover = useCallback(async (mediaId: string) => {
+    const hideLoading = showLoading({ title: "设置中", timeoutMs: 0 })
+
+    try {
+      const result = await setFolderCoverAction(spaceId, folderId, mediaId)
+
+      if (!result.ok) {
+        setSelectionError(result.error)
+        return
+      }
+
+      setSelectionError(null)
+      await refresh()
+    } finally {
+      hideLoading()
+    }
+  }, [folderId, refresh, showLoading, spaceId])
   const openPreview = useCallback(async (index: number) => {
     let previewList = visibleMedia
     let previewStartIndex = index
@@ -1163,6 +1180,7 @@ export function FolderClient({
           media={previewMedia}
           initialIndex={previewIndex}
           onClose={closePreview}
+          onSetCover={handleSetCover}
           onDelete={handleDeletePreviewItem}
         />
       ) : null}
