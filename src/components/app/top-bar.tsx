@@ -9,7 +9,7 @@ export function TopBar({
   actions,
   className,
 }: {
-  title: string
+  title: ReactNode
   subtitle?: string
   leading?: ReactNode
   actions?: ReactNode

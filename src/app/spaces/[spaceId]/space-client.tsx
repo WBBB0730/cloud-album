@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import {
   ChevronLeft,
@@ -8,18 +9,27 @@ import {
   FolderPlus,
   Grid2X2,
   List,
+  Pencil,
   Trash2,
   Users,
 } from 'lucide-react'
 
 import { EmptyState } from '@/components/app/empty-state'
+import { useGlobalLoading } from '@/components/app/global-loading'
 import { LoadingState } from '@/components/app/loading-state'
 import { MediaThumbnail } from '@/components/app/media-thumbnail'
 import { MobileFrame } from '@/components/app/mobile-frame'
+import { NameEditDialog } from '@/components/app/name-edit-dialog'
 import { PullToRefresh } from '@/components/app/pull-to-refresh'
 import { TopBar } from '@/components/app/top-bar'
+import { Skeleton } from '@/components/ui/skeleton'
+import { createFolderAction } from '@/features/albums/actions'
 import { getSpaceViewAction } from '@/features/app/view-actions'
-import { useServerAction } from '@/hooks/use-server-action'
+import { renameSpaceAction } from '@/features/spaces/actions'
+import {
+  clearServerActionCache,
+  useServerAction,
+} from '@/hooks/use-server-action'
 
 type SpaceView = 'grid' | 'list'
 
@@ -44,15 +54,23 @@ const writeSavedSpaceView = (view: SpaceView) => {
 }
 
 export function SpaceClient({ spaceId }: { spaceId: string }) {
+  const router = useRouter()
+  const { showLoading } = useGlobalLoading()
   const [view, setView] = useState<SpaceView>(() =>
     typeof window === 'undefined' ? 'grid' : readSavedSpaceView()
   )
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [createFolderOpen, setCreateFolderOpen] = useState(false)
   const {
     data,
     error: loadError,
     loading,
     refresh,
+    mutate,
   } = useServerAction(() => getSpaceViewAction(spaceId), [spaceId])
+  const canRenameSpace = data
+    ? data.space.createdBy === data.currentUserId
+    : false
 
   useEffect(() => {
     writeSavedSpaceView(view)
@@ -62,11 +80,71 @@ export function SpaceClient({ spaceId }: { spaceId: string }) {
     setView(nextView)
   }
 
+  const handleRenameSpace = async (name: string) => {
+    const hideLoading = showLoading({ title: '保存中', timeoutMs: 0 })
+    const formData = new FormData()
+    formData.set('name', name)
+
+    try {
+      const result = await renameSpaceAction(spaceId, formData)
+
+      if (!result.ok || !result.space) {
+        return result.error
+      }
+
+      mutate((current) =>
+        current
+          ? {
+              ...current,
+              space: {
+                ...current.space,
+                name: result.space.name,
+                updatedAt: result.space.updatedAt,
+              },
+            }
+          : current
+      )
+      clearServerActionCache()
+      return null
+    } finally {
+      hideLoading()
+    }
+  }
+
+  const handleCreateFolder = async (name: string) => {
+    const hideLoading = showLoading({ title: '创建中', timeoutMs: 0 })
+    const formData = new FormData()
+    formData.set('name', name)
+
+    try {
+      const result = await createFolderAction(spaceId, formData)
+
+      if (!result.ok || !result.folderId) {
+        return result.error ?? '创建相册失败'
+      }
+
+      clearServerActionCache()
+      router.replace(`/spaces/${spaceId}/albums/${result.folderId}`)
+      return null
+    } finally {
+      hideLoading()
+    }
+  }
+
   return (
     <MobileFrame className="ca-scroll-layout">
       <div className="ca-fixed-section">
         <TopBar
-          title={data?.space.name ?? '空间'}
+          title={
+            data ? (
+              data.space.name
+            ) : (
+              <Skeleton
+                className="h-[22px] w-[min(42vw,128px)] rounded-full"
+                aria-hidden="true"
+              />
+            )
+          }
           leading={
             <Link
               replace
@@ -79,6 +157,16 @@ export function SpaceClient({ spaceId }: { spaceId: string }) {
           }
           actions={
             <>
+              {canRenameSpace ? (
+                <button
+                  type="button"
+                  className="ca-icon-btn"
+                  aria-label="修改空间名称"
+                  onClick={() => setRenameOpen(true)}
+                >
+                  <Pencil />
+                </button>
+              ) : null}
               <Link
                 href={`/spaces/${spaceId}/members`}
                 className="ca-icon-btn"
@@ -86,13 +174,14 @@ export function SpaceClient({ spaceId }: { spaceId: string }) {
               >
                 <Users />
               </Link>
-              <Link
-                href={`/spaces/${spaceId}/albums/new`}
+              <button
+                type="button"
                 className="ca-icon-btn"
                 aria-label="新建相册"
+                onClick={() => setCreateFolderOpen(true)}
               >
                 <FolderPlus />
-              </Link>
+              </button>
               <Link
                 href={`/spaces/${spaceId}/trash`}
                 className="ca-icon-btn"
@@ -189,6 +278,25 @@ export function SpaceClient({ spaceId }: { spaceId: string }) {
           )
         ) : null}
       </PullToRefresh>
+
+      <NameEditDialog
+        initialName={data?.space.name ?? ''}
+        label="空间名称"
+        open={renameOpen}
+        title="修改空间名称"
+        onOpenChange={setRenameOpen}
+        onSubmit={handleRenameSpace}
+      />
+      <NameEditDialog
+        initialName="我的相册"
+        label="相册名称"
+        open={createFolderOpen}
+        pendingLabel="创建中"
+        submitLabel="创建"
+        title="新建相册"
+        onOpenChange={setCreateFolderOpen}
+        onSubmit={handleCreateFolder}
+      />
     </MobileFrame>
   )
 }

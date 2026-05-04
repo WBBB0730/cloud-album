@@ -43,11 +43,11 @@
 
 - `/login`：手机号密码登录。
 - `/invite/[token]`：邀请注册。
-- `/spaces`：空间入口。
-- `/spaces/[spaceId]`：相册首页，支持卡片/列表视图、创建相册、进入成员管理、进入回收站。
+- `/spaces`：空间入口，支持通过弹窗创建空间和退出登录。
+- `/spaces/[spaceId]`：相册首页，支持卡片/列表视图、空间创建者修改空间名称、通过弹窗创建相册、进入成员管理、进入回收站。
 - `/spaces/[spaceId]/members`：成员管理页，展示空间成员，通过手机号邀请已注册用户加入，支持创建者移除其他成员和非创建者退出当前空间。
 - `/spaces/[spaceId]/upload`：选择上传文件夹。
-- `/spaces/[spaceId]/albums/[folderId]`：相册媒体网格，支持类型筛选、页内预览、长按多选、拖动快速选择、批量下载、批量删除和选择相册封面。
+- `/spaces/[spaceId]/albums/[folderId]`：相册媒体网格，支持空间创建者修改相册名称、类型筛选、页内预览、长按多选、拖动快速选择、批量下载、批量删除和选择相册封面。
 - `/spaces/[spaceId]/albums/[folderId]/upload`：COS 分片上传队列，显示总进度，最多 5 个文件并发上传。
 - `/spaces/[spaceId]/trash`：回收站文件夹列表。
 - `/spaces/[spaceId]/trash/[folderId]`：回收站文件夹媒体列表，支持多选批量恢复和批量永久删除。
@@ -64,6 +64,8 @@
 
 空间是数据隔离单位。`folders`、`media`、`upload_sessions`、`delete_batches` 等业务表都必须关联 `space_id`。所有查询、上传签名、读取 URL、删除和恢复操作都必须先校验当前用户属于目标空间；全局管理员是应用级权限，不等同于空间内角色。
 
+空间和相册重命名属于空间创建者权限。Server Action 只负责解析表单和返回结构化结果，具体权限判断和更新写入在 `spaces/service.ts`、`albums/service.ts` 中完成；全局管理员身份不额外授予空间内重命名权限。
+
 删除使用逻辑删除。普通删除写入 `deleted_at`、`deleted_by` 和 `delete_batch_id`；永久删除写入 `permanently_deleted_at`、`permanently_deleted_by`，但不删除 COS 文件。删除文件夹时，文件夹和其中媒体共享同一个删除批次；恢复文件夹时恢复同批次媒体。
 
 文件夹封面使用 `folders.cover_media_id` 保存手动选择的媒体。空间文件夹列表优先读取该媒体作为封面；如果封面媒体已删除、永久删除或不可用，则回退到文件夹内最新可用媒体。
@@ -74,11 +76,15 @@
 
 ## UI 导航补充
 
-移动端头部操作统一由 `TopBar` 渲染，视觉对齐规则在 `src/styles/global.css` 的 `.ca-topbar`、`.ca-icon-btn` 中维护，并同步到 `docs/design/index.html`。空间列表右上角提供管理后台入口，空间详情右上角提供上传、新建文件夹、回收站入口；返回按钮在子页面头部左侧提供返回上级页面通路。
+移动端头部操作统一由 `TopBar` 渲染，视觉对齐规则在 `src/styles/global.css` 的 `.ca-topbar`、`.ca-icon-btn` 中维护，并同步到 `docs/design/index.html`。空间列表右上角提供管理后台、新建空间和退出登录入口；空间详情右上角提供修改空间名称、成员管理、新建相册、回收站入口；相册详情右上角提供修改相册名称和上传入口；返回按钮在子页面头部左侧提供返回上级页面通路。新建空间和新建相册入口打开页内弹窗，不进入独立页面，默认名称分别为“我的空间”和“我的相册”。
+
+危险确认弹窗和普通输入弹窗保持同一套卡片风格。确认弹窗统一使用 `ca-confirm-footer` 两列布局，取消按钮在左，危险操作按钮在右；危险操作按钮使用 `ca-confirm-button ca-danger-confirm-button`，取消按钮使用 `ca-confirm-button`。危险确认按钮样式在 `src/styles/global.css` 中集中维护，避免在各页面用临时 Tailwind 背景色导致默认按钮样式覆盖。
+
+空态和媒体占位样式在 `src/styles/global.css` 中集中维护。`src/components/app/empty-state.tsx` 使用 `.ca-empty-state` 和 `.ca-empty-state-detail`；媒体缩略图和安全图片组件使用 `.ca-media-placeholder` 作为懒加载、加载失败和过期 URL 的灰色占位。
 
 空间详情页的卡片/列表视图切换是本地 UI 偏好，不使用查询参数。`SpaceClient` 在页面内维护视图状态，并通过 `localStorage` 记住用户上次选择；切换按钮不触发路由导航。
 
-相册详情页的类型筛选和拍摄时间排序也不使用查询参数。类型筛选是临时页面状态，默认显示全部；排序是用户偏好，通过 `localStorage` 记住。登录、邀请注册、新建空间、新建相册、管理后台邀请等表单直接在客户端事件中调用 Server Action，并通过结构化结果更新页面状态或跳转，不用 URL 查询参数承载错误或一次性结果。
+相册详情页的类型筛选和拍摄时间排序也不使用查询参数。类型筛选是临时页面状态，默认显示全部；排序是用户偏好，通过 `localStorage` 记住。登录、邀请注册、管理后台邀请等表单直接在客户端事件中调用 Server Action，并通过结构化结果更新页面状态或跳转，不用 URL 查询参数承载错误或一次性结果。
 
 有明确上级的应用内页面使用 `src/hooks/use-fixed-back-navigation.ts` 固定物理返回和浏览器返回的目标，避免按真实访问历史跳到错误层级。相册预览打开时暂停页面固定返回，上传页存在等待或上传中文件时先确认再离开。
 

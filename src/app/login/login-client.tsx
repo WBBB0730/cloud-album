@@ -43,10 +43,7 @@ export function LoginClient() {
         <h1>云相册</h1>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="ca-form-stack"
-      >
+      <form onSubmit={handleSubmit} className="ca-form-stack">
         <ErrorBanner message={error ?? undefined} />
         <label className="ca-field">
           <span>手机号</span>

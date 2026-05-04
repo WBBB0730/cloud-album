@@ -21,6 +21,7 @@ export const getAlbumHome = async (spaceId: string, userId: string) => {
 
   return {
     space,
+    currentUserId: userId,
     folders: folderRows.map((folder) => ({
       ...folder,
       coverUrl: folder.cover ? getSignedReadUrl(folder.cover.cosKey) : null,
@@ -49,6 +50,39 @@ export const createFolder = async (
   return folder
 }
 
+export const renameFolder = async (
+  spaceId: string,
+  folderId: string,
+  userId: string,
+  name: string
+) => {
+  const space = await requireSpaceMember(spaceId, userId)
+
+  if (space.createdBy !== userId) {
+    throw new Error('只有空间创建者可以修改相册名称')
+  }
+
+  const folder = await getFolderById(spaceId, folderId)
+
+  if (!folder || folder.deletedAt || folder.permanentlyDeletedAt) {
+    throw new Error('相册不存在')
+  }
+
+  const finalName = safeName(name)
+
+  if (!finalName) {
+    throw new Error('请输入相册名称')
+  }
+
+  const [updated] = await db
+    .update(folders)
+    .set({ name: finalName, updatedAt: new Date() })
+    .where(and(eq(folders.id, folder.id), eq(folders.spaceId, spaceId)))
+    .returning()
+
+  return updated
+}
+
 export const getFolderDetail = async (
   spaceId: string,
   folderId: string,
@@ -65,6 +99,7 @@ export const getFolderDetail = async (
 
   return {
     space,
+    currentUserId: userId,
     folder,
     media: items.map((item) => ({
       ...item,

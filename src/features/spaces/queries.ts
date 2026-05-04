@@ -89,7 +89,6 @@ export const listSpaceMembers = async (spaceId: string) =>
       userId: users.id,
       name: users.name,
       phone: users.phone,
-      isGlobalAdmin: users.isGlobalAdmin,
       joinedAt: spaceMembers.createdAt,
     })
     .from(spaceMembers)

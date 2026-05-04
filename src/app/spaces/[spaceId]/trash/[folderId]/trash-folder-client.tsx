@@ -228,16 +228,18 @@ export function TrashFolderClient({
                     文件，但这些媒体不会再出现在回收站。
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogFooter className="ca-confirm-footer">
                   <AlertDialogAction
-                    className="ca-danger-confirm-button"
+                    className="ca-confirm-button ca-danger-confirm-button"
                     onClick={() => {
                       void handlePermanentSelected()
                     }}
                   >
                     永久删除
                   </AlertDialogAction>
+                  <AlertDialogCancel className="ca-confirm-button">
+                    取消
+                  </AlertDialogCancel>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>

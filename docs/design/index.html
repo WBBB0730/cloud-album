@@ -62,7 +62,7 @@
 
       .header h1 {
         margin: 0 0 8px;
-        font-size: 30px;
+        font-size: 28px;
         line-height: 1.15;
       }
 
@@ -95,7 +95,7 @@
 
       .screen-title strong {
         display: block;
-        font-size: 15px;
+        font-size: 14px;
         margin-bottom: 4px;
       }
 
@@ -152,7 +152,7 @@
       .topbar h2 {
         flex: 1;
         margin: 0;
-        font-size: 20px;
+        font-size: 18px;
         line-height: 1.25;
         overflow-wrap: anywhere;
       }
@@ -164,7 +164,7 @@
 
       .title-stack h2 {
         margin-bottom: 4px;
-        font-size: 18px;
+        font-size: 17px;
         line-height: 1.25;
         overflow-wrap: anywhere;
       }
@@ -173,6 +173,21 @@
         margin: 0;
         color: var(--muted);
         font-size: 12px;
+      }
+
+      .title-skeleton {
+        display: block;
+        width: min(42vw, 128px);
+        height: 22px;
+        border-radius: 999px;
+        background: #e9edf2;
+        animation: skeleton-pulse 1.2s ease-in-out infinite;
+      }
+
+      @keyframes skeleton-pulse {
+        50% {
+          opacity: 0.55;
+        }
       }
 
       .icon-btn {
@@ -297,7 +312,7 @@
         display: block;
         overflow: hidden;
         margin: 10px 10px 0;
-        font-size: 15px;
+        font-size: 14px;
         line-height: 1.2;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -342,7 +357,7 @@
       .folder-row strong {
         display: block;
         overflow: hidden;
-        font-size: 14px;
+        font-size: 13.5px;
         line-height: 1.2;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -399,7 +414,7 @@
       .media-group h3 {
         margin: 0;
         color: #303844;
-        font-size: 14px;
+        font-size: 13.5px;
         font-weight: 500;
         line-height: 1.2;
       }
@@ -801,7 +816,7 @@
         overflow: hidden;
         border-bottom: 1px solid #edf0f2;
         padding: 14px 20px;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -852,7 +867,7 @@
 
       .auth-copy h2 {
         margin: 0;
-        font-size: 24px;
+        font-size: 23px;
         line-height: 1.2;
       }
 
@@ -874,7 +889,7 @@
       .input-like {
         display: flex;
         align-items: center;
-        min-height: 42px;
+        min-height: 40px;
         border: 1px solid var(--line);
         border-radius: var(--radius-md);
         background: var(--surface-soft);
@@ -898,6 +913,72 @@
         font-family: inherit;
         font-size: 14px;
         font-weight: 600;
+      }
+
+      .danger-btn {
+        display: inline-grid;
+        place-items: center;
+        min-height: 42px;
+        border: 0;
+        border-radius: var(--radius-md);
+        background: #c24141;
+        color: #fff;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .secondary-btn {
+        display: inline-grid;
+        place-items: center;
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface);
+        color: var(--text);
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .dialog-overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 22px;
+        background: rgb(13 17 23 / 28%);
+      }
+
+      .dialog-card {
+        display: grid;
+        gap: 16px;
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--surface);
+        padding: 22px;
+        box-shadow: 0 18px 48px rgb(20 26 34 / 18%);
+      }
+
+      .dialog-card h3 {
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.25;
+      }
+
+      .dialog-card p {
+        margin: -4px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.7;
+      }
+
+      .dialog-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 2px;
       }
 
       .space-list {
@@ -933,7 +1014,7 @@
       .upload-row strong {
         display: block;
         overflow: hidden;
-        font-size: 14px;
+        font-size: 13.5px;
         line-height: 1.2;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -983,7 +1064,7 @@
       }
 
       .upload-zone strong {
-        font-size: 14px;
+        font-size: 13.5px;
         line-height: 1.15;
       }
 
@@ -1226,7 +1307,10 @@
                   <i data-lucide="settings"></i>
                 </button>
                 <button class="icon-btn" aria-label="新建空间">
-                  <i data-lucide="plus"></i>
+                  <i data-lucide="circle-plus"></i>
+                </button>
+                <button class="icon-btn" aria-label="退出登录">
+                  <i data-lucide="log-out"></i>
                 </button>
               </div>
 
@@ -1262,6 +1346,58 @@
 
         <article class="screen-wrap">
           <div class="screen-title">
+            <strong>3.1 新建空间弹窗</strong>
+          </div>
+          <div class="phone">
+            <div class="app">
+              <div class="topbar">
+                <h2>选择空间</h2>
+                <button class="icon-btn" aria-label="管理后台">
+                  <i data-lucide="settings"></i>
+                </button>
+                <button class="icon-btn" aria-label="新建空间">
+                  <i data-lucide="circle-plus"></i>
+                </button>
+                <button class="icon-btn" aria-label="退出登录">
+                  <i data-lucide="log-out"></i>
+                </button>
+              </div>
+
+              <div class="space-list">
+                <div class="space-row">
+                  <div class="space-avatar">家</div>
+                  <div>
+                    <strong>我的家</strong>
+                    <small>6 位成员 · 18 个相册</small>
+                  </div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
+                </div>
+                <div class="space-row">
+                  <div class="space-avatar">旅</div>
+                  <div>
+                    <strong>旅行小队</strong>
+                    <small>4 位成员 · 12 个相册</small>
+                  </div>
+                  <div class="row-more"><i data-lucide="chevron-right"></i></div>
+                </div>
+              </div>
+
+              <div class="dialog-overlay">
+                <div class="dialog-card">
+                  <h3>新建空间</h3>
+                  <div class="input-like">我的空间</div>
+                  <div class="dialog-actions">
+                    <button class="secondary-btn">取消</button>
+                    <button class="primary-btn">创建</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
             <strong>4. 相册首页</strong>
           </div>
           <div class="phone">
@@ -1271,6 +1407,9 @@
                   <i data-lucide="chevron-left"></i>
                 </button>
                 <h2>我的家</h2>
+                <button class="icon-btn" aria-label="修改空间名称">
+                  <i data-lucide="pencil"></i>
+                </button>
                 <button class="icon-btn" aria-label="成员管理">
                   <i data-lucide="users"></i>
                 </button>
@@ -1330,6 +1469,112 @@
 
         <article class="screen-wrap">
           <div class="screen-title">
+            <strong>4.1 新建相册弹窗</strong>
+          </div>
+          <div class="phone">
+            <div class="app">
+              <div class="topbar">
+                <button class="icon-btn" aria-label="返回空间">
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <h2>我的家</h2>
+                <button class="icon-btn" aria-label="修改空间名称">
+                  <i data-lucide="pencil"></i>
+                </button>
+                <button class="icon-btn" aria-label="成员管理">
+                  <i data-lucide="users"></i>
+                </button>
+                <button class="icon-btn" aria-label="新建相册">
+                  <i data-lucide="folder-plus"></i>
+                </button>
+                <button class="icon-btn" aria-label="回收站">
+                  <i data-lucide="trash-2"></i>
+                </button>
+              </div>
+
+              <div class="view-switch" aria-label="视图切换">
+                <button class="switch-btn active" aria-label="卡片视图">
+                  <i data-lucide="layout-grid"></i>
+                </button>
+                <button class="switch-btn" aria-label="列表视图">
+                  <i data-lucide="list"></i>
+                </button>
+              </div>
+
+              <div class="folder-grid">
+                <div class="folder-card">
+                  <div class="cover"><span class="photo-a"></span></div>
+                  <strong>旅行</strong>
+                  <small>128 项</small>
+                </div>
+                <div class="folder-card">
+                  <div class="cover"><span class="photo-d"></span></div>
+                  <strong>家庭</strong>
+                  <small>86 项</small>
+                </div>
+                <div class="folder-card">
+                  <div class="cover"><span class="photo-f"></span></div>
+                  <strong>视频</strong>
+                  <small>34 项</small>
+                </div>
+              </div>
+
+              <div class="dialog-overlay">
+                <div class="dialog-card">
+                  <h3>新建相册</h3>
+                  <div class="input-like">我的相册</div>
+                  <div class="dialog-actions">
+                    <button class="secondary-btn">取消</button>
+                    <button class="primary-btn">创建</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>4.2 删除确认弹窗</strong>
+          </div>
+          <div class="phone">
+            <div class="app">
+              <div class="topbar">
+                <button class="icon-btn" aria-label="返回空间">
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <h2>旅行</h2>
+                <button class="icon-btn" aria-label="修改相册名称">
+                  <i data-lucide="pencil"></i>
+                </button>
+                <button class="icon-btn" aria-label="上传">
+                  <i data-lucide="upload"></i>
+                </button>
+              </div>
+
+              <div class="media-grid compact">
+                <div class="media photo-a"></div>
+                <div class="media photo-d"></div>
+                <div class="media photo-f"></div>
+                <div class="media photo-c"></div>
+              </div>
+
+              <div class="dialog-overlay">
+                <div class="dialog-card">
+                  <h3>删除所选媒体？</h3>
+                  <p>将删除 3 项媒体，删除后会进入回收站。</p>
+                  <div class="dialog-actions">
+                    <button class="secondary-btn">取消</button>
+                    <button class="danger-btn">删除</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
             <strong>5. 相册列表</strong>
           </div>
           <div class="phone">
@@ -1339,6 +1584,9 @@
                   <i data-lucide="chevron-left"></i>
                 </button>
                 <h2>我的家</h2>
+                <button class="icon-btn" aria-label="修改空间名称">
+                  <i data-lucide="pencil"></i>
+                </button>
                 <button class="icon-btn" aria-label="成员管理">
                   <i data-lucide="users"></i>
                 </button>
@@ -1482,6 +1730,9 @@
                 <div class="title-stack">
                   <h2>旅行</h2>
                 </div>
+                <button class="icon-btn" aria-label="修改相册名称">
+                  <i data-lucide="pencil"></i>
+                </button>
                 <button class="icon-btn" aria-label="上传">
                   <i data-lucide="upload"></i>
                 </button>
@@ -1835,21 +2086,21 @@
                 <div class="admin-row">
                   <div>
                     <strong>WBBB</strong>
-                    <small>138 0000 0000 · 全局管理员 · 当前账号</small>
+                    <small>138 0000 0000 · 当前账号</small>
                   </div>
                   <span class="status-pill">当前账号</span>
                 </div>
                 <div class="admin-row">
                   <div>
                     <strong>李阿姨</strong>
-                    <small>139 1234 5678 · 普通用户 · 05/04 21:36</small>
+                    <small>139 1234 5678 · 05/04 21:36</small>
                   </div>
                   <button style="border: 0; border-radius: 8px; background: #c24141; color: #fff; padding: 7px 12px; font-family: inherit; font-size: 11px; font-weight: 600; box-shadow: 0 2px 6px rgb(194 65 65 / 20%)">禁用</button>
                 </div>
                 <div class="admin-row">
                   <div>
                     <strong>测试账号</strong>
-                    <small>136 0000 1122 · 普通用户 · 已禁用</small>
+                    <small>136 0000 1122 · 已禁用</small>
                   </div>
                   <span style="border-radius: 8px; background: #fff1f1; color: #c24141; padding: 6px 8px; font-size: 11px">已禁用</span>
                 </div>

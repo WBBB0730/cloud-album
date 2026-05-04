@@ -63,18 +63,6 @@ export const getSpaceMembersViewAction = async (spaceId: string) => {
   return getSpaceMembers(spaceId, user.id)
 }
 
-export const getNewFolderViewAction = async (spaceId: string) => {
-  const user = await requireUser()
-  const space = await requireSpaceMember(spaceId, user.id)
-
-  return {
-    space: {
-      id: space.id,
-      name: space.name,
-    },
-  }
-}
-
 export const getFolderViewAction = async (
   spaceId: string,
   folderId: string

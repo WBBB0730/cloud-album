@@ -8,11 +8,11 @@ export function EmptyState({
   children?: ReactNode
 }) {
   return (
-    <div className="grid min-h-48 place-items-center rounded-lg border border-dashed border-[#cbd2dc] bg-[#f7f8f8] px-5 text-center">
+    <div className="ca-empty-state">
       <div>
-        <p className="font-medium">{title}</p>
+        <p>{title}</p>
         {children ? (
-          <div className="mt-2 text-sm text-muted-foreground">{children}</div>
+          <div className="ca-empty-state-detail">{children}</div>
         ) : null}
       </div>
     </div>

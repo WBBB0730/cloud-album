@@ -321,7 +321,6 @@ export function AdminClient() {
                     <strong>{user.name}</strong>
                     <small>
                       {user.phone} ·{' '}
-                      {user.isGlobalAdmin ? '全局管理员' : '普通用户'} ·{' '}
                       {disabled
                         ? `已禁用 · ${formatDateTime(user.disabledAt)}`
                         : formatDateTime(user.createdAt)}
@@ -350,16 +349,18 @@ export function AdminClient() {
                             账号将被禁用并退出登录，历史上传、删除和空间记录会保留。
                           </AlertDialogDescription>
                         </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogFooter className="ca-confirm-footer">
                           <AlertDialogAction
-                            className="ca-danger-confirm-button"
+                            className="ca-confirm-button ca-danger-confirm-button"
                             onClick={() => {
                               void handleDisableUser(user.id)
                             }}
                           >
                             禁用
                           </AlertDialogAction>
+                          <AlertDialogCancel className="ca-confirm-button">
+                            取消
+                          </AlertDialogCancel>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -369,7 +370,6 @@ export function AdminClient() {
             })}
           </div>
         ) : null}
-
       </PullToRefresh>
     </MobileFrame>
   )

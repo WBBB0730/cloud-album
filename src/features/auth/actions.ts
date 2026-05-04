@@ -1,7 +1,5 @@
 'use server'
 
-import { redirect } from 'next/navigation'
-
 import { login, logout, registerWithInvite } from './service'
 
 export const loginAction = async (formData: FormData) => {
@@ -19,7 +17,7 @@ export const loginAction = async (formData: FormData) => {
 
 export const logoutAction = async () => {
   await logout()
-  redirect('/login')
+  return { ok: true }
 }
 
 export const registerAction = async (token: string, formData: FormData) => {

@@ -10,6 +10,7 @@ import {
   deleteFolder,
   deleteMedia,
   deleteMediaBatch,
+  renameFolder,
   setFolderCover,
 } from './service'
 
@@ -38,6 +39,29 @@ export const deleteFolderAction = async (spaceId: string, folderId: string) => {
   await deleteFolder(spaceId, folderId, user.id)
   revalidatePath(`/spaces/${spaceId}`)
   redirect(`/spaces/${spaceId}`)
+}
+
+export const renameFolderAction = async (
+  spaceId: string,
+  folderId: string,
+  formData: FormData
+) => {
+  const user = await requireUser()
+
+  try {
+    const folder = await renameFolder(
+      spaceId,
+      folderId,
+      user.id,
+      String(formData.get('name') ?? '')
+    )
+    revalidatePath(`/spaces/${spaceId}`)
+    revalidatePath(`/spaces/${spaceId}/albums/${folderId}`)
+    return { ok: true, folder, error: null }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '修改相册名称失败'
+    return { ok: false, folder: null, error: message }
+  }
 }
 
 export const deleteMediaAction = async (

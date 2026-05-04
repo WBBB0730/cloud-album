@@ -34,11 +34,7 @@ import {
 import { useServerAction } from '@/hooks/use-server-action'
 import { formatDateTime } from '@/lib/format'
 
-export function MembersClient({
-  spaceId,
-}: {
-  spaceId: string
-}) {
+export function MembersClient({ spaceId }: { spaceId: string }) {
   const router = useRouter()
   const {
     data,
@@ -190,9 +186,7 @@ export function MembersClient({
                           {member.phone} ·{' '}
                           {member.userId === data.space.createdBy
                             ? '创建者'
-                            : member.isGlobalAdmin
-                              ? '全局管理员'
-                              : '成员'}{' '}
+                            : '成员'}{' '}
                           · {formatDateTime(member.joinedAt)}
                         </small>
                       </span>
@@ -217,7 +211,7 @@ export function MembersClient({
                             </AlertDialogHeader>
                             <AlertDialogFooter className="ca-confirm-footer">
                               <AlertDialogAction
-                                className="ca-confirm-button bg-[#c24141] text-white hover:bg-[#b33333]"
+                                className="ca-confirm-button ca-danger-confirm-button"
                                 onClick={() => {
                                   void handleRemoveMember(member.userId)
                                 }}
@@ -254,7 +248,7 @@ export function MembersClient({
                 </AlertDialogHeader>
                 <AlertDialogFooter className="ca-confirm-footer">
                   <AlertDialogAction
-                    className="ca-confirm-button bg-[#c24141] text-white hover:bg-[#b33333]"
+                    className="ca-confirm-button ca-danger-confirm-button"
                     onClick={() => {
                       void handleLeaveSpace()
                     }}

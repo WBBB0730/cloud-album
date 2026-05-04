@@ -25,7 +25,7 @@ export function SafeImage({
   }, [src])
 
   if (failed || !isSignedUrlUsable(src)) {
-    return <span className="absolute inset-0 bg-[#eef0f2]" aria-label={alt} />
+    return <span className="ca-media-placeholder" aria-label={alt} />
   }
 
   return (

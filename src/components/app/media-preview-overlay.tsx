@@ -784,7 +784,7 @@ export function MediaPreviewOverlay({
             showCloseButton={false}
           >
             <SheetHeader className="border-b border-[#edf0f2] px-5 py-4 text-left">
-              <SheetTitle className="truncate text-base">
+              <SheetTitle className="truncate text-[15px]">
                 {currentItem.filename}
               </SheetTitle>
             </SheetHeader>
@@ -828,10 +828,9 @@ export function MediaPreviewOverlay({
                         删除后会进入回收站，可以在回收站恢复。
                       </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>取消</AlertDialogCancel>
+                    <AlertDialogFooter className="ca-confirm-footer">
                       <AlertDialogAction
-                        className="ca-danger-confirm-button"
+                        className="ca-confirm-button ca-danger-confirm-button"
                         onClick={() => {
                           setActionsOpen(false)
                           void onDelete(currentItem.id)
@@ -839,6 +838,9 @@ export function MediaPreviewOverlay({
                       >
                         删除
                       </AlertDialogAction>
+                      <AlertDialogCancel className="ca-confirm-button">
+                        取消
+                      </AlertDialogCancel>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>

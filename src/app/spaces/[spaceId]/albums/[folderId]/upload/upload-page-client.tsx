@@ -104,12 +104,15 @@ export function UploadPageClient({
               还有文件正在等待或上传中，离开后本次上传可能会中断。
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="w-full" onClick={keepUploading}>
+          <AlertDialogFooter className="ca-confirm-footer">
+            <AlertDialogCancel
+              className="ca-confirm-button"
+              onClick={keepUploading}
+            >
               继续上传
             </AlertDialogCancel>
             <AlertDialogAction
-              className="ca-danger-confirm-button w-full"
+              className="ca-confirm-button ca-danger-confirm-button"
               onClick={leavePage}
             >
               离开

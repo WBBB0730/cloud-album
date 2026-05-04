@@ -1,5 +1,7 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
+
 import { requireUser } from '@/features/auth/session'
 
 import {
@@ -7,6 +9,7 @@ import {
   createSpace,
   leaveSpace,
   removeSpaceMember,
+  renameSpace,
 } from './service'
 
 export const createSpaceAction = async (formData: FormData) => {
@@ -34,6 +37,24 @@ export const addMemberAction = async (spaceId: string, formData: FormData) => {
   } catch (error) {
     const message = error instanceof Error ? error.message : '操作失败'
     return { ok: false, data: null, error: message }
+  }
+}
+
+export const renameSpaceAction = async (spaceId: string, formData: FormData) => {
+  const user = await requireUser()
+
+  try {
+    const space = await renameSpace(
+      user.id,
+      spaceId,
+      String(formData.get('name') ?? '')
+    )
+    revalidatePath('/spaces')
+    revalidatePath(`/spaces/${spaceId}`)
+    return { ok: true, space, error: null }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '修改空间名称失败'
+    return { ok: false, space: null, error: message }
   }
 }
 

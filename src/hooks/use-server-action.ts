@@ -41,6 +41,20 @@ const removeCache = (key: string) => {
   }
 }
 
+export const clearServerActionCache = () => {
+  try {
+    const keys = Array.from({ length: window.localStorage.length }, (_, index) =>
+      window.localStorage.key(index)
+    ).filter((key): key is string => Boolean(key?.startsWith(CACHE_PREFIX)))
+
+    for (const key of keys) {
+      window.localStorage.removeItem(key)
+    }
+  } catch {
+    // localStorage can be unavailable; fresh data will be loaded on next page.
+  }
+}
+
 type RefreshOptions = {
   showLoading?: boolean
 }

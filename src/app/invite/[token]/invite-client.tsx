@@ -12,11 +12,7 @@ import { getInviteViewAction } from '@/features/app/view-actions'
 import { registerAction } from '@/features/auth/actions'
 import { useServerAction } from '@/hooks/use-server-action'
 
-export function InviteClient({
-  token,
-}: {
-  token: string
-}) {
+export function InviteClient({ token }: { token: string }) {
   const router = useRouter()
   const { hideLoading } = useGlobalLoading()
   const { data, loading } = useServerAction(
@@ -32,7 +28,10 @@ export function InviteClient({
     setPending(true)
 
     try {
-      const result = await registerAction(token, new FormData(event.currentTarget))
+      const result = await registerAction(
+        token,
+        new FormData(event.currentTarget)
+      )
 
       if (!result.ok) {
         setError(result.error ?? '注册失败')

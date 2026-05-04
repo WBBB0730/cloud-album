@@ -26,7 +26,6 @@ export const listUsers = async () =>
       id: users.id,
       phone: users.phone,
       name: users.name,
-      isGlobalAdmin: users.isGlobalAdmin,
       createdAt: users.createdAt,
       disabledAt: users.disabledAt,
     })

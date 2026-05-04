@@ -236,6 +236,37 @@
   padding-left: calc(var(--ca-page-x) + var(--ca-safe-left));
 }
 
+.ca-empty-state {
+  display: grid;
+  min-height: 192px;
+  place-items: center;
+  border: 1px dashed #cbd2dc;
+  border-radius: 10px;
+  background: var(--album-surface-soft);
+  padding: 0 20px;
+  text-align: center;
+}
+
+.ca-empty-state p {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.ca-empty-state-detail {
+  margin-top: 8px;
+  color: var(--album-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ca-media-placeholder {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: #eef0f2;
+}
+
 .ca-pull-refresh {
   position: relative;
   overscroll-behavior-y: contain;
@@ -291,7 +322,7 @@
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.25;
 }
@@ -304,7 +335,7 @@
 .ca-title-stack h1,
 .ca-title-stack h2 {
   margin-bottom: 4px;
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .ca-title-stack p {
@@ -466,7 +497,7 @@
   display: block;
   overflow: hidden;
   margin: 10px 10px 0;
-  font-size: 15px;
+  font-size: 14px;
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -548,8 +579,24 @@
 
 .ca-confirm-footer {
   display: grid !important;
-  grid-template-columns: 1fr !important;
-  gap: 10px !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 14px !important;
+}
+
+.ca-confirm-footer [data-slot="alert-dialog-cancel"] {
+  order: 1;
+}
+
+.ca-confirm-footer [data-slot="alert-dialog-action"] {
+  order: 2;
+}
+
+.ca-confirm-footer .ca-confirm-button:not(.ca-danger-confirm-button) {
+  order: 1;
+}
+
+.ca-confirm-footer .ca-danger-confirm-button {
+  order: 2;
 }
 
 .ca-confirm-form {
@@ -558,16 +605,22 @@
 
 .ca-confirm-button {
   width: 100%;
+  min-height: 42px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
   justify-content: center;
 }
 
 .ca-danger-confirm-button {
   background: #c24141 !important;
+  border-color: #c24141 !important;
   color: #fff !important;
 }
 
 .ca-danger-confirm-button:hover {
   background: #b33333 !important;
+  border-color: #b33333 !important;
   color: #fff !important;
 }
 
@@ -623,7 +676,7 @@
 .ca-admin-row strong {
   display: block;
   overflow: hidden;
-  font-size: 14px;
+  font-size: 13.5px;
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -791,7 +844,7 @@
 .ca-media-group h2 {
   margin: 0;
   color: #303844;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 500;
   line-height: 1.2;
 }
@@ -893,13 +946,27 @@
 .ca-auth-copy h1,
 .ca-auth-copy h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: 23px;
   line-height: 1.2;
 }
 
 .ca-form-stack {
   display: grid;
   gap: 12px;
+}
+
+.ca-name-dialog-content {
+  gap: 16px;
+  padding: 22px;
+}
+
+.ca-name-dialog-form {
+  display: grid;
+  gap: 18px;
+}
+
+.ca-name-dialog-form .ca-dialog-actions {
+  margin-top: 2px;
 }
 
 .ca-field {
@@ -915,8 +982,8 @@
 .ca-input {
   display: flex;
   align-items: center;
-  height: 42px;
-  min-height: 42px;
+  height: 40px;
+  min-height: 40px;
   border: 1px solid var(--album-line);
   border-radius: 10px;
   background: var(--album-surface-soft);
@@ -936,6 +1003,25 @@
   font-family: inherit;
   font-size: 14px;
   font-weight: 600;
+}
+
+.ca-secondary-btn {
+  display: inline-grid;
+  place-items: center;
+  min-height: 42px;
+  border: 1px solid var(--album-line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--album-text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ca-dialog-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
 }
 
 .ca-upload-zone {
@@ -958,6 +1044,7 @@
 }
 
 .ca-upload-zone strong {
+  font-size: 13.5px;
   line-height: 1.15;
 }
 

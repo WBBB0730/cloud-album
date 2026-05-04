@@ -64,6 +64,32 @@ export const createSpace = async (userId: string, name: string) => {
   return space
 }
 
+export const renameSpace = async (
+  actorId: string,
+  spaceId: string,
+  name: string
+) => {
+  const space = await requireSpaceMember(spaceId, actorId)
+
+  if (space.createdBy !== actorId) {
+    throw new Error('只有空间创建者可以修改空间名称')
+  }
+
+  const finalName = safeName(name)
+
+  if (!finalName) {
+    throw new Error('请输入空间名称')
+  }
+
+  const [updated] = await db
+    .update(spaces)
+    .set({ name: finalName, updatedAt: new Date() })
+    .where(eq(spaces.id, spaceId))
+    .returning()
+
+  return updated
+}
+
 export const addMemberByPhone = async (
   actorId: string,
   spaceId: string,

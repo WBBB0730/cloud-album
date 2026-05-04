@@ -15,7 +15,10 @@ export const createInviteAction = async (formData: FormData) => {
   const admin = await requireAdmin()
 
   try {
-    const link = await createInvite(admin.id, String(formData.get('phone') ?? ''))
+    const link = await createInvite(
+      admin.id,
+      String(formData.get('phone') ?? '')
+    )
     revalidatePath('/admin')
     return { ok: true, link, error: null }
   } catch (error) {

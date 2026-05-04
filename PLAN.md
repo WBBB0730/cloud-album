@@ -422,3 +422,71 @@
 - 管理后台撤销邀请、禁用账号、后台恢复，以及成员移除/退出空间、回收站首页恢复/永久删除相册，都改为直接调用 Server Action，不再使用 `form action`。
 - 已扫描确认 app 页面不再存在 `<form action=...>`，features 中不再存在 `redirect(...?...)` 形式的一次性参数跳转。
 - `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 危险确认弹窗统一
+- 成员移除和退出空间确认弹窗的危险按钮改用统一 `ca-danger-confirm-button`，修正默认黑色按钮覆盖红色样式的问题。
+- 危险确认弹窗统一使用 `ca-confirm-footer` + `ca-confirm-button ca-danger-confirm-button` 结构，危险按钮在上、取消按钮在下。
+- 已覆盖管理后台禁用账号、相册批量删除、上传页离开确认、成员移除/退出、回收站永久删除、预览删除等确认弹窗。
+- `ca-danger-confirm-button` 同步覆盖背景色和边框色，避免默认按钮外壳漏出黑色或默认边框。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 空占位样式统一
+- 检查所有 `EmptyState` 用法，没有发现裸渲染的空态文案；空态文案都通过 `EmptyState` 组件渲染。
+- `EmptyState` 改为使用全局 `.ca-empty-state` 和 `.ca-empty-state-detail`，不再把空态样式散落在组件内 Tailwind class 中。
+- 图片/视频懒加载、加载失败和过期 URL 占位改为统一 `.ca-media-placeholder`，替代散落的 `absolute inset-0 bg-[#eef0f2]`。
+- 已扫描确认 app/components 中没有旧的 `bg-[#eef0f2]` 媒体占位残留。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 标题字号收敛
+- 页面顶栏标题调为 18px；标题栈、登录/注册标题、相册/列表主标题、日期分组标题、上传选择标题、弹窗/抽屉标题整体小幅下调。
+- `docs/design/index.html` 已同步对应标题字号。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 退出登录和重命名
+- 空间列表新增退出登录按钮，退出时销毁 session，并清理本地视图缓存后回到登录页。
+- 空间创建者可在空间详情页修改空间名称；空间创建者可在相册详情页修改相册名称。
+- 重命名写入走 service 层并校验空间成员和空间创建者权限，全局管理员身份不额外授予空间内权限。
+- 成员页和管理后台账号列表不再对外展示全局管理员/普通用户身份标签。
+- `docs/PRD.md`、`docs/TECHNICAL_DESIGN.md`、`STRUCTURE.md`、`docs/design/index.html` 和 `MEMORY.md` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-05 创建空间图标
+- 空间列表的新建空间入口图标由 `Plus` 改为 lucide `CirclePlus`。
+- `docs/design/index.html` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-05 标题加载骨架
+- 空间详情和相册详情在数据未加载完成前，顶栏标题显示骨架占位，不再显示“空间”或“相册”兜底文案。
+- `TopBar` 标题支持传入 `ReactNode`，空间页和相册页复用现有 `Skeleton` 组件渲染标题骨架。
+- 如果本地缓存已有名称，则直接显示缓存名称，不用骨架覆盖。
+- `docs/design/index.html` 已同步标题骨架样式。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-05 新建相册免加载
+- 新建相册页移除进入页面时的空间名读取和加载态，直接显示表单。
+- 删除不再使用的 `getNewFolderViewAction`；创建提交时仍由 `createFolderAction` 校验当前用户空间权限。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-05 新建空间和相册弹窗
+- 新建空间改为在空间入口页内打开 `NameEditDialog` 弹窗，不再进入 `/spaces/new` 独立页面；默认名称为“我的空间”。
+- 新建相册改为在相册首页内打开 `NameEditDialog` 弹窗，不再进入 `/spaces/[spaceId]/albums/new` 独立页面；默认名称为“我的相册”。
+- 删除旧的新建空间和新建相册页面文件，避免保留可访问的旧流程。
+- `docs/PRD.md`、`docs/TECHNICAL_DESIGN.md`、`STRUCTURE.md`、`MEMORY.md` 和 `docs/design/index.html` 已同步。
+- 清理 `.next/types` 和 `.next/dev/types` 生成类型缓存后，`pnpm.cmd typecheck` 通过。
+
+## 2026-05-05 弹窗风格统一
+- `AlertDialog` 默认内容、标题、描述和 footer 改为和普通 `Dialog` 一致的卡片风格，去掉模板默认的灰色 footer 区和居中确认布局。
+- `ca-confirm-footer` 改为两列按钮布局，并固定取消在左、危险操作在右；按钮尺寸和普通弹窗按钮保持一致。
+- `NameEditDialog` 移除重复的可见字段 label，只保留 `sr-only` label 和 `aria-label`。
+- `docs/design/index.html` 已同步普通输入弹窗和删除确认弹窗状态。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-05 弹窗留白调整
+- 普通 `Dialog` 和 `AlertDialog` 默认内边距从 16px 提高到 24px，内容间距从 16px 提高到 20px，降低弹窗拥挤感。
+- 确认弹窗描述使用更舒展的行高；按钮间距统一为 14px。
+- 名称输入弹窗输入框高度调为 40px，配合更大的上下留白。
+- `docs/design/index.html` 已同步。
+- `pnpm.cmd typecheck` 通过。
+- 名称输入弹窗改用独立 `.ca-name-dialog-form`，表单内部间距为 18px，避免通用表单栈造成标题、输入和按钮之间的节奏不均。
+- 名称弹窗按钮区额外增加 8px 顶部间距，避免输入框 focus ring 视觉上压到按钮；`pnpm.cmd typecheck` 通过。
+- 名称输入弹窗进一步使用独立 `.ca-name-dialog-content`，不再完全套用全局弹窗的 24px 大留白；弹窗内边距调为 22px，表单按钮区顶距收敛为 2px，降低“改了但看起来没区别”的平均留白感；`pnpm.cmd typecheck` 通过。

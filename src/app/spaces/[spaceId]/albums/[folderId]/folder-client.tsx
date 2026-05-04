@@ -8,6 +8,7 @@ import {
   Check,
   ChevronLeft,
   Download,
+  Pencil,
   Play,
   Trash2,
   Upload,
@@ -21,8 +22,10 @@ import { LoadingState } from '@/components/app/loading-state'
 import { MediaPreviewOverlay } from '@/components/app/media-preview-overlay'
 import { MediaThumbnail } from '@/components/app/media-thumbnail'
 import { MobileFrame } from '@/components/app/mobile-frame'
+import { NameEditDialog } from '@/components/app/name-edit-dialog'
 import { PullToRefresh } from '@/components/app/pull-to-refresh'
 import { TopBar } from '@/components/app/top-bar'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,12 +39,16 @@ import {
 } from '@/components/ui/alert-dialog'
 import {
   deleteMediaBatchAction,
+  renameFolderAction,
   setFolderCoverAction,
 } from '@/features/albums/actions'
 import { getFolderViewAction } from '@/features/app/view-actions'
 import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
 import { useMediaSelection } from '@/hooks/use-media-selection'
-import { useServerAction } from '@/hooks/use-server-action'
+import {
+  clearServerActionCache,
+  useServerAction,
+} from '@/hooks/use-server-action'
 import { formatDuration } from '@/lib/format'
 import {
   getSignedUrlExpiresAt,
@@ -440,6 +447,7 @@ export function FolderClient({
   )
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
   const [previewMedia, setPreviewMedia] = useState<FolderMediaItem[]>([])
+  const [renameOpen, setRenameOpen] = useState(false)
   const [closingPreviewHistory, setClosingPreviewHistory] = useState(false)
   const [stableMedia, setStableMedia] = useState<FolderMediaItem[]>([])
   const stableMediaRef = useRef<FolderMediaItem[]>([])
@@ -459,6 +467,9 @@ export function FolderClient({
   )
   const nextSort = sort === 'desc' ? 'asc' : 'desc'
   const SortIcon = sort === 'desc' ? ArrowDown : ArrowUp
+  const canRenameFolder = data
+    ? data.space.createdBy === data.currentUserId
+    : false
 
   useEffect(() => {
     writeSavedAlbumSort(sort)
@@ -703,6 +714,39 @@ export function FolderClient({
     },
     [folderId, refresh, showLoading, spaceId]
   )
+  const handleRenameFolder = useCallback(
+    async (name: string) => {
+      const hideLoading = showLoading({ title: '保存中', timeoutMs: 0 })
+      const formData = new FormData()
+      formData.set('name', name)
+
+      try {
+        const result = await renameFolderAction(spaceId, folderId, formData)
+
+        if (!result.ok || !result.folder) {
+          return result.error
+        }
+
+        mutate((current) =>
+          current
+            ? {
+                ...current,
+                folder: {
+                  ...current.folder,
+                  name: result.folder.name,
+                  updatedAt: result.folder.updatedAt,
+                },
+              }
+            : current
+        )
+        clearServerActionCache()
+        return null
+      } finally {
+        hideLoading()
+      }
+    },
+    [folderId, mutate, showLoading, spaceId]
+  )
   const openPreview = useCallback(
     async (index: number) => {
       let previewList = visibleMedia
@@ -881,7 +925,16 @@ export function FolderClient({
     <MobileFrame className="ca-scroll-layout relative">
       <div className="ca-fixed-section">
         <TopBar
-          title={data?.folder.name ?? '相册'}
+          title={
+            data ? (
+              data.folder.name
+            ) : (
+              <Skeleton
+                className="h-[22px] w-[min(42vw,128px)] rounded-full"
+                aria-hidden="true"
+              />
+            )
+          }
           leading={
             <button
               type="button"
@@ -893,13 +946,25 @@ export function FolderClient({
             </button>
           }
           actions={
-            <Link
-              href={`/spaces/${spaceId}/albums/${folderId}/upload`}
-              className="ca-icon-btn"
-              aria-label="上传"
-            >
-              <Upload />
-            </Link>
+            <>
+              {canRenameFolder ? (
+                <button
+                  type="button"
+                  className="ca-icon-btn"
+                  aria-label="修改相册名称"
+                  onClick={() => setRenameOpen(true)}
+                >
+                  <Pencil />
+                </button>
+              ) : null}
+              <Link
+                href={`/spaces/${spaceId}/albums/${folderId}/upload`}
+                className="ca-icon-btn"
+                aria-label="上传"
+              >
+                <Upload />
+              </Link>
+            </>
           }
         />
 
@@ -979,14 +1044,16 @@ export function FolderClient({
                     将删除 {selectedIds.size} 项媒体，删除后会进入回收站。
                   </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogFooter className="ca-confirm-footer">
                   <AlertDialogAction
-                    className="ca-danger-confirm-button"
+                    className="ca-confirm-button ca-danger-confirm-button"
                     onClick={handleDeleteSelected}
                   >
                     删除
                   </AlertDialogAction>
+                  <AlertDialogCancel className="ca-confirm-button">
+                    取消
+                  </AlertDialogCancel>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
@@ -1064,6 +1131,15 @@ export function FolderClient({
           onDelete={handleDeletePreviewItem}
         />
       ) : null}
+
+      <NameEditDialog
+        initialName={data?.folder.name ?? ''}
+        label="相册名称"
+        open={renameOpen}
+        title="修改相册名称"
+        onOpenChange={setRenameOpen}
+        onSubmit={handleRenameFolder}
+      />
     </MobileFrame>
   )
 }

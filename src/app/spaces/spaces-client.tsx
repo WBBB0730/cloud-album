@@ -1,21 +1,66 @@
 'use client'
 
 import Link from 'next/link'
-import { ChevronRight, Plus, Settings } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { ChevronRight, CirclePlus, LogOut, Settings } from 'lucide-react'
 
 import { EmptyState } from '@/components/app/empty-state'
+import { useGlobalLoading } from '@/components/app/global-loading'
 import { LoadingState } from '@/components/app/loading-state'
 import { MobileFrame } from '@/components/app/mobile-frame'
+import { NameEditDialog } from '@/components/app/name-edit-dialog'
 import { PullToRefresh } from '@/components/app/pull-to-refresh'
 import { TopBar } from '@/components/app/top-bar'
 import { getSpacesViewAction } from '@/features/app/view-actions'
-import { useServerAction } from '@/hooks/use-server-action'
+import { logoutAction } from '@/features/auth/actions'
+import { createSpaceAction } from '@/features/spaces/actions'
+import {
+  clearServerActionCache,
+  useServerAction,
+} from '@/hooks/use-server-action'
 
 export function SpacesClient() {
+  const router = useRouter()
+  const { showLoading } = useGlobalLoading()
+  const [createOpen, setCreateOpen] = useState(false)
   const { data, error, loading, refresh } = useServerAction(
     () => getSpacesViewAction(),
     []
   )
+
+  const handleLogout = async () => {
+    const hideLoading = showLoading({ title: '退出中', timeoutMs: 0 })
+
+    try {
+      await logoutAction()
+      clearServerActionCache()
+      router.replace('/login')
+      router.refresh()
+    } finally {
+      hideLoading()
+    }
+  }
+
+  const handleCreateSpace = async (name: string) => {
+    const hideLoading = showLoading({ title: '创建中', timeoutMs: 0 })
+    const formData = new FormData()
+    formData.set('name', name)
+
+    try {
+      const result = await createSpaceAction(formData)
+
+      if (!result.ok || !result.spaceId) {
+        return result.error ?? '创建空间失败'
+      }
+
+      clearServerActionCache()
+      router.replace(`/spaces/${result.spaceId}`)
+      return null
+    } finally {
+      hideLoading()
+    }
+  }
 
   return (
     <MobileFrame className="ca-scroll-layout">
@@ -33,13 +78,24 @@ export function SpacesClient() {
                   <Settings />
                 </Link>
               ) : null}
-              <Link
-                href="/spaces/new"
+              <button
+                type="button"
                 className="ca-icon-btn"
                 aria-label="新建空间"
+                onClick={() => setCreateOpen(true)}
               >
-                <Plus />
-              </Link>
+                <CirclePlus />
+              </button>
+              <button
+                type="button"
+                className="ca-icon-btn"
+                aria-label="退出登录"
+                onClick={() => {
+                  void handleLogout()
+                }}
+              >
+                <LogOut />
+              </button>
             </>
           }
         />
@@ -80,6 +136,17 @@ export function SpacesClient() {
           </div>
         ) : null}
       </PullToRefresh>
+
+      <NameEditDialog
+        initialName="我的空间"
+        label="空间名称"
+        open={createOpen}
+        pendingLabel="创建中"
+        submitLabel="创建"
+        title="新建空间"
+        onOpenChange={setCreateOpen}
+        onSubmit={handleCreateSpace}
+      />
     </MobileFrame>
   )
 }
