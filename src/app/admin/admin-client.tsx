@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Check, ChevronLeft, Copy } from 'lucide-react'
+import { toast } from 'sonner'
 
-import { EmptyState } from '@/components/app/empty-state'
 import { ErrorBanner } from '@/components/app/error-banner'
+import { useGlobalLoading } from '@/components/app/global-loading'
 import { LoadingState } from '@/components/app/loading-state'
 import { MobileFrame } from '@/components/app/mobile-frame'
 import { PullToRefresh } from '@/components/app/pull-to-refresh'
@@ -23,7 +24,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import {
-  adminRestoreAction,
   createInviteAction,
   disableUserAction,
   revokeInviteAction,
@@ -37,6 +37,28 @@ const tabs = [
   ['invites', '邀请'],
   ['users', '账号'],
 ] as const
+
+type AdminTab = (typeof tabs)[number][0]
+
+const ADMIN_TAB_STORAGE_KEY = 'cloud-album:admin-tab'
+
+const readSavedAdminTab = (): AdminTab => {
+  try {
+    return window.localStorage.getItem(ADMIN_TAB_STORAGE_KEY) === 'users'
+      ? 'users'
+      : 'invites'
+  } catch {
+    return 'invites'
+  }
+}
+
+const writeSavedAdminTab = (tab: AdminTab) => {
+  try {
+    window.localStorage.setItem(ADMIN_TAB_STORAGE_KEY, tab)
+  } catch {
+    // 后台 tab 偏好保存失败不影响当前页面内切换。
+  }
+}
 
 const formatInviteTime = (date: Date | string | null | undefined) => {
   if (!date) {
@@ -56,15 +78,8 @@ const formatInviteTime = (date: Date | string | null | undefined) => {
   }).format(value)
 }
 
-export function AdminClient({
-  tab,
-  error,
-  invite,
-}: {
-  tab: string
-  error?: string
-  invite?: string
-}) {
+export function AdminClient() {
+  const { hideLoading, showLoading } = useGlobalLoading()
   const {
     data,
     error: loadError,
@@ -72,7 +87,17 @@ export function AdminClient({
     refresh,
   } = useServerAction(() => getAdminViewAction(), [])
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null)
+  const [copiedGeneratedInvite, setCopiedGeneratedInvite] = useState(false)
+  const [generatedInvite, setGeneratedInvite] = useState<string | null>(null)
+  const [localError, setLocalError] = useState<string | null>(null)
+  const [tab, setTab] = useState<AdminTab>(() =>
+    typeof window === 'undefined' ? 'invites' : readSavedAdminTab()
+  )
   useFixedBackNavigation('/spaces')
+
+  useEffect(() => {
+    writeSavedAdminTab(tab)
+  }, [tab])
 
   const copyInviteLink = async (inviteId: string, inviteLink: string) => {
     await navigator.clipboard.writeText(inviteLink)
@@ -83,7 +108,78 @@ export function AdminClient({
       )
     }, 1400)
   }
+  const copyGeneratedInviteLink = async () => {
+    if (!generatedInvite) {
+      return
+    }
 
+    await navigator.clipboard.writeText(generatedInvite)
+    setCopiedGeneratedInvite(true)
+    window.setTimeout(() => setCopiedGeneratedInvite(false), 1400)
+  }
+  const handleCreateInvite = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setLocalError(null)
+    setGeneratedInvite(null)
+
+    const closeLoading = showLoading({ title: '生成中', timeoutMs: 0 })
+
+    try {
+      const result = await createInviteAction(new FormData(event.currentTarget))
+
+      if (!result.ok || !result.link) {
+        setLocalError(result.error ?? '生成邀请失败')
+        toast.error(result.error ?? '生成邀请失败')
+        return
+      }
+
+      setGeneratedInvite(result.link)
+      event.currentTarget.reset()
+      await refresh()
+    } finally {
+      closeLoading()
+      hideLoading()
+    }
+  }
+  const handleRevokeInvite = async (inviteId: string) => {
+    setLocalError(null)
+    const closeLoading = showLoading({ title: '撤销中', timeoutMs: 0 })
+
+    try {
+      const result = await revokeInviteAction(inviteId)
+
+      if (!result.ok) {
+        setLocalError(result.error)
+        toast.error(result.error)
+        return
+      }
+
+      await refresh()
+    } finally {
+      closeLoading()
+      hideLoading()
+    }
+  }
+  const handleDisableUser = async (userId: string) => {
+    setLocalError(null)
+    const closeLoading = showLoading({ title: '禁用中', timeoutMs: 0 })
+
+    try {
+      const result = await disableUserAction(userId)
+
+      if (!result.ok) {
+        setLocalError(result.error)
+        toast.error(result.error)
+        return
+      }
+
+      setTab('users')
+      await refresh()
+    } finally {
+      closeLoading()
+      hideLoading()
+    }
+  }
   return (
     <MobileFrame className="ca-scroll-layout">
       <div className="ca-fixed-section">
@@ -103,38 +199,54 @@ export function AdminClient({
 
         <div className="ca-admin-tabs">
           {tabs.map(([value, label]) => (
-            <Link
+            <button
               key={value}
-              href={`/admin?tab=${value}`}
               className={`ca-chip ca-admin-tab ${tab === value ? 'active' : ''}`}
+              type="button"
+              onClick={() => setTab(value)}
             >
               {label}
-            </Link>
+            </button>
           ))}
         </div>
       </div>
 
       <PullToRefresh onRefresh={refresh}>
-        <ErrorBanner message={error ?? loadError ?? undefined} />
+        <ErrorBanner message={localError ?? loadError ?? undefined} />
         {loading ? <LoadingState /> : null}
 
         {data && tab === 'invites' ? (
           <div className="grid gap-3">
-            <form action={createInviteAction} className="ca-form-stack">
+            <form onSubmit={handleCreateInvite} className="ca-form-stack">
               <label className="ca-field">
                 <span>手机号</span>
                 <Input name="phone" className="ca-input" />
               </label>
               <button className="ca-primary-btn">生成邀请链接</button>
             </form>
-            {invite ? (
-              <div className="rounded-lg border border-[#d5ece7] bg-[#e7f6f3] p-3 text-sm break-all text-[#0f766e]">
-                {invite}
+            {generatedInvite ? (
+              <div className="flex min-w-0 items-center gap-2 rounded-lg border border-[#d5ece7] bg-[#e7f6f3] p-3 text-sm text-[#0f766e]">
+                <span className="min-w-0 flex-1 break-all">
+                  {generatedInvite}
+                </span>
+                <button
+                  type="button"
+                  className="grid size-8 shrink-0 place-items-center rounded-md text-[#0f9f8f]"
+                  aria-label="复制邀请链接"
+                  onClick={() => {
+                    void copyGeneratedInviteLink()
+                  }}
+                >
+                  {copiedGeneratedInvite ? (
+                    <Check className="size-4" />
+                  ) : (
+                    <Copy className="size-4" />
+                  )}
+                </button>
               </div>
             ) : null}
             <div className="ca-list">
               {data.invites.map((row) => {
-                const revokeAction = revokeInviteAction.bind(null, row.id)
                 const copied = copiedInviteId === row.id
                 const inviteLink = row.inviteLink
 
@@ -149,11 +261,15 @@ export function AdminClient({
                           </small>
                         </span>
                         {row.status === 'pending' ? (
-                          <form action={revokeAction}>
-                            <button className="rounded-lg bg-[#fff1f1] px-2 py-1 text-[11px] text-[#c24141]">
-                              撤销
-                            </button>
-                          </form>
+                          <button
+                            type="button"
+                            className="rounded-lg bg-[#fff1f1] px-2 py-1 text-[11px] text-[#c24141]"
+                            onClick={() => {
+                              void handleRevokeInvite(row.id)
+                            }}
+                          >
+                            撤销
+                          </button>
                         ) : (
                           <span className="text-[11px] text-[#747b86]">
                             {formatInviteTime(row.acceptedAt ?? row.updatedAt)}
@@ -196,7 +312,6 @@ export function AdminClient({
         {data && tab === 'users' ? (
           <div className="ca-list">
             {data.users.map((user) => {
-              const disableAction = disableUserAction.bind(null, user.id)
               const disabled = Boolean(user.disabledAt)
               const isCurrentAdmin = user.id === data.currentAdminId
 
@@ -237,14 +352,14 @@ export function AdminClient({
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>取消</AlertDialogCancel>
-                          <form action={disableAction}>
-                            <AlertDialogAction
-                              type="submit"
-                              className="ca-danger-confirm-button"
-                            >
-                              禁用
-                            </AlertDialogAction>
-                          </form>
+                          <AlertDialogAction
+                            className="ca-danger-confirm-button"
+                            onClick={() => {
+                              void handleDisableUser(user.id)
+                            }}
+                          >
+                            禁用
+                          </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -255,40 +370,6 @@ export function AdminClient({
           </div>
         ) : null}
 
-        {data && tab === 'deleted' ? (
-          <div className="ca-list">
-            {data.permanentRecords.length === 0 ? (
-              <EmptyState title="暂无永久删除记录" />
-            ) : null}
-            {data.permanentRecords.map((record) => {
-              const restoreAction = adminRestoreAction.bind(
-                null,
-                record.recordType,
-                record.id
-              )
-
-              return (
-                <div
-                  key={`${record.recordType}-${record.id}`}
-                  className="ca-admin-row"
-                >
-                  <div className="min-w-0">
-                    <strong>{record.name}</strong>
-                    <small>
-                      {record.kind} ·{' '}
-                      {formatDateTime(record.permanentlyDeletedAt)}
-                    </small>
-                  </div>
-                  <form action={restoreAction}>
-                    <button className="rounded-lg bg-[#e7f6f3] px-2 py-1 text-[11px] text-[#0f9f8f]">
-                      后台恢复
-                    </button>
-                  </form>
-                </div>
-              )
-            })}
-          </div>
-        ) : null}
       </PullToRefresh>
     </MobileFrame>
   )

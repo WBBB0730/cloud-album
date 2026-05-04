@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,19 +21,46 @@ import { TopBar } from '@/components/app/top-bar'
 import { getSpaceViewAction } from '@/features/app/view-actions'
 import { useServerAction } from '@/hooks/use-server-action'
 
-export function SpaceClient({
-  spaceId,
-  view,
-}: {
-  spaceId: string
-  view: 'grid' | 'list'
-}) {
+type SpaceView = 'grid' | 'list'
+
+const SPACE_VIEW_STORAGE_KEY = 'cloud-album:space-view'
+
+const readSavedSpaceView = (): SpaceView => {
+  try {
+    return window.localStorage.getItem(SPACE_VIEW_STORAGE_KEY) === 'list'
+      ? 'list'
+      : 'grid'
+  } catch {
+    return 'grid'
+  }
+}
+
+const writeSavedSpaceView = (view: SpaceView) => {
+  try {
+    window.localStorage.setItem(SPACE_VIEW_STORAGE_KEY, view)
+  } catch {
+    // 视图偏好保存失败不影响当前页面内切换。
+  }
+}
+
+export function SpaceClient({ spaceId }: { spaceId: string }) {
+  const [view, setView] = useState<SpaceView>(() =>
+    typeof window === 'undefined' ? 'grid' : readSavedSpaceView()
+  )
   const {
     data,
     error: loadError,
     loading,
     refresh,
   } = useServerAction(() => getSpaceViewAction(spaceId), [spaceId])
+
+  useEffect(() => {
+    writeSavedSpaceView(view)
+  }, [view])
+
+  const switchView = (nextView: SpaceView) => {
+    setView(nextView)
+  }
 
   return (
     <MobileFrame className="ca-scroll-layout">
@@ -77,20 +105,22 @@ export function SpaceClient({
         />
 
         <div className="ca-view-switch" aria-label="视图切换">
-          <Link
-            href={`/spaces/${spaceId}?view=grid`}
+          <button
+            type="button"
             className={`ca-switch-btn ${view === 'grid' ? 'active' : ''}`}
             aria-label="卡片视图"
+            onClick={() => switchView('grid')}
           >
             <Grid2X2 className="size-4" />
-          </Link>
-          <Link
-            href={`/spaces/${spaceId}?view=list`}
+          </button>
+          <button
+            type="button"
             className={`ca-switch-btn ${view === 'list' ? 'active' : ''}`}
             aria-label="列表视图"
+            onClick={() => switchView('list')}
           >
             <List className="size-4" />
-          </Link>
+          </button>
         </div>
       </div>
 

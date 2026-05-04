@@ -1,9 +1,12 @@
 'use client'
 
 import Link from 'next/link'
+import { useState, type FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 
 import { ErrorBanner } from '@/components/app/error-banner'
+import { useGlobalLoading } from '@/components/app/global-loading'
 import { LoadingState } from '@/components/app/loading-state'
 import { MobileFrame } from '@/components/app/mobile-frame'
 import { TopBar } from '@/components/app/top-bar'
@@ -14,16 +17,40 @@ import { useServerAction } from '@/hooks/use-server-action'
 
 export function NewFolderClient({
   spaceId,
-  error,
 }: {
   spaceId: string
-  error?: string
 }) {
+  const router = useRouter()
+  const { hideLoading } = useGlobalLoading()
+  const [error, setError] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
   const { data, loading } = useServerAction(
     () => getNewFolderViewAction(spaceId),
     [spaceId]
   )
-  const action = createFolderAction.bind(null, spaceId)
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError(null)
+    setPending(true)
+
+    try {
+      const result = await createFolderAction(
+        spaceId,
+        new FormData(event.currentTarget)
+      )
+
+      if (!result.ok || !result.folderId) {
+        setError(result.error ?? '创建相册失败')
+        return
+      }
+
+      router.replace(`/spaces/${spaceId}/albums/${result.folderId}`)
+    } finally {
+      setPending(false)
+      hideLoading()
+    }
+  }
 
   return (
     <MobileFrame className="ca-scroll-layout">
@@ -45,13 +72,15 @@ export function NewFolderClient({
       </div>
       <div className="ca-scroll-section">
         {loading ? <LoadingState /> : null}
-        <form action={action} className="ca-form-stack">
-          <ErrorBanner message={error} />
+        <form onSubmit={handleSubmit} className="ca-form-stack">
+          <ErrorBanner message={error ?? undefined} />
           <label className="ca-field">
             <span>相册名称</span>
             <Input name="name" className="ca-input" />
           </label>
-          <button className="ca-primary-btn">创建相册</button>
+          <button className="ca-primary-btn" disabled={pending}>
+            创建相册
+          </button>
         </form>
       </div>
     </MobileFrame>

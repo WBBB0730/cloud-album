@@ -407,3 +407,18 @@
 - 相册媒体格子抽成 memo 组件，去掉每项渲染时 `findIndex` 的 O(n²) 查找，改为一次性构建 id 到序号的 Map。
 - `MediaThumbnail` 使用 `React.memo`，配合相册媒体对象引用稳定，减少未变化图片和视频缩略图重渲染。
 - `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 空间页视图切换
+- 空间详情页卡片/列表视图切换改为页面内状态，不再使用 `?view=grid` / `?view=list` 查询参数。
+- 视图偏好保存到 `localStorage`，再次进入空间详情页时恢复上次选择；保存失败时仍能在当前页面内正常切换。
+- 视图切换按钮从 `Link` 改为 `button`，切换时不触发导航、不进入历史栈、不触发路由 loading。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 表单和筛选参数清理
+- 相册详情页 `type` 和 `sort` 改为页面内状态，不再使用查询参数；`type` 每次进入默认“全部”，`sort` 保存到 `localStorage` 并恢复上次排序。
+- 登录、邀请注册、新建空间、新建相册改为客户端 `onSubmit` 直接调用 Server Action，Server Action 返回结构化结果；失败在当前页面内显示，不再通过 `?error=` 传递。
+- 登录失败不再依赖 URL 或 `sessionStorage` 恢复表单；手机号和密码由受控输入保留在当前页面状态中。
+- 管理后台 tab 改为页面内状态并保存到 `localStorage`；邀请链接创建改为结构化返回，本地展示并提供复制按钮，不再使用 `?invite=`。
+- 管理后台撤销邀请、禁用账号、后台恢复，以及成员移除/退出空间、回收站首页恢复/永久删除相册，都改为直接调用 Server Action，不再使用 `form action`。
+- 已扫描确认 app 页面不再存在 `<form action=...>`，features 中不再存在 `redirect(...?...)` 形式的一次性参数跳转。
+- `pnpm.cmd typecheck` 通过。

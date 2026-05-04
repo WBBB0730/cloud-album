@@ -1,9 +1,12 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ChevronLeft, Trash2, Undo2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { EmptyState } from '@/components/app/empty-state'
+import { useGlobalLoading } from '@/components/app/global-loading'
 import { LoadingState } from '@/components/app/loading-state'
 import { MobileFrame } from '@/components/app/mobile-frame'
 import { PullToRefresh } from '@/components/app/pull-to-refresh'
@@ -19,11 +22,48 @@ import { useServerAction } from '@/hooks/use-server-action'
 import { formatDateTime } from '@/lib/format'
 
 export function TrashClient({ spaceId }: { spaceId: string }) {
+  const router = useRouter()
+  const { hideLoading, showLoading } = useGlobalLoading()
   const { data, error, loading, refresh } = useServerAction(
     () => getTrashHomeViewAction(spaceId),
     [spaceId]
   )
   useFixedBackNavigation(`/spaces/${spaceId}`)
+
+  const handleRestoreFolder = async (folderId: string) => {
+    const closeLoading = showLoading({ title: '恢复中', timeoutMs: 0 })
+
+    try {
+      const result = await restoreFolderAction(spaceId, folderId)
+
+      if (!result.ok) {
+        toast.error(result.error)
+        return
+      }
+
+      router.replace(`/spaces/${spaceId}`)
+    } finally {
+      closeLoading()
+      hideLoading()
+    }
+  }
+  const handlePermanentFolder = async (folderId: string) => {
+    const closeLoading = showLoading({ title: '删除中', timeoutMs: 0 })
+
+    try {
+      const result = await permanentFolderAction(spaceId, folderId)
+
+      if (!result.ok) {
+        toast.error(result.error)
+        return
+      }
+
+      await refresh()
+    } finally {
+      closeLoading()
+      hideLoading()
+    }
+  }
 
   return (
     <MobileFrame className="ca-scroll-layout">
@@ -50,17 +90,6 @@ export function TrashClient({ spaceId }: { spaceId: string }) {
           data.folders.length > 0 ? (
             <div className="ca-list">
               {data.folders.map((folder) => {
-                const restoreAction = restoreFolderAction.bind(
-                  null,
-                  spaceId,
-                  folder.id
-                )
-                const permanentAction = permanentFolderAction.bind(
-                  null,
-                  spaceId,
-                  folder.id
-                )
-
                 return (
                   <div key={folder.id} className="ca-folder-row">
                     <Link
@@ -83,19 +112,26 @@ export function TrashClient({ spaceId }: { spaceId: string }) {
                       </small>
                     </Link>
                     <div className="flex gap-1">
-                      <form action={restoreAction}>
-                        <button className="ca-icon-btn" aria-label="恢复相册">
-                          <Undo2 className="size-4" />
-                        </button>
-                      </form>
-                      <form action={permanentAction}>
-                        <button
-                          className="ca-icon-btn text-red-600"
-                          aria-label="永久删除"
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
-                      </form>
+                      <button
+                        type="button"
+                        className="ca-icon-btn"
+                        aria-label="恢复相册"
+                        onClick={() => {
+                          void handleRestoreFolder(folder.id)
+                        }}
+                      >
+                        <Undo2 className="size-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="ca-icon-btn text-red-600"
+                        aria-label="永久删除"
+                        onClick={() => {
+                          void handlePermanentFolder(folder.id)
+                        }}
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
                     </div>
                   </div>
                 )

@@ -66,3 +66,5 @@
 - 管理后台用户列表只允许返回页面展示需要的账号字段，不能 `select()` 用户表全字段下发到客户端，尤其不能携带 `passwordHash`。
 - 重要数据页的下拉刷新统一使用 `src/components/app/pull-to-refresh.tsx` 包裹内部滚动区域，并调用 `useServerAction().refresh()`；复杂手势页必须按状态禁用：相册预览打开、多选状态、回收站多选状态都不能接管下拉刷新。
 - `useServerAction` 支持可选 `mergeData` / `getCacheData`；相册详情需要用结构共享降低缓存数据刷新后的重渲染，但缓存写入仍应保存服务端 fresh 数据，避免旧签名 URL 被重新写回本地缓存。
+- 空间详情页卡片/列表视图是本地 UI 偏好，使用页面内 state 和 `localStorage` 记住，不写入 URL 查询参数，也不通过 `Link` 导航切换。
+- 相册详情页筛选和排序不写 URL：`type` 是临时页面状态，默认 `all`；`sort` 是用户偏好，保存到 `localStorage`。登录、注册、新建空间、新建相册、管理后台邀请等一次性表单结果不要用 `?error=` / `?invite=`，应直接调用 Server Action 并返回结构化结果；页面内展示错误或结果。

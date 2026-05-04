@@ -1,52 +1,41 @@
 'use client'
 
-import { Suspense, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, type FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
 
 import { ErrorBanner } from '@/components/app/error-banner'
-import { LoadingState } from '@/components/app/loading-state'
+import { useGlobalLoading } from '@/components/app/global-loading'
 import { MobileFrame } from '@/components/app/mobile-frame'
 import { Input } from '@/components/ui/input'
 import { loginAction } from '@/features/auth/actions'
 
-const LOGIN_FORM_CACHE_KEY = 'cloud-album:login-form'
+export function LoginClient() {
+  const router = useRouter()
+  const { hideLoading } = useGlobalLoading()
+  const [error, setError] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
+  const [phone, setPhone] = useState('')
+  const [password, setPassword] = useState('')
 
-function LoginContent() {
-  const searchParams = useSearchParams()
-  const error = searchParams.get('error') ?? undefined
-  const [initialValues, setInitialValues] = useState({
-    phone: '',
-    password: '',
-  })
-  const shouldRestoreForm = Boolean(error)
-
-  useEffect(() => {
-    if (!shouldRestoreForm) {
-      window.sessionStorage.removeItem(LOGIN_FORM_CACHE_KEY)
-      return
-    }
-
-    const saved = window.sessionStorage.getItem(LOGIN_FORM_CACHE_KEY)
-
-    if (!saved) {
-      return
-    }
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError(null)
+    setPending(true)
 
     try {
-      const values = JSON.parse(saved) as { phone?: string; password?: string }
-      setInitialValues({
-        phone: values.phone ?? '',
-        password: values.password ?? '',
-      })
-    } catch {
-      window.sessionStorage.removeItem(LOGIN_FORM_CACHE_KEY)
-    }
-  }, [shouldRestoreForm])
+      const result = await loginAction(new FormData(event.currentTarget))
 
-  const formKey = useMemo(
-    () => `${initialValues.phone}:${initialValues.password}`,
-    [initialValues.password, initialValues.phone]
-  )
+      if (!result.ok || !result.destination) {
+        setError(result.error ?? '登录失败')
+        return
+      }
+
+      router.replace(result.destination)
+    } finally {
+      setPending(false)
+      hideLoading()
+    }
+  }
 
   return (
     <MobileFrame variant="auth">
@@ -55,22 +44,10 @@ function LoginContent() {
       </div>
 
       <form
-        key={formKey}
-        action={loginAction}
+        onSubmit={handleSubmit}
         className="ca-form-stack"
-        onSubmit={(event) => {
-          const formData = new FormData(event.currentTarget)
-
-          window.sessionStorage.setItem(
-            LOGIN_FORM_CACHE_KEY,
-            JSON.stringify({
-              phone: String(formData.get('phone') ?? ''),
-              password: String(formData.get('password') ?? ''),
-            })
-          )
-        }}
       >
-        <ErrorBanner message={error} />
+        <ErrorBanner message={error ?? undefined} />
         <label className="ca-field">
           <span>手机号</span>
           <Input
@@ -78,7 +55,8 @@ function LoginContent() {
             inputMode="tel"
             autoComplete="tel"
             className="ca-input"
-            defaultValue={initialValues.phone}
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
           />
         </label>
         <label className="ca-field">
@@ -88,25 +66,14 @@ function LoginContent() {
             type="password"
             autoComplete="current-password"
             className="ca-input"
-            defaultValue={initialValues.password}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
           />
         </label>
-        <button className="ca-primary-btn">登录</button>
+        <button className="ca-primary-btn" disabled={pending}>
+          登录
+        </button>
       </form>
     </MobileFrame>
-  )
-}
-
-export function LoginClient() {
-  return (
-    <Suspense
-      fallback={
-        <MobileFrame variant="auth">
-          <LoadingState />
-        </MobileFrame>
-      }
-    >
-      <LoginContent />
-    </Suspense>
   )
 }

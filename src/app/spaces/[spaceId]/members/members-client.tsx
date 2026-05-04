@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState, type FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -35,11 +36,10 @@ import { formatDateTime } from '@/lib/format'
 
 export function MembersClient({
   spaceId,
-  error: inviteError,
 }: {
   spaceId: string
-  error?: string
 }) {
+  const router = useRouter()
   const {
     data,
     error: loadError,
@@ -50,7 +50,6 @@ export function MembersClient({
   const { hideLoading, showLoading } = useGlobalLoading()
   const [phone, setPhone] = useState('')
   const [localError, setLocalError] = useState<string | null>(null)
-  const leaveAction = leaveSpaceAction.bind(null, spaceId)
   const currentUser = data?.members.find(
     (member) => member.userId === data.currentUserId
   )
@@ -80,6 +79,54 @@ export function MembersClient({
       hideLoading()
     }
   }
+  const handleRemoveMember = async (targetUserId: string) => {
+    setLocalError(null)
+    const closeLoading = showLoading({ title: '移除中', timeoutMs: 0 })
+
+    try {
+      const result = await removeMemberAction(spaceId, targetUserId)
+
+      if (!result.ok) {
+        setLocalError(result.error)
+        toast.error(result.error)
+        return
+      }
+
+      mutate((current) =>
+        current
+          ? {
+              ...current,
+              members: current.members.filter(
+                (member) => member.userId !== targetUserId
+              ),
+            }
+          : current
+      )
+      toast.success('已移除成员')
+    } finally {
+      closeLoading()
+      hideLoading()
+    }
+  }
+  const handleLeaveSpace = async () => {
+    setLocalError(null)
+    const closeLoading = showLoading({ title: '退出中', timeoutMs: 0 })
+
+    try {
+      const result = await leaveSpaceAction(spaceId)
+
+      if (!result.ok) {
+        setLocalError(result.error)
+        toast.error(result.error)
+        return
+      }
+
+      router.replace('/spaces')
+    } finally {
+      closeLoading()
+      hideLoading()
+    }
+  }
 
   return (
     <MobileFrame className="ca-scroll-layout">
@@ -102,7 +149,7 @@ export function MembersClient({
 
       <PullToRefresh onRefresh={refresh}>
         <div className="grid gap-4">
-          <ErrorBanner message={localError ?? inviteError ?? undefined} />
+          <ErrorBanner message={localError ?? undefined} />
           <form onSubmit={handleInviteSubmit} className="ca-form-stack">
             <label className="ca-field">
               <span>手机号</span>
@@ -132,12 +179,6 @@ export function MembersClient({
                     data.space.createdBy === data.currentUserId &&
                     member.userId !== data.space.createdBy &&
                     !isSelf
-                  const removeAction = removeMemberAction.bind(
-                    null,
-                    spaceId,
-                    member.userId
-                  )
-
                   return (
                     <div key={member.id} className="ca-member-row">
                       <span className="ca-space-avatar">
@@ -175,17 +216,14 @@ export function MembersClient({
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter className="ca-confirm-footer">
-                              <form
-                                action={removeAction}
-                                className="ca-confirm-form"
+                              <AlertDialogAction
+                                className="ca-confirm-button bg-[#c24141] text-white hover:bg-[#b33333]"
+                                onClick={() => {
+                                  void handleRemoveMember(member.userId)
+                                }}
                               >
-                                <AlertDialogAction
-                                  type="submit"
-                                  className="ca-confirm-button bg-[#c24141] text-white hover:bg-[#b33333]"
-                                >
-                                  移除
-                                </AlertDialogAction>
-                              </form>
+                                移除
+                              </AlertDialogAction>
                               <AlertDialogCancel className="ca-confirm-button">
                                 取消
                               </AlertDialogCancel>
@@ -215,14 +253,14 @@ export function MembersClient({
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="ca-confirm-footer">
-                  <form action={leaveAction} className="ca-confirm-form">
-                    <AlertDialogAction
-                      type="submit"
-                      className="ca-confirm-button bg-[#c24141] text-white hover:bg-[#b33333]"
-                    >
-                      退出
-                    </AlertDialogAction>
-                  </form>
+                  <AlertDialogAction
+                    className="ca-confirm-button bg-[#c24141] text-white hover:bg-[#b33333]"
+                    onClick={() => {
+                      void handleLeaveSpace()
+                    }}
+                  >
+                    退出
+                  </AlertDialogAction>
                   <AlertDialogCancel className="ca-confirm-button">
                     取消
                   </AlertDialogCancel>

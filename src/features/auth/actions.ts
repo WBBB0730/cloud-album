@@ -4,24 +4,17 @@ import { redirect } from 'next/navigation'
 
 import { login, logout, registerWithInvite } from './service'
 
-const withError = (path: string, error: unknown) => {
-  const message = error instanceof Error ? error.message : '操作失败'
-  redirect(`${path}?error=${encodeURIComponent(message)}`)
-}
-
 export const loginAction = async (formData: FormData) => {
-  let destination = '/spaces'
-
   try {
-    destination = await login(
+    const destination = await login(
       String(formData.get('phone') ?? ''),
       String(formData.get('password') ?? '')
     )
+    return { ok: true, destination, error: null }
   } catch (error) {
-    withError('/login', error)
+    const message = error instanceof Error ? error.message : '登录失败'
+    return { ok: false, destination: null, error: message }
   }
-
-  redirect(destination)
 }
 
 export const logoutAction = async () => {
@@ -37,9 +30,9 @@ export const registerAction = async (token: string, formData: FormData) => {
       String(formData.get('password') ?? ''),
       String(formData.get('confirmPassword') ?? '')
     )
+    return { ok: true, error: null }
   } catch (error) {
-    withError(`/invite/${token}`, error)
+    const message = error instanceof Error ? error.message : '注册失败'
+    return { ok: false, error: message }
   }
-
-  redirect('/spaces')
 }

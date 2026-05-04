@@ -1,7 +1,5 @@
 'use server'
 
-import { redirect } from 'next/navigation'
-
 import { requireUser } from '@/features/auth/session'
 
 import {
@@ -11,24 +9,16 @@ import {
   removeSpaceMember,
 } from './service'
 
-const withError = (path: string, error: unknown) => {
-  const message = error instanceof Error ? error.message : '操作失败'
-  redirect(`${path}?error=${encodeURIComponent(message)}`)
-}
-
 export const createSpaceAction = async (formData: FormData) => {
   const user = await requireUser()
-  const name = String(formData.get('name') ?? '')
-  let spaceId = ''
 
   try {
-    const space = await createSpace(user.id, name)
-    spaceId = space.id
+    const space = await createSpace(user.id, String(formData.get('name') ?? ''))
+    return { ok: true, spaceId: space.id, error: null }
   } catch (error) {
-    withError('/spaces', error)
+    const message = error instanceof Error ? error.message : '创建空间失败'
+    return { ok: false, spaceId: null, error: message }
   }
-
-  redirect(`/spaces/${spaceId}`)
 }
 
 export const addMemberAction = async (spaceId: string, formData: FormData) => {
@@ -52,12 +42,11 @@ export const leaveSpaceAction = async (spaceId: string) => {
 
   try {
     await leaveSpace(user.id, spaceId)
+    return { ok: true, error: null }
   } catch (error) {
     const message = error instanceof Error ? error.message : '操作失败'
-    redirect(`/spaces/${spaceId}/members?error=${encodeURIComponent(message)}`)
+    return { ok: false, error: message }
   }
-
-  redirect('/spaces')
 }
 
 export const removeMemberAction = async (
@@ -68,10 +57,9 @@ export const removeMemberAction = async (
 
   try {
     await removeSpaceMember(user.id, spaceId, targetUserId)
+    return { ok: true, error: null }
   } catch (error) {
     const message = error instanceof Error ? error.message : '操作失败'
-    redirect(`/spaces/${spaceId}/members?error=${encodeURIComponent(message)}`)
+    return { ok: false, error: message }
   }
-
-  redirect(`/spaces/${spaceId}/members`)
 }

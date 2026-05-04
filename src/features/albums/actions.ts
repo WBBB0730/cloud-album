@@ -13,17 +13,11 @@ import {
   setFolderCover,
 } from './service'
 
-const withError = (path: string, error: unknown) => {
-  const message = error instanceof Error ? error.message : '操作失败'
-  redirect(`${path}?error=${encodeURIComponent(message)}`)
-}
-
 export const createFolderAction = async (
   spaceId: string,
   formData: FormData
 ) => {
   const user = await requireUser()
-  let folderId = ''
 
   try {
     const folder = await createFolder(
@@ -31,13 +25,12 @@ export const createFolderAction = async (
       user.id,
       String(formData.get('name') ?? '')
     )
-    folderId = folder.id
+    revalidatePath(`/spaces/${spaceId}`)
+    return { ok: true, folderId: folder.id, error: null }
   } catch (error) {
-    withError(`/spaces/${spaceId}`, error)
+    const message = error instanceof Error ? error.message : '创建相册失败'
+    return { ok: false, folderId: null, error: message }
   }
-
-  revalidatePath(`/spaces/${spaceId}`)
-  redirect(`/spaces/${spaceId}/albums/${folderId}`)
 }
 
 export const deleteFolderAction = async (spaceId: string, folderId: string) => {

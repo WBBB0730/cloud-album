@@ -1,8 +1,10 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useState, type FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
 
 import { ErrorBanner } from '@/components/app/error-banner'
+import { useGlobalLoading } from '@/components/app/global-loading'
 import { LoadingState } from '@/components/app/loading-state'
 import { MobileFrame } from '@/components/app/mobile-frame'
 import { Input } from '@/components/ui/input'
@@ -12,16 +14,37 @@ import { useServerAction } from '@/hooks/use-server-action'
 
 export function InviteClient({
   token,
-  error,
 }: {
   token: string
-  error?: string
 }) {
+  const router = useRouter()
+  const { hideLoading } = useGlobalLoading()
   const { data, loading } = useServerAction(
     () => getInviteViewAction(token),
     [token]
   )
-  const action = useMemo(() => registerAction.bind(null, token), [token])
+  const [error, setError] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError(null)
+    setPending(true)
+
+    try {
+      const result = await registerAction(token, new FormData(event.currentTarget))
+
+      if (!result.ok) {
+        setError(result.error ?? '注册失败')
+        return
+      }
+
+      router.replace('/spaces')
+    } finally {
+      setPending(false)
+      hideLoading()
+    }
+  }
 
   return (
     <MobileFrame variant="auth">
@@ -35,8 +58,8 @@ export function InviteClient({
       ) : null}
 
       {data ? (
-        <form action={action} className="ca-form-stack">
-          <ErrorBanner message={error} />
+        <form onSubmit={handleSubmit} className="ca-form-stack">
+          <ErrorBanner message={error ?? undefined} />
           <label className="ca-field">
             <span>手机号</span>
             <Input
@@ -67,7 +90,9 @@ export function InviteClient({
               className="ca-input"
             />
           </label>
-          <button className="ca-primary-btn">创建账号</button>
+          <button className="ca-primary-btn" disabled={pending}>
+            创建账号
+          </button>
         </form>
       ) : null}
     </MobileFrame>

@@ -56,9 +56,31 @@ const IMAGE_PRELOAD_CONCURRENCY = 3
 
 type FolderViewData = Awaited<ReturnType<typeof getFolderViewAction>>
 type FolderMediaItem = FolderViewData['media'][number]
+type MediaFilterType = 'all' | 'image' | 'video'
+type MediaSortType = 'desc' | 'asc'
 type MediaPointerHandlers = ReturnType<
   typeof useMediaSelection
 >['getMediaPointerHandlers']
+
+const ALBUM_SORT_STORAGE_KEY = 'cloud-album:album-sort'
+
+const readSavedAlbumSort = (): MediaSortType => {
+  try {
+    return window.localStorage.getItem(ALBUM_SORT_STORAGE_KEY) === 'asc'
+      ? 'asc'
+      : 'desc'
+  } catch {
+    return 'desc'
+  }
+}
+
+const writeSavedAlbumSort = (sort: MediaSortType) => {
+  try {
+    window.localStorage.setItem(ALBUM_SORT_STORAGE_KEY, sort)
+  } catch {
+    // 排序偏好保存失败不影响当前页面内切换。
+  }
+}
 
 const formatDateGroup = (date: Date | string | null | undefined) => {
   if (!date) {
@@ -234,8 +256,8 @@ const mergeFolderViewData = (
 
 const getVisibleMedia = (
   media: FolderMediaItem[],
-  type: 'all' | 'image' | 'video',
-  sort: 'desc' | 'asc'
+  type: MediaFilterType,
+  sort: MediaSortType
 ) =>
   media
     .filter((item) => type === 'all' || item.type === type)
@@ -408,14 +430,14 @@ const FolderMediaGridItem = memo(function FolderMediaGridItem({
 export function FolderClient({
   spaceId,
   folderId,
-  type,
-  sort,
 }: {
   spaceId: string
   folderId: string
-  type: 'all' | 'image' | 'video'
-  sort: 'desc' | 'asc'
 }) {
+  const [type, setType] = useState<MediaFilterType>('all')
+  const [sort, setSort] = useState<MediaSortType>(() =>
+    typeof window === 'undefined' ? 'desc' : readSavedAlbumSort()
+  )
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
   const [previewMedia, setPreviewMedia] = useState<FolderMediaItem[]>([])
   const [closingPreviewHistory, setClosingPreviewHistory] = useState(false)
@@ -437,6 +459,10 @@ export function FolderClient({
   )
   const nextSort = sort === 'desc' ? 'asc' : 'desc'
   const SortIcon = sort === 'desc' ? ArrowDown : ArrowUp
+
+  useEffect(() => {
+    writeSavedAlbumSort(sort)
+  }, [sort])
 
   useEffect(() => {
     stableMediaRef.current = stableMedia
@@ -884,22 +910,24 @@ export function FolderClient({
               ['image', '图片'],
               ['video', '视频'],
             ].map(([value, label]) => (
-              <Link
+              <button
                 key={value}
-                href={`/spaces/${spaceId}/albums/${folderId}?type=${value}&sort=${sort}`}
                 className={`ca-chip ${type === value ? 'active' : ''}`}
+                type="button"
+                onClick={() => setType(value as MediaFilterType)}
               >
                 {label}
-              </Link>
+              </button>
             ))}
           </div>
-          <Link
-            href={`/spaces/${spaceId}/albums/${folderId}?type=${type}&sort=${nextSort}`}
+          <button
+            type="button"
             className="ca-sort-btn"
+            onClick={() => setSort(nextSort)}
           >
             拍摄时间
             <SortIcon />
-          </Link>
+          </button>
         </div>
 
         {selectionMode ? (

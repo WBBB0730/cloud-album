@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
 
 import { requireAdmin } from '@/features/auth/session'
 
@@ -12,31 +11,30 @@ import {
   revokeInvite,
 } from './service'
 
-const withError = (path: string, error: unknown) => {
-  const message = error instanceof Error ? error.message : '操作失败'
-  const separator = path.includes('?') ? '&' : '?'
-  redirect(`${path}${separator}error=${encodeURIComponent(message)}`)
-}
-
 export const createInviteAction = async (formData: FormData) => {
   const admin = await requireAdmin()
-  let link = ''
 
   try {
-    link = await createInvite(admin.id, String(formData.get('phone') ?? ''))
+    const link = await createInvite(admin.id, String(formData.get('phone') ?? ''))
+    revalidatePath('/admin')
+    return { ok: true, link, error: null }
   } catch (error) {
-    withError('/admin', error)
+    const message = error instanceof Error ? error.message : '生成邀请失败'
+    return { ok: false, link: null, error: message }
   }
-
-  revalidatePath('/admin')
-  redirect(`/admin?invite=${encodeURIComponent(link)}`)
 }
 
 export const revokeInviteAction = async (inviteId: string) => {
   const admin = await requireAdmin()
-  await revokeInvite(admin.id, inviteId)
-  revalidatePath('/admin')
-  redirect('/admin')
+
+  try {
+    await revokeInvite(admin.id, inviteId)
+    revalidatePath('/admin')
+    return { ok: true, error: null }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '撤销失败'
+    return { ok: false, error: message }
+  }
 }
 
 export const disableUserAction = async (userId: string) => {
@@ -44,20 +42,25 @@ export const disableUserAction = async (userId: string) => {
 
   try {
     await disableUserAccount(admin.id, userId)
+    revalidatePath('/admin')
+    return { ok: true, error: null }
   } catch (error) {
-    withError('/admin?tab=users', error)
+    const message = error instanceof Error ? error.message : '禁用失败'
+    return { ok: false, error: message }
   }
-
-  revalidatePath('/admin')
-  redirect('/admin?tab=users')
 }
 
 export const adminRestoreAction = async (
   kind: 'media' | 'folder',
   recordId: string
 ) => {
-  await requireAdmin()
-  await adminRestorePermanentRecord(kind, recordId)
-  revalidatePath('/admin')
-  redirect('/admin')
+  try {
+    await requireAdmin()
+    await adminRestorePermanentRecord(kind, recordId)
+    revalidatePath('/admin')
+    return { ok: true, error: null }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '恢复失败'
+    return { ok: false, error: message }
+  }
 }

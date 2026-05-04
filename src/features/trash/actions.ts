@@ -19,9 +19,16 @@ export const restoreFolderAction = async (
   folderId: string
 ) => {
   const user = await requireUser()
-  await restoreFolderFromTrash(spaceId, folderId, user.id)
-  revalidatePath(`/spaces/${spaceId}/trash`)
-  redirect(`/spaces/${spaceId}`)
+
+  try {
+    await restoreFolderFromTrash(spaceId, folderId, user.id)
+    revalidatePath(`/spaces/${spaceId}/trash`)
+    revalidatePath(`/spaces/${spaceId}`)
+    return { ok: true, error: null }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '恢复失败'
+    return { ok: false, error: message }
+  }
 }
 
 export const restoreMediaAction = async (
@@ -93,7 +100,13 @@ export const permanentFolderAction = async (
   folderId: string
 ) => {
   const user = await requireUser()
-  await permanentlyDeleteFolder(spaceId, folderId, user.id)
-  revalidatePath(`/spaces/${spaceId}/trash`)
-  redirect(`/spaces/${spaceId}/trash`)
+
+  try {
+    await permanentlyDeleteFolder(spaceId, folderId, user.id)
+    revalidatePath(`/spaces/${spaceId}/trash`)
+    return { ok: true, error: null }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '永久删除失败'
+    return { ok: false, error: message }
+  }
 }
