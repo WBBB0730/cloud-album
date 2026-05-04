@@ -1,7 +1,8 @@
 {
-  "name": "Cloud Album",
-  "short_name": "Cloud Album",
-  "description": "私有家庭云相册",
+  "$schema": "https://json.schemastore.org/web-manifest-combined.json",
+  "name": "拾云",
+  "short_name": "拾云",
+  "description": "一个轻量的云相册",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -13,13 +14,25 @@
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

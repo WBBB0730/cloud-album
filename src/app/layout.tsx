@@ -11,19 +11,21 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
-  title: 'Cloud Album',
-  description: '私有家庭云相册',
-  applicationName: 'Cloud Album',
+  title: '拾云',
+  description: '一个轻量的云相册',
+  applicationName: '拾云',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Cloud Album',
+    title: '拾云',
   },
   icons: {
     icon: [
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icons/icon-192-maskable.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512-maskable.png', sizes: '512x512', type: 'image/png' },
     ],
     apple: [
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },

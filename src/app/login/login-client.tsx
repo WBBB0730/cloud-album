@@ -40,7 +40,7 @@ export function LoginClient() {
   return (
     <MobileFrame variant="auth">
       <div className="ca-auth-copy">
-        <h1>云相册</h1>
+        <h1>拾云</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="ca-form-stack">

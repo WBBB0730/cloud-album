@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { ChevronRight, CirclePlus, LogOut, Settings } from 'lucide-react'
+import { ChevronRight, HousePlus, LogOut, Settings } from 'lucide-react'
 
 import { EmptyState } from '@/components/app/empty-state'
 import { useGlobalLoading } from '@/components/app/global-loading'
@@ -84,7 +84,7 @@ export function SpacesClient() {
                 aria-label="新建空间"
                 onClick={() => setCreateOpen(true)}
               >
-                <CirclePlus />
+                <HousePlus />
               </button>
               <button
                 type="button"
