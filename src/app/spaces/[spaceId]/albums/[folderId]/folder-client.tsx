@@ -1,16 +1,29 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { ArrowDown, ArrowUp, ChevronLeft, Play, Trash2, Upload } from "lucide-react"
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { ArrowDown, ArrowUp, Check, ChevronLeft, Download, Play, Trash2, Upload, X } from "lucide-react"
 
 import { EmptyState } from "@/components/app/empty-state"
+import { ErrorBanner } from "@/components/app/error-banner"
+import { useGlobalLoading } from "@/components/app/global-loading"
 import { LoadingState } from "@/components/app/loading-state"
 import { MediaPreviewOverlay } from "@/components/app/media-preview-overlay"
 import { MediaThumbnail } from "@/components/app/media-thumbnail"
 import { MobileFrame } from "@/components/app/mobile-frame"
 import { TopBar } from "@/components/app/top-bar"
-import { deleteMediaAction } from "@/features/albums/actions"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { deleteMediaBatchAction } from "@/features/albums/actions"
 import { getFolderViewAction } from "@/features/app/view-actions"
 import { useServerAction } from "@/hooks/use-server-action"
 import { formatDuration } from "@/lib/format"
@@ -24,6 +37,10 @@ const PREVIEW_HISTORY_KEY = "__cloudAlbumPreview"
 const PREVIEW_HASH = "#preview"
 const FOREGROUND_REFRESH_DEBOUNCE_MS = 10_000
 const IMAGE_PRELOAD_CONCURRENCY = 3
+const MULTI_SELECT_LONG_PRESS_MS = 450
+const DRAG_SELECT_START_THRESHOLD = 8
+const DRAG_SELECT_SCROLL_EDGE = 56
+const DRAG_SELECT_MAX_SCROLL_SPEED = 12
 
 type FolderMediaItem = {
   id: string
@@ -176,6 +193,27 @@ const runImagePreloadQueue = async (
   )
 }
 
+const downloadMediaItem = async (item: Pick<FolderMediaItem, "filename" | "url">) => {
+  try {
+    const response = await fetch(item.url)
+
+    if (!response.ok) {
+      throw new Error("下载失败")
+    }
+
+    const blob = await response.blob()
+    const objectUrl = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+
+    link.href = objectUrl
+    link.download = item.filename
+    link.click()
+    URL.revokeObjectURL(objectUrl)
+  } catch {
+    window.open(item.url, "_blank", "noopener,noreferrer")
+  }
+}
+
 export function FolderClient({
   spaceId,
   folderId,
@@ -190,12 +228,47 @@ export function FolderClient({
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
   const [previewMedia, setPreviewMedia] = useState<FolderMediaItem[]>([])
   const [stableMedia, setStableMedia] = useState<FolderMediaItem[]>([])
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+  const [selectionError, setSelectionError] = useState<string | null>(null)
+  const [, startTransition] = useTransition()
   const stableMediaRef = useRef<FolderMediaItem[]>([])
   const latestMediaRef = useRef<FolderMediaItem[]>([])
   const preloadGenerationRef = useRef(0)
+  const scrollSectionRef = useRef<HTMLDivElement | null>(null)
   const previewIndexRef = useRef<number | null>(null)
   const closingPreviewRef = useRef(false)
   const lastForegroundRefreshRef = useRef(0)
+  const longPressTimerRef = useRef<number | null>(null)
+  const longPressStartRef = useRef<{ x: number; y: number } | null>(null)
+  const activeTouchIdRef = useRef<number | null>(null)
+  const dragSelectRef = useRef<{
+    active: boolean
+    select: boolean
+    anchorId: string | null
+    currentId: string | null
+    baseSelectedIds: Set<string>
+    lastX: number
+    lastY: number
+    scrollFrame: number | null
+  }>({
+    active: false,
+    select: true,
+    anchorId: null,
+    currentId: null,
+    baseSelectedIds: new Set(),
+    lastX: 0,
+    lastY: 0,
+    scrollFrame: null,
+  })
+  const pendingDragSelectRef = useRef<{
+    mediaId: string
+    select: boolean
+    startX: number
+    startY: number
+  } | null>(null)
+  const ignoreNextClickRef = useRef(false)
+  const { showLoading } = useGlobalLoading()
   const { data, error, loading, refresh } = useServerAction(
     () => getFolderViewAction(spaceId, folderId),
     [spaceId, folderId]
@@ -308,6 +381,327 @@ export function FolderClient({
     return getVisibleMedia(stableMedia, type, sort)
   }, [data, sort, stableMedia, type])
   const mediaGroups = useMemo(() => groupMediaByDate(visibleMedia), [visibleMedia])
+  const selectedMedia = useMemo(
+    () => visibleMedia.filter((item) => selectedIds.has(item.id)),
+    [selectedIds, visibleMedia]
+  )
+  const clearLongPressTimer = useCallback(() => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+    longPressStartRef.current = null
+  }, [])
+  const clearSelection = useCallback(() => {
+    setSelectionMode(false)
+    setSelectedIds(new Set())
+    setSelectionError(null)
+  }, [])
+  const getDragRangeIds = useCallback((anchorId: string, currentId: string) => {
+    const anchorIndex = visibleMedia.findIndex((item) => item.id === anchorId)
+    const currentIndex = visibleMedia.findIndex((item) => item.id === currentId)
+
+    if (anchorIndex < 0 || currentIndex < 0) {
+      return [anchorId]
+    }
+
+    const startIndex = Math.min(anchorIndex, currentIndex)
+    const endIndex = Math.max(anchorIndex, currentIndex)
+
+    return visibleMedia.slice(startIndex, endIndex + 1).map((item) => item.id)
+  }, [visibleMedia])
+  const applyDragSelectionRange = useCallback((currentId: string) => {
+    const dragState = dragSelectRef.current
+
+    if (!dragState.active || !dragState.anchorId) {
+      return
+    }
+
+    const anchorId = dragState.anchorId
+
+    setSelectionError(null)
+    dragState.currentId = currentId
+    setSelectedIds(() => {
+      const next = new Set(dragState.baseSelectedIds)
+      const rangeIds = getDragRangeIds(anchorId, currentId)
+
+      for (const id of rangeIds) {
+        if (dragState.select) {
+          next.add(id)
+        } else {
+          next.delete(id)
+        }
+      }
+
+      return next
+    })
+  }, [getDragRangeIds])
+  const getMediaIdAtPoint = useCallback((clientX: number, clientY: number) => {
+    const element = document.elementFromPoint(clientX, clientY)
+    const mediaElement = element?.closest<HTMLElement>("[data-media-id]")
+
+    return mediaElement?.dataset.mediaId ?? null
+  }, [])
+  const stopDragAutoScroll = useCallback(() => {
+    const frame = dragSelectRef.current.scrollFrame
+
+    if (frame !== null) {
+      window.cancelAnimationFrame(frame)
+      dragSelectRef.current.scrollFrame = null
+    }
+  }, [])
+  const runDragAutoScroll = useCallback(function tick() {
+    const dragState = dragSelectRef.current
+    const scroller = scrollSectionRef.current
+
+    if (!dragState.active || !scroller) {
+      dragState.scrollFrame = null
+      return
+    }
+
+    const rect = scroller.getBoundingClientRect()
+    const topDistance = dragState.lastY - rect.top
+    const bottomDistance = rect.bottom - dragState.lastY
+    let scrollDelta = 0
+
+    if (topDistance >= 0 && topDistance < DRAG_SELECT_SCROLL_EDGE) {
+      scrollDelta = -Math.ceil(
+        ((DRAG_SELECT_SCROLL_EDGE - topDistance) / DRAG_SELECT_SCROLL_EDGE) *
+          DRAG_SELECT_MAX_SCROLL_SPEED
+      )
+    } else if (bottomDistance >= 0 && bottomDistance < DRAG_SELECT_SCROLL_EDGE) {
+      scrollDelta = Math.ceil(
+        ((DRAG_SELECT_SCROLL_EDGE - bottomDistance) / DRAG_SELECT_SCROLL_EDGE) *
+          DRAG_SELECT_MAX_SCROLL_SPEED
+      )
+    }
+
+    if (scrollDelta !== 0) {
+      scroller.scrollTop += scrollDelta
+      const mediaId = getMediaIdAtPoint(dragState.lastX, dragState.lastY)
+
+      if (mediaId && mediaId !== dragState.currentId) {
+        applyDragSelectionRange(mediaId)
+      }
+    }
+
+    dragState.scrollFrame = window.requestAnimationFrame(tick)
+  }, [applyDragSelectionRange, getMediaIdAtPoint])
+  const beginDragSelect = useCallback((mediaId: string, select: boolean, clientX: number, clientY: number) => {
+    stopDragAutoScroll()
+    dragSelectRef.current = {
+      active: true,
+      select,
+      anchorId: mediaId,
+      currentId: mediaId,
+      baseSelectedIds: new Set(selectedIds),
+      lastX: clientX,
+      lastY: clientY,
+      scrollFrame: null,
+    }
+    ignoreNextClickRef.current = true
+    setSelectionMode(true)
+    applyDragSelectionRange(mediaId)
+    dragSelectRef.current.scrollFrame = window.requestAnimationFrame(runDragAutoScroll)
+  }, [applyDragSelectionRange, runDragAutoScroll, selectedIds, stopDragAutoScroll])
+  const updateDragSelect = useCallback((clientX: number, clientY: number) => {
+    const dragState = dragSelectRef.current
+
+    if (!dragState.active) {
+      return false
+    }
+
+    dragState.lastX = clientX
+    dragState.lastY = clientY
+
+    const mediaId = getMediaIdAtPoint(clientX, clientY)
+
+    if (mediaId && mediaId !== dragState.currentId) {
+      applyDragSelectionRange(mediaId)
+    }
+
+    return true
+  }, [applyDragSelectionRange, getMediaIdAtPoint])
+  const stopDragSelect = useCallback(() => {
+    dragSelectRef.current.active = false
+    dragSelectRef.current.anchorId = null
+    dragSelectRef.current.currentId = null
+    dragSelectRef.current.baseSelectedIds = new Set()
+    stopDragAutoScroll()
+  }, [stopDragAutoScroll])
+  const enterSelection = useCallback((mediaId: string, clientX: number, clientY: number) => {
+    beginDragSelect(mediaId, true, clientX, clientY)
+  }, [beginDragSelect])
+  const enterSelectionOnly = useCallback((mediaId: string) => {
+    ignoreNextClickRef.current = true
+    setSelectionError(null)
+    setSelectionMode(true)
+    setSelectedIds((current) => {
+      if (current.has(mediaId)) {
+        return current
+      }
+
+      const next = new Set(current)
+
+      next.add(mediaId)
+      return next
+    })
+  }, [])
+  const cancelPendingDragSelect = useCallback(() => {
+    pendingDragSelectRef.current = null
+  }, [])
+  const stopSelectionPointers = useCallback(() => {
+    cancelPendingDragSelect()
+    stopDragSelect()
+    clearLongPressTimer()
+    activeTouchIdRef.current = null
+  }, [cancelPendingDragSelect, clearLongPressTimer, stopDragSelect])
+  const findActiveTouch = useCallback((touches: {
+    length: number
+    item: (index: number) => React.Touch | Touch | null
+  }) => {
+    const activeTouchId = activeTouchIdRef.current
+
+    if (activeTouchId === null) {
+      return null
+    }
+
+    for (let index = 0; index < touches.length; index += 1) {
+      const touch = touches.item(index)
+
+      if (touch?.identifier === activeTouchId) {
+        return touch
+      }
+    }
+
+    return null
+  }, [])
+  const handleDragMove = useCallback((clientX: number, clientY: number) => {
+    const pendingDragSelect = pendingDragSelectRef.current
+
+    if (pendingDragSelect) {
+      const deltaX = clientX - pendingDragSelect.startX
+      const deltaY = clientY - pendingDragSelect.startY
+      const absX = Math.abs(deltaX)
+      const absY = Math.abs(deltaY)
+
+      if (Math.hypot(deltaX, deltaY) < DRAG_SELECT_START_THRESHOLD) {
+        return false
+      }
+
+      if (absY > absX * 1.25 && absY > 10) {
+        cancelPendingDragSelect()
+        return false
+      }
+
+      beginDragSelect(pendingDragSelect.mediaId, pendingDragSelect.select, clientX, clientY)
+      cancelPendingDragSelect()
+      updateDragSelect(clientX, clientY)
+      return true
+    }
+
+    if (dragSelectRef.current.active) {
+      updateDragSelect(clientX, clientY)
+      return true
+    }
+
+    return false
+  }, [beginDragSelect, cancelPendingDragSelect, updateDragSelect])
+  const toggleSelection = useCallback((mediaId: string) => {
+    setSelectionError(null)
+    setSelectedIds((current) => {
+      const next = new Set(current)
+
+      if (next.has(mediaId)) {
+        next.delete(mediaId)
+      } else {
+        next.add(mediaId)
+      }
+
+      return next
+    })
+  }, [])
+  const toggleGroupSelection = useCallback((items: FolderMediaItem[]) => {
+    setSelectionError(null)
+    setSelectedIds((current) => {
+      const groupIds = items.map((item) => item.id)
+      const allSelected = groupIds.every((id) => current.has(id))
+      const next = new Set(current)
+
+      for (const id of groupIds) {
+        if (allSelected) {
+          next.delete(id)
+        } else {
+          next.add(id)
+        }
+      }
+
+      return next
+    })
+  }, [])
+  const scheduleLongPress = useCallback((mediaId: string, clientX: number, clientY: number) => {
+    clearLongPressTimer()
+    longPressStartRef.current = { x: clientX, y: clientY }
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTimerRef.current = null
+      longPressStartRef.current = null
+      enterSelection(mediaId, clientX, clientY)
+    }, MULTI_SELECT_LONG_PRESS_MS)
+  }, [clearLongPressTimer, enterSelection])
+  const handleDeleteMedia = useCallback(async (mediaIds: string[]) => {
+    const uniqueIds = Array.from(new Set(mediaIds))
+
+    if (uniqueIds.length === 0) {
+      return false
+    }
+
+    const hideLoading = showLoading({ title: "删除中", timeoutMs: 0 })
+
+    try {
+      const result = await deleteMediaBatchAction(spaceId, folderId, uniqueIds)
+
+      if (!result.ok) {
+        setSelectionError(result.error)
+        return false
+      }
+
+      setStableMedia((currentMedia) =>
+        currentMedia.filter((item) => !uniqueIds.includes(item.id))
+      )
+      setPreviewMedia((currentMedia) =>
+        currentMedia.filter((item) => !uniqueIds.includes(item.id))
+      )
+      setSelectedIds(new Set())
+      setSelectionMode(false)
+      setSelectionError(null)
+      await refresh()
+      return true
+    } finally {
+      hideLoading()
+    }
+  }, [folderId, refresh, showLoading, spaceId])
+  const handleDeleteSelected = useCallback(() => {
+    const ids = selectedMedia.map((item) => item.id)
+
+    startTransition(() => {
+      void handleDeleteMedia(ids)
+    })
+  }, [handleDeleteMedia, selectedMedia, startTransition])
+  const handleDownloadSelected = useCallback(async () => {
+    if (selectedMedia.length === 0) {
+      return
+    }
+
+    const hideLoading = showLoading({ title: "下载中", timeoutMs: 0 })
+
+    try {
+      for (const item of selectedMedia) {
+        await downloadMediaItem(item)
+      }
+    } finally {
+      hideLoading()
+    }
+  }, [selectedMedia, showLoading])
   const openPreview = useCallback(async (index: number) => {
     let previewList = visibleMedia
     let previewStartIndex = index
@@ -365,10 +759,29 @@ export function FolderClient({
       window.setTimeout(() => window.history.back(), 0)
     }
   }, [])
+  const handleDeletePreviewItem = useCallback(async (mediaId: string) => {
+    const deleted = await handleDeleteMedia([mediaId])
+
+    if (deleted) {
+      closePreview()
+    }
+  }, [closePreview, handleDeleteMedia])
 
   useEffect(() => {
     previewIndexRef.current = previewIndex
   }, [previewIndex])
+
+  useEffect(() => {
+    const visibleIds = new Set(visibleMedia.map((item) => item.id))
+
+    setSelectedIds((current) => {
+      const next = new Set(Array.from(current).filter((id) => visibleIds.has(id)))
+
+      return next.size === current.size ? current : next
+    })
+  }, [visibleMedia])
+
+  useEffect(() => () => stopSelectionPointers(), [stopSelectionPointers])
 
   useEffect(() => {
     if (previewIndexRef.current === null) {
@@ -468,9 +881,59 @@ export function FolderClient({
             <SortIcon />
           </Link>
         </div>
+
+        {selectionMode ? (
+          <div className="ca-selection-bar">
+            <button type="button" className="ca-selection-icon" aria-label="取消选择" onClick={clearSelection}>
+              <X />
+            </button>
+            <span>已选择 {selectedIds.size} 项</span>
+            <button
+              type="button"
+              className="ca-selection-icon"
+              aria-label="下载所选"
+              disabled={selectedIds.size === 0}
+              onClick={() => {
+                void handleDownloadSelected()
+              }}
+            >
+              <Download />
+            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  type="button"
+                  className="ca-selection-icon danger"
+                  aria-label="删除所选"
+                  disabled={selectedIds.size === 0}
+                >
+                  <Trash2 />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>删除所选媒体？</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    将删除 {selectedIds.size} 项媒体，删除后会进入回收站。
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>取消</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="ca-danger-confirm-button"
+                    onClick={handleDeleteSelected}
+                  >
+                    删除
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        ) : null}
       </div>
 
-      <div className="ca-scroll-section">
+      <div ref={scrollSectionRef} className="ca-scroll-section">
+        <ErrorBanner message={selectionError ?? undefined} />
         {loading ? (
           <LoadingState />
         ) : error ? (
@@ -480,18 +943,181 @@ export function FolderClient({
             <div className="ca-media-groups">
               {mediaGroups.map((group) => (
                 <section key={group.key} className="ca-media-group">
-                  <h2>{group.title}</h2>
+                  <div className="ca-media-group-head">
+                    <h2>{group.title}</h2>
+                    {selectionMode ? (
+                      <button
+                        type="button"
+                        className="ca-group-select-btn"
+                        onClick={() => toggleGroupSelection(group.media)}
+                      >
+                        {group.media.every((item) => selectedIds.has(item.id)) ? "取消全选" : "全选"}
+                      </button>
+                    ) : null}
+                  </div>
                   <div className="ca-media-grid">
                     {group.media.map((item) => {
-                      const deleteAction = deleteMediaAction.bind(null, spaceId, folderId, item.id)
                       const index = visibleMedia.findIndex((media) => media.id === item.id)
+                      const selected = selectedIds.has(item.id)
 
                       return (
-                        <div key={item.id} className="ca-media group">
+                        <div key={item.id} className={`ca-media group ${selected ? "selected" : ""}`}>
                           <button
                             type="button"
                             className="absolute inset-0 text-left"
-                            onClick={() => openPreview(index)}
+                            data-media-id={item.id}
+                            onPointerDown={(event) => {
+                              if (event.pointerType === "touch" || event.button !== 0) {
+                                return
+                              }
+
+                              if (selectionMode) {
+                                pendingDragSelectRef.current = {
+                                  mediaId: item.id,
+                                  select: !selected,
+                                  startX: event.clientX,
+                                  startY: event.clientY,
+                                }
+                                return
+                              }
+
+                              scheduleLongPress(item.id, event.clientX, event.clientY)
+                            }}
+                            onPointerMove={(event) => {
+                              if (event.pointerType === "touch") {
+                                return
+                              }
+
+                              if (handleDragMove(event.clientX, event.clientY)) {
+                                event.preventDefault()
+                                event.currentTarget.setPointerCapture(event.pointerId)
+                                return
+                              }
+
+                              const start = longPressStartRef.current
+
+                              if (!start) {
+                                return
+                              }
+
+                              if (Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10) {
+                                clearLongPressTimer()
+                              }
+                            }}
+                            onPointerUp={(event) => {
+                              if (event.pointerType === "touch") {
+                                return
+                              }
+
+                              const wasDragSelecting = dragSelectRef.current.active
+
+                              stopSelectionPointers()
+
+                              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                                event.currentTarget.releasePointerCapture(event.pointerId)
+                              }
+
+                              if (wasDragSelecting) {
+                                ignoreNextClickRef.current = true
+                              }
+                            }}
+                            onPointerCancel={(event) => {
+                              if (event.pointerType === "touch") {
+                                return
+                              }
+
+                              stopSelectionPointers()
+
+                              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                                event.currentTarget.releasePointerCapture(event.pointerId)
+                              }
+                            }}
+                            onTouchStart={(event) => {
+                              if (event.touches.length !== 1) {
+                                return
+                              }
+
+                              const touch = event.touches.item(0)
+
+                              if (!touch) {
+                                return
+                              }
+
+                              activeTouchIdRef.current = touch.identifier
+
+                              if (selectionMode) {
+                                pendingDragSelectRef.current = {
+                                  mediaId: item.id,
+                                  select: !selected,
+                                  startX: touch.clientX,
+                                  startY: touch.clientY,
+                                }
+                                return
+                              }
+
+                              scheduleLongPress(item.id, touch.clientX, touch.clientY)
+                            }}
+                            onTouchMove={(event) => {
+                              const touch = findActiveTouch(event.touches)
+
+                              if (!touch) {
+                                return
+                              }
+
+                              if (handleDragMove(touch.clientX, touch.clientY)) {
+                                if (event.cancelable) {
+                                  event.preventDefault()
+                                }
+                                return
+                              }
+
+                              const start = longPressStartRef.current
+
+                              if (!start) {
+                                return
+                              }
+
+                              if (Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 10) {
+                                clearLongPressTimer()
+                              }
+                            }}
+                            onTouchEnd={(event) => {
+                              if (!findActiveTouch(event.changedTouches)) {
+                                return
+                              }
+
+                              const wasDragSelecting = dragSelectRef.current.active
+
+                              stopSelectionPointers()
+
+                              if (wasDragSelecting) {
+                                ignoreNextClickRef.current = true
+                              }
+                            }}
+                            onTouchCancel={(event) => {
+                              if (!findActiveTouch(event.changedTouches)) {
+                                return
+                              }
+
+                              stopSelectionPointers()
+                            }}
+                            onContextMenu={(event) => {
+                              event.preventDefault()
+                              enterSelectionOnly(item.id)
+                            }}
+                            onClick={() => {
+                              if (ignoreNextClickRef.current) {
+                                ignoreNextClickRef.current = false
+                                return
+                              }
+
+                              if (selectionMode) {
+                                toggleSelection(item.id)
+                                return
+                              }
+
+                              void openPreview(index)
+                            }}
                           >
                             <MediaThumbnail
                               src={item.url}
@@ -506,12 +1132,12 @@ export function FolderClient({
                                 {formatDuration(item.duration)}
                               </span>
                             ) : null}
+                            {selectionMode ? (
+                              <span className={`ca-select-mark ${selected ? "active" : ""}`}>
+                                {selected ? <Check /> : null}
+                              </span>
+                            ) : null}
                           </button>
-                          <form action={deleteAction} className="absolute right-1 top-1 opacity-0 transition-opacity group-hover:opacity-100">
-                            <button className="grid size-5 place-items-center rounded-full bg-[#0f9f8f] text-white" aria-label="删除媒体">
-                              <Trash2 className="size-3" />
-                            </button>
-                          </form>
                         </div>
                       )
                     })}
@@ -530,6 +1156,7 @@ export function FolderClient({
           media={previewMedia}
           initialIndex={previewIndex}
           onClose={closePreview}
+          onDelete={handleDeletePreviewItem}
         />
       ) : null}
     </MobileFrame>

@@ -17,7 +17,7 @@ export function SpacesClient() {
     <MobileFrame className="ca-scroll-layout">
       <div className="ca-fixed-section">
         <TopBar
-          title="空间"
+          title="选择空间"
           actions={
             <>
               {data?.user.isGlobalAdmin ? (

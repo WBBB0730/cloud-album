@@ -8,6 +8,20 @@
       "when": 1777799758219,
       "tag": "0000_clear_malice",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777878260060,
+      "tag": "0001_invite_token",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777878617573,
+      "tag": "0002_disable_user_accounts",
+      "breakpoints": true
     }
   ]
 }

@@ -3,7 +3,7 @@ import "server-only"
 import { and, eq } from "drizzle-orm"
 
 import { db } from "@/db/client"
-import { accountInvites, folders, media, users } from "@/db/schema"
+import { accountInvites, folders, media, sessions, users } from "@/db/schema"
 import { env } from "@/lib/env"
 import { hashInviteToken, normalizePhone, randomToken } from "@/lib/security"
 
@@ -11,23 +11,32 @@ import {
   listInvites,
   listPermanentFolders,
   listPermanentMedia,
-  listSpaces,
   listUsers,
 } from "./queries"
 
-export const getAdminDashboard = async () => {
-  const [invites, userRows, spaceRows, permanentMedia, permanentFolders] = await Promise.all([
+export const getAdminDashboard = async (adminId: string) => {
+  const [invites, userRows, permanentMedia, permanentFolders] = await Promise.all([
     listInvites(),
     listUsers(),
-    listSpaces(),
     listPermanentMedia(),
     listPermanentFolders(),
   ])
 
   return {
-    invites,
+    currentAdminId: adminId,
+    invites: invites.map((invite) => ({
+      id: invite.id,
+      phone: invite.phone,
+      status: invite.status,
+      inviteLink:
+        invite.status === "pending" && invite.token
+          ? `${env.appUrl.replace(/\/$/, "")}/invite/${invite.token}`
+          : null,
+      acceptedAt: invite.acceptedAt,
+      createdAt: invite.createdAt,
+      updatedAt: invite.updatedAt,
+    })),
     users: userRows,
-    spaces: spaceRows,
     permanentRecords: [
       ...permanentMedia.map((item) => ({
         ...item,
@@ -75,6 +84,7 @@ export const createInvite = async (adminId: string, phone: string) => {
   await db.insert(accountInvites).values({
     phone: finalPhone,
     name: finalPhone,
+    token,
     tokenHash: hashInviteToken(token),
     invitedBy: adminId,
   })
@@ -92,6 +102,35 @@ export const revokeInvite = async (adminId: string, inviteId: string) => {
       updatedAt: new Date(),
     })
     .where(and(eq(accountInvites.id, inviteId), eq(accountInvites.status, "pending")))
+}
+
+export const disableUserAccount = async (adminId: string, userId: string) => {
+  if (adminId === userId) {
+    throw new Error("不能禁用当前登录账号")
+  }
+
+  const [target] = await db.select().from(users).where(eq(users.id, userId)).limit(1)
+
+  if (!target) {
+    throw new Error("账号不存在")
+  }
+
+  if (target.disabledAt) {
+    return
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(users)
+      .set({
+        disabledAt: new Date(),
+        disabledBy: adminId,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+
+    await tx.delete(sessions).where(eq(sessions.userId, userId))
+  })
 }
 
 export const adminRestorePermanentRecord = async (

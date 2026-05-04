@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ChevronLeft, ChevronRight, FolderPlus, Grid2X2, List, Trash2, Upload } from "lucide-react"
+import { ChevronLeft, ChevronRight, FolderPlus, Grid2X2, List, Trash2, Users } from "lucide-react"
 
 import { EmptyState } from "@/components/app/empty-state"
 import { LoadingState } from "@/components/app/loading-state"
@@ -18,7 +18,7 @@ export function SpaceClient({
   spaceId: string
   view: "grid" | "list"
 }) {
-  const { data, error, loading } = useServerAction(() => getSpaceViewAction(spaceId), [spaceId])
+  const { data, error: loadError, loading } = useServerAction(() => getSpaceViewAction(spaceId), [spaceId])
 
   return (
     <MobileFrame className="ca-scroll-layout">
@@ -32,8 +32,8 @@ export function SpaceClient({
           }
           actions={
             <>
-              <Link href={`/spaces/${spaceId}/upload`} className="ca-icon-btn" aria-label="上传">
-                <Upload />
+              <Link href={`/spaces/${spaceId}/members`} className="ca-icon-btn" aria-label="成员管理">
+                <Users />
               </Link>
               <Link href={`/spaces/${spaceId}/albums/new`} className="ca-icon-btn" aria-label="新建相册">
                 <FolderPlus />
@@ -57,7 +57,7 @@ export function SpaceClient({
 
       <div className="ca-scroll-section">
         {loading ? <LoadingState /> : null}
-        {error ? <EmptyState title={error} /> : null}
+        {loadError ? <EmptyState title={loadError} /> : null}
 
         {data ? (
           data.folders.length === 0 ? (

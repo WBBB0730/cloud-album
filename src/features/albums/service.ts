@@ -94,6 +94,50 @@ export const deleteMedia = async (spaceId: string, mediaId: string, userId: stri
   })
 }
 
+export const deleteMediaBatch = async (
+  spaceId: string,
+  mediaIds: string[],
+  userId: string
+) => {
+  await requireSpaceMember(spaceId, userId)
+  const uniqueIds = Array.from(new Set(mediaIds.filter(Boolean)))
+
+  if (uniqueIds.length === 0) {
+    throw new Error("请选择要删除的媒体")
+  }
+
+  const items = await Promise.all(
+    uniqueIds.map((mediaId) => getActiveMediaById(spaceId, mediaId))
+  )
+
+  if (items.some((item) => !item)) {
+    throw new Error("部分媒体不存在")
+  }
+
+  await db.transaction(async (tx) => {
+    const [batch] = await tx
+      .insert(deleteBatches)
+      .values({ spaceId, deletedBy: userId, reason: "delete_media" })
+      .returning()
+
+    for (const item of items) {
+      if (!item) {
+        continue
+      }
+
+      await tx
+        .update(media)
+        .set({
+          deletedAt: new Date(),
+          deletedBy: userId,
+          deleteBatchId: batch.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(media.id, item.id))
+    }
+  })
+}
+
 export const deleteFolder = async (spaceId: string, folderId: string, userId: string) => {
   await requireSpaceMember(spaceId, userId)
   const folder = await getFolderById(spaceId, folderId)

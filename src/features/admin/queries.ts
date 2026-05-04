@@ -1,19 +1,26 @@
 import "server-only"
 
-import { desc, isNotNull, sql } from "drizzle-orm"
+import { desc, isNotNull, ne, sql } from "drizzle-orm"
 
 import { db } from "@/db/client"
-import { accountInvites, folders, media, spaces, users } from "@/db/schema"
+import { accountInvites, folders, media, users } from "@/db/schema"
 
 export const listInvites = async () =>
   db
-    .select()
+    .select({
+      id: accountInvites.id,
+      phone: accountInvites.phone,
+      token: accountInvites.token,
+      status: accountInvites.status,
+      acceptedAt: accountInvites.acceptedAt,
+      createdAt: accountInvites.createdAt,
+      updatedAt: accountInvites.updatedAt,
+    })
     .from(accountInvites)
+    .where(ne(accountInvites.status, "revoked"))
     .orderBy(desc(accountInvites.createdAt))
 
 export const listUsers = async () => db.select().from(users).orderBy(desc(users.createdAt))
-
-export const listSpaces = async () => db.select().from(spaces).orderBy(desc(spaces.createdAt))
 
 export const listPermanentMedia = async () =>
   db

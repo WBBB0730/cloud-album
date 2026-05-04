@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, eq, gt } from "drizzle-orm"
+import { and, eq, gt, isNull } from "drizzle-orm"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
@@ -60,7 +60,8 @@ export const getCurrentUser = async () => {
     .where(
       and(
         eq(sessions.tokenHash, hashSessionToken(token)),
-        gt(sessions.expiresAt, new Date())
+        gt(sessions.expiresAt, new Date()),
+        isNull(users.disabledAt)
       )
     )
     .limit(1)

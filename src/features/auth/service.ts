@@ -25,6 +25,10 @@ export const login = async (phone: string, password: string) => {
     throw new Error("手机号或密码错误")
   }
 
+  if (user.disabledAt) {
+    throw new Error("账号已被禁用")
+  }
+
   const passwordMatches = await bcrypt.compare(password, user.passwordHash)
 
   if (!passwordMatches) {

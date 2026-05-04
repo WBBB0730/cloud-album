@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 
 import { requireUser } from "@/features/auth/session"
 
-import { createFolder, deleteFolder, deleteMedia } from "./service"
+import { createFolder, deleteFolder, deleteMedia, deleteMediaBatch } from "./service"
 
 const withError = (path: string, error: unknown) => {
   const message = error instanceof Error ? error.message : "操作失败"
@@ -43,4 +43,22 @@ export const deleteMediaAction = async (
   await deleteMedia(spaceId, mediaId, user.id)
   revalidatePath(`/spaces/${spaceId}/albums/${folderId}`)
   redirect(`/spaces/${spaceId}/albums/${folderId}`)
+}
+
+export const deleteMediaBatchAction = async (
+  spaceId: string,
+  folderId: string,
+  mediaIds: string[]
+) => {
+  const user = await requireUser()
+
+  try {
+    await deleteMediaBatch(spaceId, mediaIds, user.id)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "删除失败"
+    return { ok: false, error: message }
+  }
+
+  revalidatePath(`/spaces/${spaceId}/albums/${folderId}`)
+  return { ok: true, error: null }
 }

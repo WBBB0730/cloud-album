@@ -1,4 +1,5 @@
 import {
+  AnyPgColumn,
   boolean,
   index,
   pgEnum,
@@ -29,6 +30,8 @@ export const users = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    disabledAt: timestamp("disabled_at", { withTimezone: true }),
+    disabledBy: uuid("disabled_by").references((): AnyPgColumn => users.id),
   },
   (table) => [uniqueIndex("users_phone_unique").on(table.phone)]
 )
@@ -39,6 +42,7 @@ export const accountInvites = pgTable(
     id: uuid("id").defaultRandom().primaryKey(),
     phone: varchar("phone", { length: 32 }).notNull(),
     name: varchar("name", { length: 80 }).notNull(),
+    token: text("token"),
     tokenHash: text("token_hash").notNull(),
     status: inviteStatusEnum("status").notNull().default("pending"),
     invitedBy: uuid("invited_by")
@@ -52,6 +56,7 @@ export const accountInvites = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
+    uniqueIndex("account_invites_token_unique").on(table.token),
     uniqueIndex("account_invites_token_hash_unique").on(table.tokenHash),
     uniqueIndex("account_invites_pending_phone_unique")
       .on(table.phone)

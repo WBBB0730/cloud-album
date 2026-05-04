@@ -4,7 +4,7 @@ import { getAdminDashboard } from "@/features/admin/service"
 import { getAlbumHome, getFolderDetail, getMediaPreview } from "@/features/albums/service"
 import { getInviteForToken } from "@/features/auth/service"
 import { getCurrentUser, requireAdmin, requireUser } from "@/features/auth/session"
-import { getSpacesForUser, requireSpaceMember } from "@/features/spaces/service"
+import { getSpaceMembers, getSpacesForUser, requireSpaceMember } from "@/features/spaces/service"
 import { getTrashFolder, getTrashHome } from "@/features/trash/service"
 
 export const getRootDestinationAction = async () => {
@@ -44,6 +44,11 @@ export const getSpacesViewAction = async () => {
 export const getSpaceViewAction = async (spaceId: string) => {
   const user = await requireUser()
   return getAlbumHome(spaceId, user.id)
+}
+
+export const getSpaceMembersViewAction = async (spaceId: string) => {
+  const user = await requireUser()
+  return getSpaceMembers(spaceId, user.id)
 }
 
 export const getNewFolderViewAction = async (spaceId: string) => {
@@ -86,6 +91,6 @@ export const getTrashFolderViewAction = async (spaceId: string, folderId: string
 }
 
 export const getAdminViewAction = async () => {
-  await requireAdmin()
-  return getAdminDashboard()
+  const admin = await requireAdmin()
+  return getAdminDashboard(admin.id)
 }

@@ -1,14 +1,25 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   TransformComponent,
   TransformWrapper,
   type ReactZoomPanPinchContentRef,
 } from "react-zoom-pan-pinch"
-import { ChevronLeft, Download, MoreHorizontal, Play } from "lucide-react"
+import { ChevronLeft, Download, MoreHorizontal, Play, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import {
   Sheet,
   SheetContent,
@@ -35,6 +46,12 @@ type ImageTransformState = {
 const IMAGE_DOUBLE_CLICK_SCALE = 2.5
 const IMAGE_DOUBLE_TAP_INTERVAL = 280
 const IMAGE_DOUBLE_TAP_DISTANCE = 28
+const VIDEO_LONG_PRESS_SPEED_MS = 350
+const VIDEO_LONG_PRESS_MOVE_THRESHOLD = 10
+const VIDEO_FAST_RATE = 2
+const VIDEO_CONTROL_HIT_AREA = 64
+const PREVIEW_THUMB_ANCHOR_X = 132
+const PREVIEW_THUMB_STEP = 35
 
 const getBoundedZoomPosition = (
   position: number,
@@ -214,6 +231,7 @@ function ZoomableImage({
       wheel={{ step: 0.16 }}
       pinch={{ step: 8 }}
       panning={{
+        allowRightClickPan: false,
         velocityDisabled: false,
       }}
       onTransform={(_, state) => {
@@ -264,8 +282,13 @@ function ZoomableImage({
             ref={imageRef}
             src={src}
             alt={alt}
-            className="max-h-full max-w-full select-none object-contain"
-            draggable={false}
+            className="max-h-full max-w-full object-contain"
+            style={{
+              WebkitTouchCallout: "default",
+              pointerEvents: "auto",
+              userSelect: "auto",
+            }}
+            onContextMenu={(event) => event.stopPropagation()}
             onError={() => setFailed(true)}
           />
         </TransformComponent>
@@ -274,24 +297,187 @@ function ZoomableImage({
   )
 }
 
+function VideoPreview({
+  item,
+  active,
+  registerVideo,
+  onLongPressSpeed,
+  onPlayingChange,
+}: {
+  item: PreviewMediaItem
+  active: boolean
+  registerVideo: (mediaId: string, element: HTMLVideoElement | null) => void
+  onLongPressSpeed: () => void
+  onPlayingChange: (mediaId: string, playing: boolean) => void
+}) {
+  const videoRef = useRef<HTMLVideoElement | null>(null)
+  const longPressTimerRef = useRef<number | null>(null)
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
+  const [speeding, setSpeeding] = useState(false)
+
+  const clearLongPressTimer = useCallback(() => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+  }, [])
+
+  const stopSpeed = useCallback(() => {
+    clearLongPressTimer()
+    pointerStartRef.current = null
+    setSpeeding(false)
+
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 1
+    }
+  }, [clearLongPressTimer])
+
+  const setVideoRef = useCallback((element: HTMLVideoElement | null) => {
+    videoRef.current = element
+    registerVideo(item.id, element)
+  }, [item.id, registerVideo])
+
+  useEffect(() => {
+    if (!active) {
+      stopSpeed()
+    }
+  }, [active, stopSpeed])
+
+  useEffect(() => () => {
+    registerVideo(item.id, null)
+    stopSpeed()
+  }, [item.id, registerVideo, stopSpeed])
+
+  return (
+    <div className="relative flex h-full w-full items-center justify-center px-0 pb-[calc(var(--ca-safe-bottom)+110px)] pt-[calc(var(--ca-safe-top)+72px)]">
+      <video
+        ref={setVideoRef}
+        data-media-id={item.id}
+        src={item.url}
+        controls={active}
+        playsInline
+        preload="metadata"
+        className="max-h-full max-w-full bg-black object-contain"
+        onPointerDown={(event) => {
+          const video = videoRef.current
+
+          if (!active || !video) {
+            return
+          }
+
+          const isPlaying = !video.paused && !video.ended
+
+          if (!isPlaying) {
+            stopSpeed()
+            return
+          }
+
+          const videoRect = video.getBoundingClientRect()
+
+          if (event.clientY > videoRect.bottom - VIDEO_CONTROL_HIT_AREA) {
+            return
+          }
+
+          event.preventDefault()
+
+          pointerStartRef.current = {
+            x: event.clientX,
+            y: event.clientY,
+          }
+          clearLongPressTimer()
+          longPressTimerRef.current = window.setTimeout(() => {
+            const video = videoRef.current
+
+            longPressTimerRef.current = null
+
+            if (!video || video.paused || video.ended) {
+              return
+            }
+
+            video.playbackRate = VIDEO_FAST_RATE
+            setSpeeding(true)
+            onLongPressSpeed()
+          }, VIDEO_LONG_PRESS_SPEED_MS)
+        }}
+        onPointerMove={(event) => {
+          const start = pointerStartRef.current
+
+          if (!start) {
+            return
+          }
+
+          if (videoRef.current && !videoRef.current.paused && !videoRef.current.ended) {
+            event.preventDefault()
+          }
+
+          if (
+            Math.hypot(event.clientX - start.x, event.clientY - start.y) >
+            VIDEO_LONG_PRESS_MOVE_THRESHOLD
+          ) {
+            clearLongPressTimer()
+          }
+        }}
+        onPointerUp={stopSpeed}
+        onPointerCancel={stopSpeed}
+        onPointerLeave={stopSpeed}
+        onContextMenu={(event) => {
+          if (videoRef.current && !videoRef.current.paused && !videoRef.current.ended) {
+            event.preventDefault()
+          }
+        }}
+        onPlay={() => {
+          if (active) {
+            onPlayingChange(item.id, true)
+          }
+        }}
+        onEnded={() => {
+          stopSpeed()
+          if (active) {
+            onPlayingChange(item.id, false)
+          }
+        }}
+        onPause={() => {
+          stopSpeed()
+          if (active) {
+            onPlayingChange(item.id, false)
+          }
+        }}
+      />
+      {speeding ? (
+        <div className="pointer-events-none absolute left-1/2 top-[calc(var(--ca-safe-top)+92px)] -translate-x-1/2 rounded-full bg-white/18 px-3 py-1 text-xs font-medium text-white backdrop-blur">
+          2x 快进
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export function MediaPreviewOverlay({
   media,
   initialIndex,
   onClose,
+  onDelete,
 }: {
   media: PreviewMediaItem[]
   initialIndex: number
   onClose: () => void
+  onDelete?: (mediaId: string) => void | Promise<void>
 }) {
   const previewRef = useRef<HTMLDivElement | null>(null)
   const pointerStartX = useRef<number | null>(null)
   const pointerStartY = useRef<number | null>(null)
   const pointerCanTurnPageRef = useRef(false)
   const pointerMovedRef = useRef(false)
+  const suppressNextTapRef = useRef(false)
+  const controlsTapTimerRef = useRef<number | null>(null)
+  const pendingControlsTapRef = useRef<{ x: number; y: number } | null>(null)
+  const videoRefs = useRef(new Map<string, HTMLVideoElement>())
+  const pauseFrameRef = useRef<number | null>(null)
   const [currentIndex, setCurrentIndex] = useState(initialIndex)
   const [dragOffset, setDragOffset] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const [controlsVisible, setControlsVisible] = useState(true)
+  const [videoPlaying, setVideoPlaying] = useState(false)
   const [actionsOpen, setActionsOpen] = useState(false)
   const [imageTransformState, setImageTransformState] = useState<ImageTransformState>({
     atLeftEdge: true,
@@ -300,12 +486,94 @@ export function MediaPreviewOverlay({
   })
   const currentItem = media[currentIndex] ?? media[0]
 
+  const registerVideo = useCallback((mediaId: string, element: HTMLVideoElement | null) => {
+    if (element) {
+      videoRefs.current.set(mediaId, element)
+      return
+    }
+
+    videoRefs.current.delete(mediaId)
+  }, [])
+
+  const pauseAllVideosNow = useCallback(() => {
+    const videos = new Set<HTMLVideoElement>(videoRefs.current.values())
+
+    previewRef.current?.querySelectorAll("video").forEach((video) => {
+      videos.add(video)
+    })
+
+    videos.forEach((video) => {
+      video.pause()
+      video.playbackRate = 1
+    })
+    setVideoPlaying(false)
+  }, [])
+
+  const pauseAllVideos = useCallback(() => {
+    pauseAllVideosNow()
+
+    if (pauseFrameRef.current !== null) {
+      window.cancelAnimationFrame(pauseFrameRef.current)
+    }
+
+    pauseFrameRef.current = window.requestAnimationFrame(() => {
+      pauseFrameRef.current = null
+      pauseAllVideosNow()
+    })
+  }, [pauseAllVideosNow])
+
+  const pauseInactiveVideos = useCallback((activeMediaId: string | null) => {
+    videoRefs.current.forEach((video) => {
+      if (video.dataset.mediaId !== activeMediaId) {
+        video.pause()
+        video.playbackRate = 1
+      }
+    })
+  }, [])
+
+  const clearPendingControlsTap = useCallback(() => {
+    if (controlsTapTimerRef.current !== null) {
+      window.clearTimeout(controlsTapTimerRef.current)
+      controlsTapTimerRef.current = null
+    }
+
+    pendingControlsTapRef.current = null
+  }, [])
+
+  const scheduleControlsToggle = useCallback((clientX: number, clientY: number) => {
+    if (currentItem?.type !== "image") {
+      setControlsVisible((visible) => !visible)
+      return
+    }
+
+    const pendingTap = pendingControlsTapRef.current
+
+    if (
+      pendingTap &&
+      Math.hypot(clientX - pendingTap.x, clientY - pendingTap.y) <= IMAGE_DOUBLE_TAP_DISTANCE
+    ) {
+      clearPendingControlsTap()
+      return
+    }
+
+    clearPendingControlsTap()
+    pendingControlsTapRef.current = { x: clientX, y: clientY }
+    controlsTapTimerRef.current = window.setTimeout(() => {
+      controlsTapTimerRef.current = null
+      pendingControlsTapRef.current = null
+      setControlsVisible((visible) => !visible)
+    }, IMAGE_DOUBLE_TAP_INTERVAL)
+  }, [clearPendingControlsTap, currentItem?.type])
+
   const openIndex = (index: number) => {
     const nextIndex = Math.min(Math.max(index, 0), media.length - 1)
 
+    clearPendingControlsTap()
+    pauseAllVideos()
     setCurrentIndex(nextIndex)
     setDragOffset(0)
     setIsDragging(false)
+    setVideoPlaying(false)
     setControlsVisible(true)
     setImageTransformState({ atLeftEdge: true, atRightEdge: true, scale: 1 })
   }
@@ -360,22 +628,61 @@ export function MediaPreviewOverlay({
   }
 
   useEffect(() => {
+    clearPendingControlsTap()
     setCurrentIndex(initialIndex)
     setDragOffset(0)
     setIsDragging(false)
+    setVideoPlaying(false)
     setControlsVisible(true)
     setImageTransformState({ atLeftEdge: true, atRightEdge: true, scale: 1 })
-  }, [initialIndex])
+  }, [clearPendingControlsTap, initialIndex])
 
   useEffect(() => {
-    if (!controlsVisible) {
+    pauseAllVideos()
+  }, [currentIndex, pauseAllVideos])
+
+  useEffect(() => {
+    pauseInactiveVideos(currentItem?.id ?? null)
+  }, [currentItem?.id, pauseInactiveVideos])
+
+  useEffect(() => () => {
+    if (pauseFrameRef.current !== null) {
+      window.cancelAnimationFrame(pauseFrameRef.current)
+    }
+
+    clearPendingControlsTap()
+    pauseAllVideosNow()
+  }, [clearPendingControlsTap, pauseAllVideosNow])
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        pauseAllVideos()
+      }
+    }
+
+    const handlePageHide = () => {
+      pauseAllVideos()
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    window.addEventListener("pagehide", handlePageHide)
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.removeEventListener("pagehide", handlePageHide)
+    }
+  }, [pauseAllVideos])
+
+  useEffect(() => {
+    if (!controlsVisible || videoPlaying) {
       return
     }
 
     const timer = window.setTimeout(() => setControlsVisible(false), 5000)
 
     return () => window.clearTimeout(timer)
-  }, [controlsVisible, currentIndex])
+  }, [controlsVisible, currentIndex, videoPlaying])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -400,11 +707,13 @@ export function MediaPreviewOverlay({
     return null
   }
 
+  const previewControlsVisible = controlsVisible && !videoPlaying
+
   return (
     <div className="fixed inset-0 z-50 h-[var(--ca-viewport-height)] overflow-hidden bg-[#05080d] text-white">
       <header
         className={`absolute left-0 right-0 top-0 z-10 grid grid-cols-[2.5rem_1fr_2.5rem] items-center bg-black/42 px-[calc(1rem+var(--ca-safe-left))] pb-3 pt-[calc(var(--ca-safe-top)+20px)] pr-[calc(1rem+var(--ca-safe-right))] transition-opacity duration-200 ${
-          controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
+          previewControlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
         onPointerDown={(event) => event.stopPropagation()}
       >
@@ -450,6 +759,39 @@ export function MediaPreviewOverlay({
                 <Download className="size-5 text-[#111827]" />
                 下载
               </button>
+              {onDelete ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-3 py-4 text-left text-[#c24141]"
+                    >
+                      <Trash2 className="size-5" />
+                      删除
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>删除这项媒体？</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        删除后会进入回收站，可以在回收站恢复。
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>取消</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="ca-danger-confirm-button"
+                        onClick={() => {
+                          setActionsOpen(false)
+                          void onDelete(currentItem.id)
+                        }}
+                      >
+                        删除
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : null}
             </div>
           </SheetContent>
         </Sheet>
@@ -503,6 +845,7 @@ export function MediaPreviewOverlay({
           setDragOffset(atStart || atEnd ? deltaX * 0.28 : deltaX)
         }}
         onPointerCancel={() => {
+          clearPendingControlsTap()
           pointerStartX.current = null
           pointerStartY.current = null
           pointerCanTurnPageRef.current = false
@@ -511,16 +854,18 @@ export function MediaPreviewOverlay({
           setDragOffset(0)
         }}
         onPointerUp={(event) => {
-          const shouldToggleControls = !pointerMovedRef.current
+          const shouldToggleControls =
+            !videoPlaying && !pointerMovedRef.current && !suppressNextTapRef.current
 
           finishDrag(event.clientX)
 
           if (shouldToggleControls) {
-            setControlsVisible((visible) => !visible)
+            scheduleControlsToggle(event.clientX, event.clientY)
           }
 
           pointerStartY.current = null
           pointerMovedRef.current = false
+          suppressNextTapRef.current = false
         }}
       >
         <div
@@ -535,12 +880,24 @@ export function MediaPreviewOverlay({
           {media.map((item, index) => (
             <div key={item.id} className="relative h-full w-full shrink-0">
               {item.type === "video" ? (
-                <video
-                  src={item.url}
-                  controls={index === currentIndex}
-                  playsInline
-                  preload="metadata"
-                  className="h-full w-full bg-black object-contain"
+                <VideoPreview
+                  item={item}
+                  active={index === currentIndex}
+                  registerVideo={registerVideo}
+                  onLongPressSpeed={() => {
+                    suppressNextTapRef.current = true
+                  }}
+                  onPlayingChange={(mediaId, playing) => {
+                    if (mediaId !== currentItem.id) {
+                      return
+                    }
+
+                    setVideoPlaying(playing)
+
+                    if (playing) {
+                      setControlsVisible(false)
+                    }
+                  }}
                 />
               ) : (
                 <ZoomableImage
@@ -558,14 +915,14 @@ export function MediaPreviewOverlay({
 
       <div
         className={`absolute inset-x-0 bottom-0 overflow-hidden bg-black/38 px-[calc(1rem+var(--ca-safe-left))] pr-[calc(1rem+var(--ca-safe-right))] py-2 pb-[calc(var(--ca-safe-bottom)+18px)] transition-opacity duration-200 ${
-          controlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
+          previewControlsVisible ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
         onPointerDown={(event) => event.stopPropagation()}
       >
         <div
           className="flex items-end gap-px transition-transform duration-200 ease-out will-change-transform"
           style={{
-            transform: `translate3d(${Math.max(0, 132 - currentIndex * 36)}px, 0, 0)`,
+            transform: `translate3d(${PREVIEW_THUMB_ANCHOR_X - currentIndex * PREVIEW_THUMB_STEP}px, 0, 0)`,
           }}
         >
           {media.map((item, index) => (

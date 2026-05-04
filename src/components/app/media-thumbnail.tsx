@@ -60,6 +60,8 @@ export function MediaThumbnail({
         muted
         playsInline
         preload="metadata"
+        draggable={false}
+        onContextMenu={(event) => event.preventDefault()}
         onError={handleError}
       />
     )
@@ -73,6 +75,8 @@ export function MediaThumbnail({
       className={className}
       sizes={sizes}
       priority={priority}
+      draggable={false}
+      onContextMenu={(event) => event.preventDefault()}
       onError={handleError}
     />
   )

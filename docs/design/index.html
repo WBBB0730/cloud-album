@@ -389,10 +389,28 @@
         gap: 8px;
       }
 
+      .media-group-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
       .media-group h3 {
         margin: 0;
         color: #303844;
         font-size: 14px;
+        font-weight: 500;
+        line-height: 1.2;
+      }
+
+      .group-select-btn {
+        border: 0;
+        background: transparent;
+        color: var(--accent);
+        padding: 0;
+        font: inherit;
+        font-size: 12px;
         font-weight: 500;
         line-height: 1.2;
       }
@@ -455,12 +473,71 @@
         stroke-linejoin: round;
       }
 
+      .selection-bar {
+        display: grid;
+        grid-template-columns: 30px 1fr 30px 30px;
+        align-items: center;
+        gap: 8px;
+        margin: -4px 0 14px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: var(--surface-soft);
+        padding: 6px;
+      }
+
+      .selection-bar span {
+        min-width: 0;
+        color: #303844;
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .selection-action {
+        display: inline-grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        border: 0;
+        border-radius: var(--radius-sm);
+        background: transparent;
+        color: #2d3440;
+      }
+
+      .selection-action.danger {
+        color: #c24141;
+      }
+
+      .selection-action svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
       .media {
         position: relative;
         aspect-ratio: 1 / 1;
         overflow: hidden;
         border-radius: var(--radius-md);
         background: var(--surface-soft);
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        user-select: none;
+      }
+
+      .media button,
+      .media img,
+      .media video {
+        -webkit-touch-callout: none;
+        user-select: none;
+      }
+
+      .media img,
+      .media video {
+        pointer-events: none;
       }
 
       .media::after {
@@ -574,6 +651,71 @@
         content: none;
       }
 
+      .hero-photo.video-preview {
+        inset: 104px 0 152px;
+        display: grid;
+        place-items: center;
+        background: #05080d;
+        box-shadow: none;
+      }
+
+      .video-frame {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #11151d;
+      }
+
+      .video-controls {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #fff;
+        font-size: 12px;
+      }
+
+      .video-controls::before {
+        content: "";
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        background: rgb(255 255 255 / 78%);
+      }
+
+      .video-progress {
+        flex: 1 1 auto;
+        height: 3px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgb(255 255 255 / 28%);
+      }
+
+      .video-progress span {
+        display: block;
+        width: 42%;
+        height: 100%;
+        border-radius: inherit;
+        background: #fff;
+      }
+
+      .video-speed-pill {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: rgb(255 255 255 / 18%);
+        padding: 4px 12px;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        backdrop-filter: blur(10px);
+      }
+
       .thumb-strip {
         position: absolute;
         left: 0;
@@ -612,6 +754,62 @@
         transform: translateX(-50%);
         border-radius: 999px;
         background: rgb(255 255 255 / 80%);
+      }
+
+      .preview-sheet {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 8;
+        overflow: hidden;
+        border-radius: 18px 18px 0 0;
+        background: #fff;
+        color: var(--text);
+      }
+
+      .preview-sheet-title {
+        overflow: hidden;
+        border-bottom: 1px solid #edf0f2;
+        padding: 14px 20px;
+        font-size: 15px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .preview-action {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        border: 0;
+        background: transparent;
+        padding: 14px 20px;
+        color: #111827;
+        font: inherit;
+        text-align: left;
+      }
+
+      .preview-action.danger {
+        color: #c24141;
+      }
+
+      .preview-action svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .video-playing .viewer-top,
+      .video-playing .thumb-strip,
+      .video-playing .preview-sheet {
+        pointer-events: none;
+        opacity: 0;
       }
 
       .auth-app {
@@ -730,9 +928,11 @@
       }
 
       .upload-zone {
-        display: grid;
-        place-items: center;
-        gap: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
         min-height: 112px;
         border: 1px dashed #b9c1cc;
         border-radius: var(--radius-lg);
@@ -742,6 +942,8 @@
       }
 
       .upload-zone svg {
+        display: block;
+        flex: 0 0 auto;
         width: 26px;
         height: 26px;
         stroke: var(--accent);
@@ -753,6 +955,7 @@
 
       .upload-zone strong {
         font-size: 14px;
+        line-height: 1.15;
       }
 
       .upload-list,
@@ -853,12 +1056,21 @@
       }
 
       .admin-tabs .chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         border: 1px solid var(--line);
         background: var(--surface-soft);
+        font-weight: 500;
+        padding-inline: 11px;
+        text-decoration: none;
       }
 
       .admin-tabs .chip.active {
-        border-color: transparent;
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 4px 12px rgb(15 159 143 / 20%);
       }
 
       @media (max-width: 640px) {
@@ -953,12 +1165,12 @@
 
         <article class="screen-wrap">
           <div class="screen-title">
-            <strong>3. 空间入口</strong>
+            <strong>3. 选择空间</strong>
           </div>
           <div class="phone">
             <div class="app">
               <div class="topbar">
-                <h2>空间</h2>
+                <h2>选择空间</h2>
                 <button class="icon-btn" aria-label="管理后台">
                   <i data-lucide="settings"></i>
                 </button>
@@ -1008,8 +1220,8 @@
                   <i data-lucide="chevron-left"></i>
                 </button>
                 <h2>我的家</h2>
-                <button class="icon-btn" aria-label="上传">
-                  <i data-lucide="upload"></i>
+                <button class="icon-btn" aria-label="成员管理">
+                  <i data-lucide="users"></i>
                 </button>
                 <button class="icon-btn" aria-label="新建相册">
                   <i data-lucide="folder-plus"></i>
@@ -1076,8 +1288,8 @@
                   <i data-lucide="chevron-left"></i>
                 </button>
                 <h2>我的家</h2>
-                <button class="icon-btn" aria-label="上传">
-                  <i data-lucide="upload"></i>
+                <button class="icon-btn" aria-label="成员管理">
+                  <i data-lucide="users"></i>
                 </button>
                 <button class="icon-btn" aria-label="新建相册">
                   <i data-lucide="folder-plus"></i>
@@ -1152,7 +1364,63 @@
 
         <article class="screen-wrap">
           <div class="screen-title">
-            <strong>6. 相册内容</strong>
+            <strong>6. 成员管理</strong>
+          </div>
+          <div class="phone">
+            <div class="app">
+              <div class="topbar">
+                <button class="icon-btn" aria-label="返回空间">
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <div class="title-stack">
+                  <h2>成员管理</h2>
+                  <p>我的家</p>
+                </div>
+              </div>
+
+              <div class="form-stack">
+                <label class="field">
+                  <span>手机号</span>
+                  <div class="input-like">139 1234 5678</div>
+                </label>
+                <button class="primary-btn">邀请加入空间</button>
+              </div>
+
+              <div class="space-list" style="margin-top: 16px">
+                <div class="space-row" style="grid-template-columns: 36px 1fr auto">
+                  <div class="space-avatar">我</div>
+                  <div>
+                    <strong>我</strong>
+                    <small>138 0000 0000 · 成员 · 今天 10:12</small>
+                  </div>
+                </div>
+                <div class="space-row" style="grid-template-columns: 36px 1fr auto">
+                  <div class="space-avatar">李</div>
+                  <div>
+                    <strong>李阿姨</strong>
+                    <small>139 1234 5678 · 成员 · 昨天 21:08</small>
+                  </div>
+                  <button class="mini-action danger-action">移除</button>
+                </div>
+                <div class="space-row" style="grid-template-columns: 36px 1fr auto">
+                  <div class="space-avatar">爸</div>
+                  <div>
+                    <strong>爸爸</strong>
+                    <small>136 0000 1122 · 创建者 · 5月1日 09:30</small>
+                  </div>
+                </div>
+              </div>
+
+              <button class="primary-btn" style="margin-top: 16px; border: 1px solid #f3c7c7; background: #fff1f1; color: #c24141">
+                退出空间
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>7. 相册内容</strong>
           </div>
           <div class="phone">
             <div class="app">
@@ -1180,9 +1448,25 @@
                 </button>
               </div>
 
+              <div class="selection-bar">
+                <button class="selection-action" aria-label="取消选择">
+                  <i data-lucide="x"></i>
+                </button>
+                <span>已选择 1 项</span>
+                <button class="selection-action" aria-label="下载所选">
+                  <i data-lucide="download"></i>
+                </button>
+                <button class="selection-action danger" aria-label="删除所选">
+                  <i data-lucide="trash-2"></i>
+                </button>
+              </div>
+
               <div class="media-groups">
                 <section class="media-group">
-                  <h3>2026?5?3?</h3>
+                  <div class="media-group-head">
+                    <h3>2026?5?3?</h3>
+                    <button class="group-select-btn">全选</button>
+                  </div>
                   <div class="media-grid">
                     <div class="media photo-a"></div>
                     <div class="media photo-b"><span class="play"><i data-lucide="play"></i>0:42</span></div>
@@ -1195,7 +1479,10 @@
                   </div>
                 </section>
                 <section class="media-group">
-                  <h3>2026?5?2?</h3>
+                  <div class="media-group-head">
+                    <h3>2026?5?2?</h3>
+                    <button class="group-select-btn">全选</button>
+                  </div>
                   <div class="media-grid">
                     <div class="media photo-a"></div>
                     <div class="media photo-c"></div>
@@ -1206,7 +1493,10 @@
                   </div>
                 </section>
                 <section class="media-group">
-                  <h3>2026?4?28?</h3>
+                  <div class="media-group-head">
+                    <h3>2026?4?28?</h3>
+                    <button class="group-select-btn">全选</button>
+                  </div>
                   <div class="media-grid">
                     <div class="media photo-c"></div>
                     <div class="media photo-a"></div>
@@ -1220,10 +1510,10 @@
 
         <article class="screen-wrap">
           <div class="screen-title">
-            <strong>7. 沉浸预览</strong>
+            <strong>8. 沉浸预览</strong>
           </div>
           <div class="phone">
-            <div class="app dark">
+            <div class="app dark video-playing">
               <div class="viewer-top">
                 <button class="ghost-btn" aria-label="返回">
                   <i data-lucide="chevron-left"></i>
@@ -1233,13 +1523,32 @@
                   <i data-lucide="ellipsis"></i>
                 </button>
               </div>
-              <div class="hero-photo"></div>
+              <div class="hero-photo video-preview">
+                <div class="video-frame">
+                  <div class="video-speed-pill">2x 快进</div>
+                  <div class="video-controls">
+                    <div class="video-progress"><span></span></div>
+                    <small>0:42</small>
+                  </div>
+                </div>
+              </div>
               <div class="thumb-strip" aria-hidden="true">
                 <span></span>
                 <span class="active"></span>
                 <span></span>
                 <span></span>
                 <span></span>
+              </div>
+              <div class="preview-sheet">
+                <div class="preview-sheet-title">IMG_2048.HEIC</div>
+                <button class="preview-action">
+                  <i data-lucide="download"></i>
+                  下载
+                </button>
+                <button class="preview-action danger">
+                  <i data-lucide="trash-2"></i>
+                  删除
+                </button>
               </div>
               <div class="home-indicator"></div>
             </div>
@@ -1248,7 +1557,7 @@
 
         <article class="screen-wrap">
           <div class="screen-title">
-            <strong>8. 上传队列</strong>
+            <strong>9. 上传队列</strong>
           </div>
           <div class="phone">
             <div class="app">
@@ -1302,7 +1611,7 @@
 
         <article class="screen-wrap">
           <div class="screen-title">
-            <strong>9. 回收站</strong>
+            <strong>10. 回收站</strong>
           </div>
           <div class="phone">
             <div class="app">
@@ -1348,7 +1657,7 @@
 
         <article class="screen-wrap">
           <div class="screen-title">
-            <strong>10. 全局管理</strong>
+            <strong>11. 全局管理</strong>
           </div>
           <div class="phone">
             <div class="app">
@@ -1362,7 +1671,6 @@
               <div class="admin-tabs" aria-label="管理分类">
                 <button class="chip active">邀请</button>
                 <button class="chip">账号</button>
-                <button class="chip">空间</button>
               </div>
 
               <div class="form-stack">
@@ -1376,17 +1684,74 @@
               <div class="admin-list">
                 <div class="admin-row">
                   <div>
-                    <strong>139 1234 5678</strong>
-                    <small>待注册</small>
+                    <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px">
+                      <span>
+                        <strong>139 1234 5678</strong>
+                        <small>待注册</small>
+                      </span>
+                      <button class="mini-action danger-action">撤销</button>
+                    </div>
+                    <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px; border-radius: 8px; background: var(--surface-soft); padding: 6px 8px">
+                      <span style="min-width: 0; flex: 1; color: var(--muted); font-size: 11px; line-height: 1.45; overflow-wrap: anywhere">https://album.example.com/invite/2YH9k...</span>
+                      <button class="mini-action">复制</button>
+                    </div>
                   </div>
-                  <button class="mini-action danger-action">撤销</button>
                 </div>
                 <div class="admin-row">
                   <div>
-                    <strong>136 0000 1122</strong>
-                    <small>已撤销</small>
+                    <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px">
+                      <span>
+                        <strong>136 0000 1122</strong>
+                        <small>已注册</small>
+                      </span>
+                      <span style="color: var(--muted); font-size: 11px">05/04 21:36</span>
+                    </div>
                   </div>
-                  <span class="status-pill">已撤销</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="screen-wrap">
+          <div class="screen-title">
+            <strong>12. 账号管理</strong>
+          </div>
+          <div class="phone">
+            <div class="app">
+              <div class="topbar">
+                <button class="icon-btn" aria-label="返回空间">
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <h2>管理后台</h2>
+              </div>
+
+              <div class="admin-tabs" aria-label="管理分类">
+                <button class="chip">邀请</button>
+                <button class="chip active">账号</button>
+              </div>
+
+              <div class="admin-list">
+                <div class="admin-row">
+                  <div>
+                    <strong>WBBB</strong>
+                    <small>138 0000 0000 · 全局管理员 · 当前账号</small>
+                  </div>
+                  <span class="status-pill">当前账号</span>
+                </div>
+                <div class="admin-row">
+                  <div>
+                    <strong>李阿姨</strong>
+                    <small>139 1234 5678 · 普通用户 · 05/04 21:36</small>
+                  </div>
+                  <button style="border: 0; border-radius: 8px; background: #c24141; color: #fff; padding: 7px 12px; font-family: inherit; font-size: 11px; font-weight: 600; box-shadow: 0 2px 6px rgb(194 65 65 / 20%)">禁用</button>
+                </div>
+                <div class="admin-row">
+                  <div>
+                    <strong>测试账号</strong>
+                    <small>136 0000 1122 · 普通用户 · 已禁用</small>
+                  </div>
+                  <span style="border-radius: 8px; background: #fff1f1; color: #c24141; padding: 6px 8px; font-size: 11px">已禁用</span>
                 </div>
               </div>
             </div>

@@ -1,15 +1,27 @@
 "use client"
 
 import Link from "next/link"
-import { ChevronLeft } from "lucide-react"
+import { useState } from "react"
+import { Check, ChevronLeft, Copy } from "lucide-react"
 
 import { EmptyState } from "@/components/app/empty-state"
 import { ErrorBanner } from "@/components/app/error-banner"
 import { LoadingState } from "@/components/app/loading-state"
 import { MobileFrame } from "@/components/app/mobile-frame"
 import { TopBar } from "@/components/app/top-bar"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
-import { adminRestoreAction, createInviteAction, revokeInviteAction } from "@/features/admin/actions"
+import { adminRestoreAction, createInviteAction, disableUserAction, revokeInviteAction } from "@/features/admin/actions"
 import { getAdminViewAction } from "@/features/app/view-actions"
 import { useServerAction } from "@/hooks/use-server-action"
 import { formatDateTime } from "@/lib/format"
@@ -17,8 +29,25 @@ import { formatDateTime } from "@/lib/format"
 const tabs = [
   ["invites", "邀请"],
   ["users", "账号"],
-  ["spaces", "空间"],
 ] as const
+
+const formatInviteTime = (date: Date | string | null | undefined) => {
+  if (!date) {
+    return "未知时间"
+  }
+
+  const value = new Date(date)
+  const now = new Date()
+  const showYear = value.getFullYear() !== now.getFullYear()
+
+  return new Intl.DateTimeFormat("zh-CN", {
+    ...(showYear ? { year: "numeric" as const } : {}),
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(value)
+}
 
 export function AdminClient({
   tab,
@@ -30,6 +59,15 @@ export function AdminClient({
   invite?: string
 }) {
   const { data, error: loadError, loading } = useServerAction(() => getAdminViewAction(), [])
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null)
+
+  const copyInviteLink = async (inviteId: string, inviteLink: string) => {
+    await navigator.clipboard.writeText(inviteLink)
+    setCopiedInviteId(inviteId)
+    window.setTimeout(() => {
+      setCopiedInviteId((currentId) => (currentId === inviteId ? null : currentId))
+    }, 1400)
+  }
 
   return (
     <MobileFrame className="ca-scroll-layout">
@@ -43,9 +81,9 @@ export function AdminClient({
           }
         />
 
-        <div className="mb-3 flex gap-1 overflow-x-auto">
+        <div className="ca-admin-tabs">
           {tabs.map(([value, label]) => (
-            <Link key={value} href={`/admin?tab=${value}`} className={`ca-chip shrink-0 border border-[#e6e8eb] ${tab === value ? "active" : ""}`}>{label}</Link>
+            <Link key={value} href={`/admin?tab=${value}`} className={`ca-chip ca-admin-tab ${tab === value ? "active" : ""}`}>{label}</Link>
           ))}
         </div>
       </div>
@@ -71,20 +109,49 @@ export function AdminClient({
             <div className="ca-list">
               {data.invites.map((row) => {
                 const revokeAction = revokeInviteAction.bind(null, row.id)
+                const copied = copiedInviteId === row.id
+                const inviteLink = row.inviteLink
 
                 return (
-                  <div key={row.id} className="ca-admin-row">
+                  <div key={row.id} className="ca-admin-row ca-admin-row-stack">
                     <div className="min-w-0">
-                      <strong>{row.phone}</strong>
-                      <small>{row.status === "pending" ? "待注册" : row.status === "accepted" ? "已注册" : "已撤销"}</small>
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+                        <span className="min-w-0">
+                          <strong>{row.phone}</strong>
+                          <small>{row.status === "pending" ? "待注册" : "已注册"}</small>
+                        </span>
+                        {row.status === "pending" ? (
+                          <form action={revokeAction}>
+                            <button className="rounded-lg bg-[#fff1f1] px-2 py-1 text-[11px] text-[#c24141]">撤销</button>
+                          </form>
+                        ) : (
+                          <span className="text-[11px] text-[#747b86]">
+                            {formatInviteTime(row.acceptedAt ?? row.updatedAt)}
+                          </span>
+                        )}
+                      </div>
+                      {row.status === "pending" ? (
+                        inviteLink ? (
+                          <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg bg-[#f7f8f8] px-2 py-1.5">
+                            <span className="min-w-0 flex-1 break-all text-[11px] leading-relaxed text-[#4a5360]">
+                              {inviteLink}
+                            </span>
+                            <button
+                              type="button"
+                              className="grid size-7 shrink-0 place-items-center rounded-md text-[#0f9f8f]"
+                              aria-label="复制邀请链接"
+                              onClick={() => {
+                                void copyInviteLink(row.id, inviteLink)
+                              }}
+                            >
+                              {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                            </button>
+                          </div>
+                        ) : (
+                          <small>旧邀请无法恢复链接，请撤销后重新生成</small>
+                        )
+                      ) : null}
                     </div>
-                    {row.status === "pending" ? (
-                      <form action={revokeAction}>
-                        <button className="rounded-lg bg-[#fff1f1] px-2 py-1 text-[11px] text-[#c24141]">撤销</button>
-                      </form>
-                    ) : (
-                      <span className="ca-status-pill">{row.status === "accepted" ? "已注册" : "已撤销"}</span>
-                    )}
                   </div>
                 )
               })}
@@ -94,27 +161,51 @@ export function AdminClient({
 
         {data && tab === "users" ? (
           <div className="ca-list">
-            {data.users.map((user) => (
-              <div key={user.id} className="ca-admin-row">
-                <span className="min-w-0">
-                  <strong>{user.name}</strong>
-                  <small>{user.phone} · {user.isGlobalAdmin ? "全局管理员" : "普通用户"} · {formatDateTime(user.createdAt)}</small>
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : null}
+            {data.users.map((user) => {
+              const disableAction = disableUserAction.bind(null, user.id)
+              const disabled = Boolean(user.disabledAt)
+              const isCurrentAdmin = user.id === data.currentAdminId
 
-        {data && tab === "spaces" ? (
-          <div className="ca-list">
-            {data.spaces.map((space) => (
-              <div key={space.id} className="ca-admin-row">
-                <span className="min-w-0">
-                  <strong>{space.name}</strong>
-                  <small>创建于 {formatDateTime(space.createdAt)}</small>
-                </span>
-              </div>
-            ))}
+              return (
+                <div key={user.id} className="ca-admin-row">
+                  <span className="min-w-0">
+                    <strong>{user.name}</strong>
+                    <small>
+                      {user.phone} · {user.isGlobalAdmin ? "全局管理员" : "普通用户"} · {disabled ? `已禁用 · ${formatDateTime(user.disabledAt)}` : formatDateTime(user.createdAt)}
+                    </small>
+                  </span>
+                  {disabled ? (
+                    <span className="rounded-lg bg-[#fff1f1] px-2 py-1 text-[11px] text-[#c24141]">已禁用</span>
+                  ) : isCurrentAdmin ? (
+                    <span className="ca-status-pill">当前账号</span>
+                  ) : (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button type="button" className="rounded-lg bg-[#c24141] px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm">
+                          禁用
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>禁用账号？</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            账号将被禁用并退出登录，历史上传、删除和空间记录会保留。
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>取消</AlertDialogCancel>
+                          <form action={disableAction}>
+                            <AlertDialogAction type="submit" className="ca-danger-confirm-button">
+                              禁用
+                            </AlertDialogAction>
+                          </form>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+              )
+            })}
           </div>
         ) : null}
 

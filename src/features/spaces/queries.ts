@@ -3,7 +3,7 @@ import "server-only"
 import { and, count, desc, eq, isNull } from "drizzle-orm"
 
 import { db } from "@/db/client"
-import { folders, spaceMembers, spaces } from "@/db/schema"
+import { folders, spaceMembers, spaces, users } from "@/db/schema"
 
 export const getMembership = async (spaceId: string, userId: string) => {
   const [membership] = await db
@@ -52,3 +52,18 @@ export const getSpace = async (spaceId: string) => {
   const [space] = await db.select().from(spaces).where(eq(spaces.id, spaceId)).limit(1)
   return space ?? null
 }
+
+export const listSpaceMembers = async (spaceId: string) =>
+  db
+    .select({
+      id: spaceMembers.id,
+      userId: users.id,
+      name: users.name,
+      phone: users.phone,
+      isGlobalAdmin: users.isGlobalAdmin,
+      joinedAt: spaceMembers.createdAt,
+    })
+    .from(spaceMembers)
+    .innerJoin(users, eq(users.id, spaceMembers.userId))
+    .where(eq(spaceMembers.spaceId, spaceId))
+    .orderBy(desc(spaceMembers.createdAt))

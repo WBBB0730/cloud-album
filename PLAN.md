@@ -142,3 +142,134 @@
 - 根布局配置 manifest、图标、Apple Web App metadata 和 viewport theme color。
 - 已移除 service worker 和注册组件，只保留最基础 PWA 配置。
 - `pnpm.cmd typecheck` 和 `pnpm.cmd build` 通过。
+
+## 2026-05-04 空间成员管理和媒体多选
+- 空间详情页右上角新增成员管理入口，进入独立成员管理页。
+- 成员管理页展示当前空间成员，并通过手机号把已注册用户加入当前空间；失败时停留在成员管理页展示错误。
+- 相册详情页支持长按媒体进入多选态，已选媒体可以批量下载或批量删除；批量删除进入回收站。
+- 预览更多菜单新增删除入口；相册多选删除和预览删除都需要二次确认。
+- `docs/PRD.md`、`docs/TECHNICAL_DESIGN.md` 和 `docs/design/index.html` 已同步对应能力与设计状态。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 成员页独立化
+- 空间成员邀请从空间页底部弹层改为 `/spaces/[spaceId]/members` 独立页面。
+- 空间页只保留成员管理入口；成员页固定顶栏、展示邀请表单和成员列表。
+- `STRUCTURE.md`、`docs/PRD.md`、`docs/TECHNICAL_DESIGN.md` 和 `docs/design/index.html` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 成员管理操作
+- 空间页成员入口图标改为 `Users`，不再使用加号语义。
+- 成员页邀请按钮文案改为“邀请加入空间”。
+- 成员页支持移除其他成员；当前用户可退出空间。两类操作都需要二次确认。
+- `docs/PRD.md`、`docs/TECHNICAL_DESIGN.md`、`docs/design/index.html`、`STRUCTURE.md` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 成员管理细节修正
+- 空间页移除上传按钮，只保留成员管理、新建相册、回收站入口。
+- 成员退出入口从成员行移动到成员页底部单独一行。
+- 创建者不展示退出空间入口，服务层拒绝创建者退出空间。
+- 成员移除和退出确认弹窗使用完整宽度上下按钮，避免危险按钮错位。
+- `docs/PRD.md`、`docs/TECHNICAL_DESIGN.md`、`docs/design/index.html`、`STRUCTURE.md` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 登录和成员权限修正
+- 登录失败返回登录页时恢复本次提交的手机号和密码输入，不清空表单。
+- 空间入口页标题改为“选择空间”。
+- 成员页加载态移动到邀请表单下方，和成员列表区域一起展示。
+- 只有空间创建者可以移除其他成员，创建者不能被移除；服务层同步校验。
+- `docs/PRD.md`、`docs/TECHNICAL_DESIGN.md`、`docs/design/index.html`、`STRUCTURE.md` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 上传选择按钮对齐
+- 上传页“选择图片和视频”按钮内容从 grid 改为 flex 纵向居中，图标和文字间距调整为 12px，并约束 SVG/文字行高，避免两者被隐式网格行距撑开。
+- `docs/design/index.html` 已同步。
+- 已修正一次误改：视图切换 `gap` 恢复为 2px，真正的 `.ca-upload-zone` / 设计稿 `.upload-zone` 为 12px。
+
+## 2026-05-04 多选栏按钮背景
+- 相册多选状态 `.ca-selection-bar` 内操作按钮背景改为透明。
+- `docs/design/index.html` 已同步。
+
+## 2026-05-04 多选分组全选
+- 相册进入选择状态后，每个日期分组标题右侧显示“全选/取消全选”按钮。
+- 媒体删除二次确认按钮使用明确危险色样式，避免被默认按钮样式覆盖。
+- 选中数量变为 0 时保持选择状态，只有用户点击取消选择才退出。
+- `docs/design/index.html` 已同步。
+
+## 2026-05-04 多选拖动快速选择
+- 相册媒体长按进入选择态后，可以继续拖动进行范围快速选择。
+- 已在选择态时，点击媒体仍按单项切换；只有横向或斜向拖动超过阈值才进入拖选，明显纵向滑动会让给列表滚动。
+- 拖选逻辑改为按“拖动开始项到当前手指所在媒体项”的连续范围实时重算；开始项未选中时选中范围，开始项已选中时取消选中范围，手指往回拖时会收缩本次范围，松手后保留当前范围。
+- 手机端使用 touch 事件处理长按后的拖选，避免拖动被浏览器手势吞掉；桌面端保留 pointer 事件。
+- 拖选靠近滚动区域上下边缘时自动滚动，并在组件卸载、touch/pointer 结束或取消时清理自动滚动 frame。
+- `docs/PRD.md`、`docs/TECHNICAL_DESIGN.md`、`STRUCTURE.md` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 视频预览控件
+- 视频预览单独预留底部安全区，避免原生视频控件被底部缩略图栏遮挡。
+- 视频播放中隐藏预览顶部栏和底部缩略图栏，暂停或结束后恢复为可显示状态。
+- 视频播放中长按画面区域 350ms 后临时切到 2 倍速，松手、取消、暂停、结束或切换后恢复 1 倍速；靠近原生控制条的按压不触发长按倍速。
+- 播放中且不在原生控制条区域时，对视频 pointer down/move/contextmenu 调用 `preventDefault()`，避免长按倍速唤起原生控件；底部原生控制条区域不拦截。
+- 左右切换媒体、页面隐藏和 pagehide 时暂停所有预览视频并恢复 1 倍速。
+- 暂停逻辑改为 ref map + 预览容器 DOM 查询双保险，并在切换后一帧再次暂停，避免复杂操作后旧视频继续播放；播放状态只接受当前媒体的视频事件。
+- 底部缩略图轨道按当前序号持续平移，当前缩略图保持固定位置，不再在第 5 项后向右跑出屏幕。
+- `docs/design/index.html`、`docs/PRD.md`、`docs/TECHNICAL_DESIGN.md`、`MEMORY.md` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 相册长按原生菜单
+- 相册媒体缩略图区域禁用原生长按菜单、拖拽和文本/图片选中，避免手机长按多选时弹出系统功能菜单。
+- 微信内置浏览器会绕过部分 touch-callout 规则识别真实 `img/video`，因此网格缩略图内的图片和视频设置 `pointer-events: none`，让长按目标落到外层按钮。
+- 限制只作用于相册媒体网格和 `MediaThumbnail`，不影响预览页原生视频控件。
+- `docs/design/index.html` 和 `MEMORY.md` 已同步。
+
+## 2026-05-04 预览图片长按保存
+- 预览大图移除 `select-none` 和禁用拖拽设置，并显式允许 `-webkit-touch-callout`，保留微信内置浏览器长按保存图片能力。
+- 已删除“1 倍时禁用单指 panning”的错误尝试。
+- `react-zoom-pan-pinch` 默认给内容里的 `img` 注入 `pointer-events: none`，导致真实命中目标是外层 `div`；预览大图已内联覆盖为 `pointerEvents: "auto"`。
+- `react-zoom-pan-pinch` 关闭右键 panning，预览图片自身的 contextmenu 只阻止冒泡、不阻止默认菜单，避免桌面右键落入缩放库交互而不是图片菜单。
+- 双击缩放和触摸双击逻辑不改，仍由 `ZoomableImage` 的原有坐标判断处理。
+- 图片预览单击显隐延迟一个双击判定窗口；第二次点击到达时取消显隐，避免双击缩放时上下 UI 闪现。
+- `MEMORY.md` 已同步。
+
+## 2026-05-04 视频未播放长按保存
+- 视频预览的长按倍速逻辑只在按下瞬间视频正在播放时介入；未播放、暂停或结束状态直接放行，不启动倍速计时器，也不调用 `preventDefault()`。
+- 未播放状态保留浏览器和微信内置浏览器对原生 video 的长按保存能力。
+- `docs/PRD.md`、`docs/TECHNICAL_DESIGN.md` 和 `MEMORY.md` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 管理后台邀请链接
+- 新增 `account_invites.token` nullable 字段和 migration，新创建的注册邀请保存原始 token，用于后台再次展示邀请链接；注册校验仍使用 `token_hash`。
+- 管理后台邀请查询过滤已撤销记录，并只返回必要字段和待注册邀请链接，不再把 `token_hash` 下发给客户端。
+- 邀请列表中待注册邀请显示链接和复制按钮；已注册邀请保留状态展示；历史待注册但没有 token 的邀请提示无法恢复链接，需要撤销后重建。
+- `docs/PRD.md`、`docs/TECHNICAL_DESIGN.md`、`docs/design/index.html` 和 `MEMORY.md` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 管理后台 Tab 选中态
+- 管理后台邀请/账号/空间 tab 使用单独样式，选中态改为绿色底白字并加强阴影，避免和未选中项区分不明显。
+- Tab 链接保留 `ca-chip` 基础样式并叠加后台增强样式，避免退化成裸文本。
+- `docs/design/index.html` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 邀请 Token 迁移文件名修正
+- 邀请 token migration 使用可读文件名 `0001_invite_token.sql`，并同步 Drizzle journal tag，确保 `pnpm.cmd db:migrate` 能找到实际 SQL 文件并添加 `account_invites.token` 列。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 管理后台移除空间 Tab
+- 全局管理后台移除“空间”tab 和对应空间列表渲染。
+- 后台管理数据不再查询 `spaces` 列表，减少无意义数据加载。
+- `docs/PRD.md`、`STRUCTURE.md` 和 `docs/design/index.html` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 管理后台禁用账号
+- 账号操作按禁用账号实现，新增 `users.disabled_at`、`users.disabled_by` 字段和 migration；不物理删除用户行，保留历史外键记录。
+- 登录和会话读取拒绝已禁用账号；禁用账号时清理该用户所有 session。
+- 管理后台账号 tab 显示禁用按钮，操作前二次确认；当前登录管理员不能禁用自己，已禁用账号显示禁用状态。
+- 禁用操作按钮使用红色实心按钮，和“已禁用”浅红状态标签区分。
+- `docs/PRD.md`、`docs/TECHNICAL_DESIGN.md`、`STRUCTURE.md`、`docs/design/index.html` 和 `MEMORY.md` 已同步。
+- `pnpm.cmd typecheck` 通过。
+
+## 2026-05-04 管理后台邀请撤销按钮
+- 邀请列表的撤销操作恢复为浅红标签式按钮。
+- 待注册邀请行拆成头部行和链接行，撤销按钮只和手机号/待注册两行垂直居中，不再跟整张卡片垂直居中。
+- 已注册邀请右侧显示低强调注册时间，避免重复状态胶囊和卡片右侧空置。
+- 已注册邀请时间使用中文日期格式；今年显示“5月4日 21:36”，非今年显示“2025年5月4日 21:36”。
+- `docs/design/index.html` 已同步。

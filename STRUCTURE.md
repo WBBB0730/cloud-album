@@ -26,10 +26,10 @@
 
 - `auth`：手机号密码登录、注册邀请、会话。
 - `spaces`：空间创建、空间成员、空间列表入口。
-- `albums`：一级文件夹、媒体列表、预览。
+- `albums`：一级相册、媒体列表、页内预览和多选操作。
 - `uploads`：COS 直传签名、上传记录、分片上传状态。
 - `trash`：按文件夹组织的回收站、恢复、永久删除。
-- `admin`：全局管理员的账号邀请、账号、空间和删除记录管理。
+- `admin`：全局管理员的账号邀请、账号禁用和删除记录管理。
 
 通用服务：
 
@@ -44,14 +44,14 @@
 - `/login`：手机号密码登录。
 - `/invite/[token]`：邀请注册。
 - `/spaces`：空间入口。
-- `/spaces/[spaceId]`：文件夹首页，支持卡片/列表视图、创建文件夹、添加成员、进入回收站。
+- `/spaces/[spaceId]`：相册首页，支持卡片/列表视图、创建相册、进入成员管理、进入回收站。
+- `/spaces/[spaceId]/members`：成员管理页，展示空间成员，通过手机号邀请已注册用户加入，支持创建者移除其他成员和非创建者退出当前空间。
 - `/spaces/[spaceId]/upload`：选择上传文件夹。
-- `/spaces/[spaceId]/folders/[folderId]`：文件夹媒体网格，支持类型筛选和删除媒体。
-- `/spaces/[spaceId]/folders/[folderId]/upload`：COS 分片上传队列。
-- `/spaces/[spaceId]/folders/[folderId]/media/[mediaId]`：沉浸式图片/视频预览。
+- `/spaces/[spaceId]/albums/[folderId]`：相册媒体网格，支持类型筛选、页内预览、长按多选、拖动快速选择、批量下载和批量删除。
+- `/spaces/[spaceId]/albums/[folderId]/upload`：COS 分片上传队列。
 - `/spaces/[spaceId]/trash`：回收站文件夹列表。
 - `/spaces/[spaceId]/trash/[folderId]`：回收站文件夹媒体列表。
-- `/admin`：全局管理后台，按 tab 展示邀请、账号、空间、永久删除记录。
+- `/admin`：全局管理后台，按 tab 展示邀请、账号和永久删除记录。
 
 渲染模式：
 
