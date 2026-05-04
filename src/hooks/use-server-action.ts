@@ -45,22 +45,43 @@ type RefreshOptions = {
   showLoading?: boolean
 }
 
+type UseServerActionOptions<T> = {
+  getCacheData?: (merged: T, fresh: T) => unknown
+  mergeData?: (current: T | null, fresh: T) => T
+}
+
 type MutateData<T> = T | ((current: T | null) => T | null)
 
-export function useServerAction<T>(loader: () => Promise<T>, deps: unknown[]) {
+export function useServerAction<T>(
+  loader: () => Promise<T>,
+  deps: unknown[],
+  options: UseServerActionOptions<T> = {}
+) {
   const cacheKey = useMemo(() => getCacheKey(loader, deps), deps)
-  const [data, setData] = useState<T | null>(() => readCache<T>(cacheKey))
+  const initialDataRef = useRef<T | null | undefined>(undefined)
+
+  if (initialDataRef.current === undefined) {
+    initialDataRef.current = readCache<T>(cacheKey)
+  }
+
+  const [data, setData] = useState<T | null>(() => initialDataRef.current ?? null)
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(() => readCache<T>(cacheKey) === null)
+  const [loading, setLoading] = useState(() => initialDataRef.current === null)
   const cacheKeyRef = useRef(cacheKey)
+  const dataRef = useRef<T | null>(data)
+  const getCacheDataRef = useRef(options.getCacheData)
   const hasDataRef = useRef(data !== null)
   const loaderRef = useRef(loader)
+  const mergeDataRef = useRef(options.mergeData)
   const mountedRef = useRef(false)
   const refreshKeyRef = useRef<string | null>(null)
 
   loaderRef.current = loader
+  getCacheDataRef.current = options.getCacheData
+  mergeDataRef.current = options.mergeData
 
   const updateData = (value: T) => {
+    dataRef.current = value
     hasDataRef.current = true
     setData(value)
   }
@@ -92,15 +113,22 @@ export function useServerAction<T>(loader: () => Promise<T>, deps: unknown[]) {
       }
 
       try {
-        const value = await loaderRef.current()
+        const freshValue = await loaderRef.current()
 
         if (mountedRef.current && cacheKeyRef.current === activeCacheKey) {
-          updateData(value)
+          const nextValue =
+            mergeDataRef.current?.(dataRef.current, freshValue) ?? freshValue
+
+          updateData(nextValue)
           setError(null)
-          writeCache(activeCacheKey, value)
+          writeCache(
+            activeCacheKey,
+            getCacheDataRef.current?.(nextValue, freshValue) ?? nextValue
+          )
+          return nextValue
         }
 
-        return value
+        return freshValue
       } catch (reason) {
         if (
           mountedRef.current &&
@@ -133,6 +161,7 @@ export function useServerAction<T>(loader: () => Promise<T>, deps: unknown[]) {
           ? (nextData as (current: T | null) => T | null)(current)
           : nextData
 
+      dataRef.current = next
       hasDataRef.current = next !== null
 
       if (next === null) {
@@ -155,6 +184,7 @@ export function useServerAction<T>(loader: () => Promise<T>, deps: unknown[]) {
       updateData(cached)
       setLoading(false)
     } else {
+      dataRef.current = null
       hasDataRef.current = false
       setLoading(true)
     }

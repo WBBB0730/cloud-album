@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 
 import { isSignedUrlUsable } from '@/lib/signed-url'
 
@@ -18,7 +18,7 @@ type MediaThumbnailProps = {
 
 const DEFAULT_LAZY_ROOT_MARGIN = '420px'
 
-export function MediaThumbnail({
+export const MediaThumbnail = memo(function MediaThumbnail({
   src,
   alt,
   type,
@@ -137,4 +137,4 @@ export function MediaThumbnail({
       onError={handleError}
     />
   )
-}
+})

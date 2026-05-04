@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowDown,
   ArrowUp,
@@ -54,15 +54,11 @@ const PREVIEW_HASH = '#preview'
 const FOREGROUND_REFRESH_DEBOUNCE_MS = 10_000
 const IMAGE_PRELOAD_CONCURRENCY = 3
 
-type FolderMediaItem = {
-  id: string
-  type: 'image' | 'video'
-  filename: string
-  url: string
-  duration: number | null
-  takenAt: Date | string | null
-  createdAt: Date | string
-}
+type FolderViewData = Awaited<ReturnType<typeof getFolderViewAction>>
+type FolderMediaItem = FolderViewData['media'][number]
+type MediaPointerHandlers = ReturnType<
+  typeof useMediaSelection
+>['getMediaPointerHandlers']
 
 const formatDateGroup = (date: Date | string | null | undefined) => {
   if (!date) {
@@ -121,17 +117,113 @@ const keepStableMediaUrls = (
   nextMedia: FolderMediaItem[],
   previousMedia: FolderMediaItem[]
 ) => {
-  const previousUrls = new Map(previousMedia.map((item) => [item.id, item.url]))
+  const previousItems = new Map(previousMedia.map((item) => [item.id, item]))
+  let changed = nextMedia.length !== previousMedia.length
 
-  return nextMedia.map((item) => {
-    const previousUrl = previousUrls.get(item.id)
-
-    return {
+  const mergedMedia = nextMedia.map((item, index) => {
+    const previousItem = previousItems.get(item.id)
+    const previousUrl = previousItem?.url
+    const nextItem = {
       ...item,
       url:
         previousUrl && isSignedUrlUsable(previousUrl) ? previousUrl : item.url,
     }
+
+    if (previousItem && areRecordsEqual(previousItem, nextItem)) {
+      if (previousMedia[index] !== previousItem) {
+        changed = true
+      }
+
+      return previousItem
+    }
+
+    changed = true
+    return nextItem
   })
+
+  return changed ? mergedMedia : previousMedia
+}
+
+const getDateTime = (value: unknown) => {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  const date = value instanceof Date ? value : new Date(String(value))
+  const time = date.getTime()
+
+  return Number.isNaN(time) ? null : time
+}
+
+const areFieldValuesEqual = (key: string, current: unknown, next: unknown) => {
+  if (key.endsWith('At')) {
+    return getDateTime(current) === getDateTime(next)
+  }
+
+  return Object.is(current, next)
+}
+
+const areRecordsEqual = <T extends Record<string, unknown>>(
+  current: T,
+  next: T
+) => {
+  const currentKeys = Object.keys(current)
+  const nextKeys = Object.keys(next)
+
+  if (currentKeys.length !== nextKeys.length) {
+    return false
+  }
+
+  return currentKeys.every((key) =>
+    areFieldValuesEqual(key, current[key], next[key])
+  )
+}
+
+const mergeRecords = <T extends Record<string, unknown>>(current: T, next: T) =>
+  areRecordsEqual(current, next) ? current : next
+
+const mergeExactMedia = (
+  currentMedia: FolderMediaItem[],
+  nextMedia: FolderMediaItem[]
+) => {
+  const currentItems = new Map(currentMedia.map((item) => [item.id, item]))
+  let changed = currentMedia.length !== nextMedia.length
+
+  const mergedMedia = nextMedia.map((item, index) => {
+    const currentItem = currentItems.get(item.id)
+
+    if (currentItem && areRecordsEqual(currentItem, item)) {
+      if (currentMedia[index] !== currentItem) {
+        changed = true
+      }
+
+      return currentItem
+    }
+
+    changed = true
+    return item
+  })
+
+  return changed ? mergedMedia : currentMedia
+}
+
+const mergeFolderViewData = (
+  current: FolderViewData | null,
+  fresh: FolderViewData
+): FolderViewData => {
+  if (!current) {
+    return fresh
+  }
+
+  const space = mergeRecords(current.space, fresh.space)
+  const folder = mergeRecords(current.folder, fresh.folder)
+  const media = mergeExactMedia(current.media, fresh.media)
+
+  if (space === current.space && folder === current.folder && media === current.media) {
+    return current
+  }
+
+  return { ...fresh, space, folder, media }
 }
 
 const getVisibleMedia = (
@@ -244,6 +336,69 @@ const waitForNextFrame = () =>
     window.requestAnimationFrame(() => resolve())
   })
 
+const FolderMediaGridItem = memo(function FolderMediaGridItem({
+  consumeClickSuppression,
+  getMediaPointerHandlers,
+  index,
+  item,
+  onOpenPreview,
+  onRefreshMediaUrl,
+  onToggleSelection,
+  selected,
+  selectionMode,
+}: {
+  consumeClickSuppression: () => boolean
+  getMediaPointerHandlers: MediaPointerHandlers
+  index: number
+  item: FolderMediaItem
+  onOpenPreview: (index: number) => void
+  onRefreshMediaUrl: (mediaId: string) => void
+  onToggleSelection: (mediaId: string) => void
+  selected: boolean
+  selectionMode: boolean
+}) {
+  return (
+    <div className={`ca-media group ${selected ? 'selected' : ''}`}>
+      <button
+        type="button"
+        className="absolute inset-0 text-left"
+        {...getMediaPointerHandlers(item.id, selected)}
+        onClick={() => {
+          if (consumeClickSuppression()) {
+            return
+          }
+
+          if (selectionMode) {
+            onToggleSelection(item.id)
+            return
+          }
+
+          onOpenPreview(index)
+        }}
+      >
+        <MediaThumbnail
+          src={item.url}
+          alt={item.filename}
+          type={item.type}
+          sizes="33vw"
+          onError={() => onRefreshMediaUrl(item.id)}
+        />
+        {item.type === 'video' ? (
+          <span className="ca-play">
+            <Play className="size-[9px] fill-white" />
+            {formatDuration(item.duration)}
+          </span>
+        ) : null}
+        {selectionMode ? (
+          <span className={`ca-select-mark ${selected ? 'active' : ''}`}>
+            {selected ? <Check /> : null}
+          </span>
+        ) : null}
+      </button>
+    </div>
+  )
+})
+
 export function FolderClient({
   spaceId,
   folderId,
@@ -268,7 +423,11 @@ export function FolderClient({
   const { showLoading } = useGlobalLoading()
   const { data, error, loading, refresh, mutate } = useServerAction(
     () => getFolderViewAction(spaceId, folderId),
-    [spaceId, folderId]
+    [spaceId, folderId],
+    {
+      getCacheData: (_merged, fresh) => fresh,
+      mergeData: mergeFolderViewData,
+    }
   )
   const nextSort = sort === 'desc' ? 'asc' : 'desc'
   const SortIcon = sort === 'desc' ? ArrowDown : ArrowUp
@@ -384,6 +543,10 @@ export function FolderClient({
 
     return getVisibleMedia(stableMedia, type, sort)
   }, [data, sort, stableMedia, type])
+  const visibleMediaIndexById = useMemo(
+    () => new Map(visibleMedia.map((item, index) => [item.id, index])),
+    [visibleMedia]
+  )
   const mediaGroups = useMemo(
     () => groupMediaByDate(visibleMedia),
     [visibleMedia]
@@ -561,6 +724,12 @@ export function FolderClient({
       setPreviewIndex(previewStartIndex)
     },
     [refreshExpiredUrls, sort, stableMedia, type, visibleMedia]
+  )
+  const handleOpenPreview = useCallback(
+    (index: number) => {
+      void openPreview(index)
+    },
+    [openPreview]
   )
   const closePreview = useCallback(() => {
     if (previewIndexRef.current === null) {
@@ -825,55 +994,21 @@ export function FolderClient({
                   </div>
                   <div className="ca-media-grid">
                     {group.media.map((item) => {
-                      const index = visibleMedia.findIndex(
-                        (media) => media.id === item.id
-                      )
                       const selected = selectedIds.has(item.id)
 
                       return (
-                        <div
+                        <FolderMediaGridItem
                           key={item.id}
-                          className={`ca-media group ${selected ? 'selected' : ''}`}
-                        >
-                          <button
-                            type="button"
-                            className="absolute inset-0 text-left"
-                            {...getMediaPointerHandlers(item.id, selected)}
-                            onClick={() => {
-                              if (consumeClickSuppression()) {
-                                return
-                              }
-
-                              if (selectionMode) {
-                                toggleSelection(item.id)
-                                return
-                              }
-
-                              void openPreview(index)
-                            }}
-                          >
-                            <MediaThumbnail
-                              src={item.url}
-                              alt={item.filename}
-                              type={item.type}
-                              sizes="33vw"
-                              onError={() => refreshMediaUrl(item.id)}
-                            />
-                            {item.type === 'video' ? (
-                              <span className="ca-play">
-                                <Play className="size-[9px] fill-white" />
-                                {formatDuration(item.duration)}
-                              </span>
-                            ) : null}
-                            {selectionMode ? (
-                              <span
-                                className={`ca-select-mark ${selected ? 'active' : ''}`}
-                              >
-                                {selected ? <Check /> : null}
-                              </span>
-                            ) : null}
-                          </button>
-                        </div>
+                          consumeClickSuppression={consumeClickSuppression}
+                          getMediaPointerHandlers={getMediaPointerHandlers}
+                          index={visibleMediaIndexById.get(item.id) ?? 0}
+                          item={item}
+                          onOpenPreview={handleOpenPreview}
+                          onRefreshMediaUrl={refreshMediaUrl}
+                          onToggleSelection={toggleSelection}
+                          selected={selected}
+                          selectionMode={selectionMode}
+                        />
                       )
                     })}
                   </div>
