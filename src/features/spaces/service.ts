@@ -64,9 +64,11 @@ export const addMemberByPhone = async (
   spaceId: string,
   phone: string
 ) => {
-  await requireSpaceMember(spaceId, actorId)
   const finalPhone = normalizePhone(phone)
-  const [target] = await db.select().from(users).where(eq(users.phone, finalPhone)).limit(1)
+  const [space, [target]] = await Promise.all([
+    requireSpaceMember(spaceId, actorId),
+    db.select().from(users).where(eq(users.phone, finalPhone)).limit(1),
+  ])
 
   if (!target) {
     throw new Error("该手机号还没有注册账号")
@@ -76,6 +78,12 @@ export const addMemberByPhone = async (
     .insert(spaceMembers)
     .values({ spaceId, userId: target.id, addedBy: actorId })
     .onConflictDoNothing()
+
+  return {
+    space,
+    currentUserId: actorId,
+    members: await listSpaceMembers(spaceId),
+  }
 }
 
 export const leaveSpace = async (userId: string, spaceId: string) => {

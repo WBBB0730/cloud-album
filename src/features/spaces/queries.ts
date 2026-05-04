@@ -1,6 +1,6 @@
 import "server-only"
 
-import { and, count, desc, eq, isNull } from "drizzle-orm"
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm"
 
 import { db } from "@/db/client"
 import { folders, spaceMembers, spaces, users } from "@/db/schema"
@@ -28,24 +28,43 @@ export const listUserSpaces = async (userId: string) => {
     .where(eq(spaceMembers.userId, userId))
     .orderBy(desc(spaceMembers.createdAt))
 
-  return Promise.all(
-    rows.map(async (space) => {
-      const [memberCount] = await db
-        .select({ value: count() })
-        .from(spaceMembers)
-        .where(eq(spaceMembers.spaceId, space.id))
-      const [folderCount] = await db
-        .select({ value: count() })
-        .from(folders)
-        .where(and(eq(folders.spaceId, space.id), isNull(folders.deletedAt), isNull(folders.permanentlyDeletedAt)))
+  if (rows.length === 0) {
+    return []
+  }
 
-      return {
-        ...space,
-        memberCount: memberCount?.value ?? 0,
-        folderCount: folderCount?.value ?? 0,
-      }
-    })
-  )
+  const spaceIds = rows.map((space) => space.id)
+  const [memberCounts, folderCounts] = await Promise.all([
+    db
+      .select({
+        spaceId: spaceMembers.spaceId,
+        value: sql<number>`count(*)::int`,
+      })
+      .from(spaceMembers)
+      .where(inArray(spaceMembers.spaceId, spaceIds))
+      .groupBy(spaceMembers.spaceId),
+    db
+      .select({
+        spaceId: folders.spaceId,
+        value: sql<number>`count(*)::int`,
+      })
+      .from(folders)
+      .where(
+        and(
+          inArray(folders.spaceId, spaceIds),
+          isNull(folders.deletedAt),
+          isNull(folders.permanentlyDeletedAt)
+        )
+      )
+      .groupBy(folders.spaceId),
+  ])
+  const memberCountBySpace = new Map(memberCounts.map((row) => [row.spaceId, row.value]))
+  const folderCountBySpace = new Map(folderCounts.map((row) => [row.spaceId, row.value]))
+
+  return rows.map((space) => ({
+    ...space,
+    memberCount: memberCountBySpace.get(space.id) ?? 0,
+    folderCount: folderCountBySpace.get(space.id) ?? 0,
+  }))
 }
 
 export const getSpace = async (spaceId: string) => {

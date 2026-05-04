@@ -50,14 +50,10 @@ export const useFixedBackNavigation = (
       return
     }
 
-    window.history.pushState(
-      {
-        ...(window.history.state ?? {}),
-        [FIXED_BACK_STATE_KEY]: true,
-      },
-      "",
-      window.location.href
-    )
+    window.history.pushState({
+      ...(window.history.state ?? {}),
+      [FIXED_BACK_STATE_KEY]: true,
+    }, "", window.location.href)
     guardActiveRef.current = true
   }, [])
 

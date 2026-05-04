@@ -1,15 +1,14 @@
 import "server-only"
 
-import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm"
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm"
 
 import { db } from "@/db/client"
-import { folders, media } from "@/db/schema"
+import { folders, media, users } from "@/db/schema"
 import { getFolderById } from "@/features/albums/queries"
 import { requireSpaceMember } from "@/features/spaces/service"
 import { getSignedReadUrl } from "@/lib/cos"
 
 import {
-  getTrashUserName,
   listDeletedMediaInFolder,
   listFoldersForTrash,
 } from "./queries"
@@ -17,26 +16,77 @@ import {
 export const getTrashHome = async (spaceId: string, userId: string) => {
   const space = await requireSpaceMember(spaceId, userId)
   const folderRows = await listFoldersForTrash(spaceId)
-  const result = []
 
-  for (const folder of folderRows) {
-    const deletedMedia = await listDeletedMediaInFolder(spaceId, folder.id)
+  if (folderRows.length === 0) {
+    return { space, folders: [] }
+  }
 
-    if (!folder.deletedAt && deletedMedia.length === 0) {
-      continue
+  const folderIds = folderRows.map((folder) => folder.id)
+  const [deletedCounts, deletedCovers] = await Promise.all([
+    db
+      .select({
+        folderId: media.folderId,
+        value: sql<number>`count(*)::int`,
+      })
+      .from(media)
+      .where(
+        and(
+          eq(media.spaceId, spaceId),
+          inArray(media.folderId, folderIds),
+          eq(media.status, "ready"),
+          isNotNull(media.deletedAt),
+          isNull(media.permanentlyDeletedAt)
+        )
+      )
+      .groupBy(media.folderId),
+    db
+      .selectDistinctOn([media.folderId])
+      .from(media)
+      .where(
+        and(
+          eq(media.spaceId, spaceId),
+          inArray(media.folderId, folderIds),
+          eq(media.status, "ready"),
+          isNotNull(media.deletedAt),
+          isNull(media.permanentlyDeletedAt)
+        )
+      )
+      .orderBy(media.folderId, desc(media.deletedAt), desc(media.takenAt)),
+  ])
+  const countByFolder = new Map(deletedCounts.map((row) => [row.folderId, row.value]))
+  const coverByFolder = new Map(deletedCovers.map((item) => [item.folderId, item]))
+  const deletedByIds = Array.from(new Set(
+    folderRows
+      .map((folder) => folder.deletedBy)
+      .concat(deletedCovers.map((item) => item.deletedBy))
+      .filter((id): id is string => Boolean(id))
+  ))
+  const deletedUsers = deletedByIds.length > 0
+    ? await db
+        .select({ id: users.id, name: users.name })
+        .from(users)
+        .where(inArray(users.id, deletedByIds))
+    : []
+  const userNameById = new Map(deletedUsers.map((user) => [user.id, user.name]))
+  const result = folderRows.flatMap((folder) => {
+    const deletedMediaCount = countByFolder.get(folder.id) ?? 0
+    const cover = coverByFolder.get(folder.id) ?? null
+
+    if (!folder.deletedAt && deletedMediaCount === 0) {
+      return []
     }
 
-    const deletedAt = folder.deletedAt ?? deletedMedia[0]?.deletedAt ?? null
-    const deletedBy = folder.deletedBy ?? deletedMedia[0]?.deletedBy ?? null
+    const deletedAt = folder.deletedAt ?? cover?.deletedAt ?? null
+    const deletedBy = folder.deletedBy ?? cover?.deletedBy ?? null
 
-    result.push({
+    return [{
       ...folder,
-      itemCount: deletedMedia.length,
+      itemCount: deletedMediaCount,
       deletedAt,
-      deletedByName: await getTrashUserName(deletedBy),
-      coverUrl: deletedMedia[0] ? getSignedReadUrl(deletedMedia[0].cosKey) : null,
-    })
-  }
+      deletedByName: deletedBy ? userNameById.get(deletedBy) ?? "未知用户" : "未知用户",
+      coverUrl: cover ? getSignedReadUrl(cover.cosKey) : null,
+    }]
+  })
 
   return { space, folders: result }
 }

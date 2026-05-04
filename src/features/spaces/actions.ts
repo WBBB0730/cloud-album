@@ -30,13 +30,12 @@ export const addMemberAction = async (spaceId: string, formData: FormData) => {
   const user = await requireUser()
 
   try {
-    await addMemberByPhone(user.id, spaceId, String(formData.get("phone") ?? ""))
+    const data = await addMemberByPhone(user.id, spaceId, String(formData.get("phone") ?? ""))
+    return { ok: true, data, error: null }
   } catch (error) {
     const message = error instanceof Error ? error.message : "操作失败"
-    redirect(`/spaces/${spaceId}/members?error=${encodeURIComponent(message)}`)
+    return { ok: false, data: null, error: message }
   }
-
-  redirect(`/spaces/${spaceId}/members`)
 }
 
 export const leaveSpaceAction = async (spaceId: string) => {

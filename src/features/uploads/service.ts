@@ -22,8 +22,10 @@ type CreateUploadInput = {
 }
 
 export const createUploadIntent = async (userId: string, input: CreateUploadInput) => {
-  await requireSpaceMember(input.spaceId, userId)
-  const folder = await getFolderById(input.spaceId, input.folderId)
+  const [, folder] = await Promise.all([
+    requireSpaceMember(input.spaceId, userId),
+    getFolderById(input.spaceId, input.folderId),
+  ])
 
   if (!folder || folder.deletedAt || folder.permanentlyDeletedAt) {
     throw new Error("相册不存在")
@@ -89,18 +91,20 @@ export const confirmUploadComplete = async (
   spaceId: string,
   sessionId: string
 ) => {
-  await requireSpaceMember(spaceId, userId)
-  const [session] = await db
-    .select()
-    .from(uploadSessions)
-    .where(
-      and(
-        eq(uploadSessions.id, sessionId),
-        eq(uploadSessions.spaceId, spaceId),
-        eq(uploadSessions.uploadedBy, userId)
+  const [, [session]] = await Promise.all([
+    requireSpaceMember(spaceId, userId),
+    db
+      .select()
+      .from(uploadSessions)
+      .where(
+        and(
+          eq(uploadSessions.id, sessionId),
+          eq(uploadSessions.spaceId, spaceId),
+          eq(uploadSessions.uploadedBy, userId)
+        )
       )
-    )
-    .limit(1)
+      .limit(1),
+  ])
 
   if (!session) {
     throw new Error("上传记录不存在")
@@ -123,18 +127,20 @@ export const markUploadFailed = async (
   spaceId: string,
   sessionId: string
 ) => {
-  await requireSpaceMember(spaceId, userId)
-  const [session] = await db
-    .select()
-    .from(uploadSessions)
-    .where(
-      and(
-        eq(uploadSessions.id, sessionId),
-        eq(uploadSessions.spaceId, spaceId),
-        eq(uploadSessions.uploadedBy, userId)
+  const [, [session]] = await Promise.all([
+    requireSpaceMember(spaceId, userId),
+    db
+      .select()
+      .from(uploadSessions)
+      .where(
+        and(
+          eq(uploadSessions.id, sessionId),
+          eq(uploadSessions.spaceId, spaceId),
+          eq(uploadSessions.uploadedBy, userId)
+        )
       )
-    )
-    .limit(1)
+      .limit(1),
+  ])
 
   if (!session) {
     return

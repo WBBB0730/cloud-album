@@ -1,10 +1,13 @@
 "use client"
 
 import Link from "next/link"
+import { useState, type FormEvent } from "react"
 import { ChevronLeft } from "lucide-react"
+import { toast } from "sonner"
 
 import { EmptyState } from "@/components/app/empty-state"
 import { ErrorBanner } from "@/components/app/error-banner"
+import { useGlobalLoading } from "@/components/app/global-loading"
 import { LoadingState } from "@/components/app/loading-state"
 import { MobileFrame } from "@/components/app/mobile-frame"
 import { TopBar } from "@/components/app/top-bar"
@@ -32,14 +35,41 @@ export function MembersClient({
   spaceId: string
   error?: string
 }) {
-  const { data, error: loadError, loading } = useServerAction(
+  const { data, error: loadError, loading, mutate } = useServerAction(
     () => getSpaceMembersViewAction(spaceId),
     [spaceId]
   )
-  const inviteAction = addMemberAction.bind(null, spaceId)
+  const { hideLoading, showLoading } = useGlobalLoading()
+  const [phone, setPhone] = useState("")
+  const [localError, setLocalError] = useState<string | null>(null)
   const leaveAction = leaveSpaceAction.bind(null, spaceId)
   const currentUser = data?.members.find((member) => member.userId === data.currentUserId)
   const currentUserIsCreator = data?.space.createdBy === data?.currentUserId
+  const handleInviteSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setLocalError(null)
+
+    const formData = new FormData(event.currentTarget)
+    const closeLoading = showLoading({ title: "邀请中", timeoutMs: 0 })
+
+    try {
+      const result = await addMemberAction(spaceId, formData)
+
+      if (!result.ok || !result.data) {
+        const message = result.error ?? "邀请失败"
+        setLocalError(message)
+        toast.error(message)
+        return
+      }
+
+      mutate(result.data)
+      setPhone("")
+      toast.success("已邀请加入空间")
+    } finally {
+      closeLoading()
+      hideLoading()
+    }
+  }
 
   return (
     <MobileFrame className="ca-scroll-layout">
@@ -57,11 +87,17 @@ export function MembersClient({
 
       <div className="ca-scroll-section">
         <div className="grid gap-4">
-          <ErrorBanner message={inviteError ?? undefined} />
-          <form action={inviteAction} className="ca-form-stack">
+          <ErrorBanner message={localError ?? inviteError ?? undefined} />
+          <form onSubmit={handleInviteSubmit} className="ca-form-stack">
             <label className="ca-field">
               <span>手机号</span>
-              <Input name="phone" className="ca-input" inputMode="tel" />
+              <Input
+                name="phone"
+                className="ca-input"
+                inputMode="tel"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+              />
             </label>
             <button className="ca-primary-btn">邀请加入空间</button>
           </form>

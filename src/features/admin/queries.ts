@@ -20,7 +20,18 @@ export const listInvites = async () =>
     .where(ne(accountInvites.status, "revoked"))
     .orderBy(desc(accountInvites.createdAt))
 
-export const listUsers = async () => db.select().from(users).orderBy(desc(users.createdAt))
+export const listUsers = async () =>
+  db
+    .select({
+      id: users.id,
+      phone: users.phone,
+      name: users.name,
+      isGlobalAdmin: users.isGlobalAdmin,
+      createdAt: users.createdAt,
+      disabledAt: users.disabledAt,
+    })
+    .from(users)
+    .orderBy(desc(users.createdAt))
 
 export const listPermanentMedia = async () =>
   db
