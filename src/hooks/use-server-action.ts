@@ -64,7 +64,9 @@ export function useServerAction<T>(
     initialDataRef.current = readCache<T>(cacheKey)
   }
 
-  const [data, setData] = useState<T | null>(() => initialDataRef.current ?? null)
+  const [data, setData] = useState<T | null>(
+    () => initialDataRef.current ?? null
+  )
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(() => initialDataRef.current === null)
   const cacheKeyRef = useRef(cacheKey)

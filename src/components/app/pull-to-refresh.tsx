@@ -85,7 +85,13 @@ export function PullToRefresh({
       const start = startRef.current
       const scroller = localScrollRef.current
 
-      if (!start || !scroller || disabled || refreshing || event.touches.length !== 1) {
+      if (
+        !start ||
+        !scroller ||
+        disabled ||
+        refreshing ||
+        event.touches.length !== 1
+      ) {
         return
       }
 
@@ -121,7 +127,8 @@ export function PullToRefresh({
   )
 
   const handleTouchEnd = useCallback(() => {
-    const shouldRefresh = pullingRef.current && pullDistance >= PULL_TRIGGER_DISTANCE
+    const shouldRefresh =
+      pullingRef.current && pullDistance >= PULL_TRIGGER_DISTANCE
 
     startRef.current = null
     pullingRef.current = false
@@ -156,7 +163,8 @@ export function PullToRefresh({
       <div
         className={`ca-pull-refresh-indicator ${refreshing ? 'refreshing' : ''}`}
         style={{
-          opacity: pullDistance > 0 || refreshing ? Math.max(0.35, progress) : 0,
+          opacity:
+            pullDistance > 0 || refreshing ? Math.max(0.35, progress) : 0,
           transform: `translate(-50%, ${Math.max(0, pullDistance - 36)}px) rotate(${progress * 180}deg)`,
         }}
       >

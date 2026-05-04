@@ -179,8 +179,10 @@ const areRecordsEqual = <T extends Record<string, unknown>>(
   )
 }
 
-const mergeRecords = <T extends Record<string, unknown>>(current: T, next: T) =>
-  areRecordsEqual(current, next) ? current : next
+const mergeRecords = <T extends Record<string, unknown>>(
+  current: T,
+  next: T
+) => (areRecordsEqual(current, next) ? current : next)
 
 const mergeExactMedia = (
   currentMedia: FolderMediaItem[],
@@ -219,7 +221,11 @@ const mergeFolderViewData = (
   const folder = mergeRecords(current.folder, fresh.folder)
   const media = mergeExactMedia(current.media, fresh.media)
 
-  if (space === current.space && folder === current.folder && media === current.media) {
+  if (
+    space === current.space &&
+    folder === current.folder &&
+    media === current.media
+  ) {
     return current
   }
 
