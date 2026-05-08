@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   Download,
   ImageIcon,
+  Loader2,
   MoreHorizontal,
   Play,
   Trash2,
@@ -264,93 +265,108 @@ function ZoomableImage({
   }
 
   return (
-    <TransformWrapper
-      ref={wrapperRef}
-      key={src}
-      minScale={1}
-      maxScale={IMAGE_MAX_SCALE}
-      centerOnInit
-      centerZoomedOut
-      limitToBounds
-      doubleClick={{
-        disabled: true,
-      }}
-      wheel={{ step: 0.16 }}
-      pinch={{ step: 8 }}
-      panning={{
-        allowRightClickPan: false,
-        velocityDisabled: false,
-      }}
-      onTransform={(_, state) => {
-        if (!active) {
-          return
-        }
+    <div className="relative h-full w-full">
+      {!loaded ? (
+        <div className="pointer-events-none absolute inset-0 z-[1] grid place-items-center">
+          <div className="grid place-items-center gap-2 rounded-full bg-black/36 px-4 py-3 text-xs text-white/80 backdrop-blur">
+            <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+            <span>加载中</span>
+          </div>
+        </div>
+      ) : null}
+      <TransformWrapper
+        ref={wrapperRef}
+        key={src}
+        minScale={1}
+        maxScale={IMAGE_MAX_SCALE}
+        centerOnInit
+        centerZoomedOut
+        limitToBounds
+        doubleClick={{
+          disabled: true,
+        }}
+        wheel={{ step: 0.16 }}
+        pinch={{ step: 8 }}
+        panning={{
+          allowRightClickPan: false,
+          velocityDisabled: false,
+        }}
+        onTransform={(_, state) => {
+          if (!active) {
+            return
+          }
 
-        const content = imageRef.current?.parentElement
-        const viewport = content?.parentElement
+          const content = imageRef.current?.parentElement
+          const viewport = content?.parentElement
 
-        if (!content || !viewport) {
+          if (!content || !viewport) {
+            onTransformStateChange({
+              atLeftEdge: true,
+              atRightEdge: true,
+              scale: state.scale,
+            })
+            return
+          }
+
+          const contentWidth =
+            content.getBoundingClientRect().width / state.scale
+          const viewportWidth = viewport.getBoundingClientRect().width
+          const scaledWidth = contentWidth * state.scale
+          const minX = Math.min(0, viewportWidth - scaledWidth)
+          const maxX =
+            scaledWidth <= viewportWidth
+              ? (viewportWidth - scaledWidth) / 2
+              : 0
+
           onTransformStateChange({
-            atLeftEdge: true,
-            atRightEdge: true,
+            atLeftEdge: state.positionX >= maxX - 2,
+            atRightEdge: state.positionX <= minX + 2,
             scale: state.scale,
           })
-          return
-        }
-
-        const contentWidth = content.getBoundingClientRect().width / state.scale
-        const viewportWidth = viewport.getBoundingClientRect().width
-        const scaledWidth = contentWidth * state.scale
-        const minX = Math.min(0, viewportWidth - scaledWidth)
-        const maxX =
-          scaledWidth <= viewportWidth ? (viewportWidth - scaledWidth) / 2 : 0
-
-        onTransformStateChange({
-          atLeftEdge: state.positionX >= maxX - 2,
-          atRightEdge: state.positionX <= minX + 2,
-          scale: state.scale,
-        })
-      }}
-    >
-      <div
-        className="h-full w-full"
-        onDoubleClickCapture={handleDoubleClick}
-        onTouchEndCapture={handleTouchEnd}
+        }}
       >
-        <TransformComponent
-          wrapperClass="!h-full !w-full"
-          wrapperStyle={{ height: '100%', width: '100%' }}
-          contentStyle={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+        <div
+          className="h-full w-full"
+          onDoubleClickCapture={handleDoubleClick}
+          onTouchEndCapture={handleTouchEnd}
         >
-          <img
-            ref={imageRef}
-            src={src}
-            alt={alt}
-            width={width ?? undefined}
-            height={height ?? undefined}
-            className="max-h-full max-w-full object-contain"
-            style={{
-              WebkitTouchCallout: 'default',
-              opacity: loaded ? 1 : 0,
-              pointerEvents: 'auto',
-              userSelect: 'auto',
+          <TransformComponent
+            wrapperClass="!h-full !w-full"
+            wrapperStyle={{ height: '100%', width: '100%' }}
+            contentStyle={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
-            onContextMenu={(event) => event.stopPropagation()}
-            onError={() => setFailed(true)}
-            onLoad={() => {
-              setLoaded(true)
-              if (active) {
-                resetImagePosition()
-              }
-            }}
-          />
-        </TransformComponent>
-      </div>
-    </TransformWrapper>
+          >
+            <img
+              ref={imageRef}
+              src={src}
+              alt={alt}
+              width={width ?? undefined}
+              height={height ?? undefined}
+              className="max-h-full max-w-full object-contain"
+              decoding="async"
+              fetchPriority={active ? 'high' : 'low'}
+              style={{
+                WebkitTouchCallout: 'default',
+                opacity: loaded ? 1 : 0,
+                pointerEvents: 'auto',
+                userSelect: 'auto',
+              }}
+              onContextMenu={(event) => event.stopPropagation()}
+              onError={() => setFailed(true)}
+              onLoad={() => {
+                setLoaded(true)
+                if (active) {
+                  resetImagePosition()
+                }
+              }}
+            />
+          </TransformComponent>
+        </div>
+      </TransformWrapper>
+    </div>
   )
 }
 
