@@ -42,6 +42,9 @@ type PreviewMediaItem = {
   type: 'image' | 'video'
   filename: string
   url: string
+  thumbnailUrl?: string
+  width?: number | null
+  height?: number | null
 }
 
 type ImageTransformState = {
@@ -60,6 +63,7 @@ const VIDEO_FAST_RATE = 2
 const VIDEO_CONTROL_HIT_AREA = 64
 const PREVIEW_THUMB_ANCHOR_X = 132
 const PREVIEW_THUMB_STEP = 35
+const PREVIEW_RENDER_RADIUS = 2
 
 const getBoundedZoomPosition = (
   position: number,
@@ -81,22 +85,50 @@ function ZoomableImage({
   alt,
   active,
   resetKey,
+  width,
+  height,
   onTransformStateChange,
 }: {
   src: string
   alt: string
   active: boolean
   resetKey: number
+  width?: number | null
+  height?: number | null
   onTransformStateChange: (state: ImageTransformState) => void
 }) {
   const wrapperRef = useRef<ReactZoomPanPinchContentRef | null>(null)
   const imageRef = useRef<HTMLImageElement | null>(null)
+  const resetFrameRef = useRef<number | null>(null)
   const [failed, setFailed] = useState(false)
+  const [loaded, setLoaded] = useState(false)
   const lastTapRef = useRef<{
     time: number
     x: number
     y: number
   } | null>(null)
+
+  const clearResetFrame = useCallback(() => {
+    if (resetFrameRef.current !== null) {
+      window.cancelAnimationFrame(resetFrameRef.current)
+      resetFrameRef.current = null
+    }
+  }, [])
+
+  const resetImagePosition = useCallback(() => {
+    clearResetFrame()
+    resetFrameRef.current = window.requestAnimationFrame(() => {
+      resetFrameRef.current = window.requestAnimationFrame(() => {
+        resetFrameRef.current = null
+        wrapperRef.current?.centerView(1, 0)
+        onTransformStateChange({
+          atLeftEdge: true,
+          atRightEdge: true,
+          scale: 1,
+        })
+      })
+    })
+  }, [clearResetFrame, onTransformStateChange])
 
   const zoomAtPoint = (clientX: number, clientY: number) => {
     const wrapper = wrapperRef.current
@@ -209,7 +241,9 @@ function ZoomableImage({
 
   useEffect(() => {
     setFailed(false)
-  }, [src])
+    setLoaded(false)
+    clearResetFrame()
+  }, [clearResetFrame, src])
 
   useEffect(() => {
     if (!active) {
@@ -218,7 +252,12 @@ function ZoomableImage({
 
     wrapperRef.current?.resetTransform(0)
     onTransformStateChange({ atLeftEdge: true, atRightEdge: true, scale: 1 })
-  }, [active, onTransformStateChange, resetKey])
+    if (loaded) {
+      resetImagePosition()
+    }
+  }, [active, loaded, onTransformStateChange, resetImagePosition, resetKey])
+
+  useEffect(() => () => clearResetFrame(), [clearResetFrame])
 
   if (failed || !isSignedUrlUsable(src)) {
     return <div className="h-full w-full bg-[#11151d]" aria-label={alt} />
@@ -291,14 +330,23 @@ function ZoomableImage({
             ref={imageRef}
             src={src}
             alt={alt}
+            width={width ?? undefined}
+            height={height ?? undefined}
             className="max-h-full max-w-full object-contain"
             style={{
               WebkitTouchCallout: 'default',
+              opacity: loaded ? 1 : 0,
               pointerEvents: 'auto',
               userSelect: 'auto',
             }}
             onContextMenu={(event) => event.stopPropagation()}
             onError={() => setFailed(true)}
+            onLoad={() => {
+              setLoaded(true)
+              if (active) {
+                resetImagePosition()
+              }
+            }}
           />
         </TransformComponent>
       </div>
@@ -744,6 +792,8 @@ export function MediaPreviewOverlay({
   }
 
   const previewControlsVisible = controlsVisible && !videoPlaying
+  const shouldRenderPreviewItem = (index: number) =>
+    Math.abs(index - currentIndex) <= PREVIEW_RENDER_RADIUS
 
   return (
     <div className="fixed inset-0 z-50 h-[var(--ca-viewport-height)] overflow-hidden bg-[#05080d] text-white">
@@ -932,39 +982,52 @@ export function MediaPreviewOverlay({
               : 'transform 240ms cubic-bezier(0.22, 0.8, 0.22, 1)',
           }}
         >
-          {media.map((item, index) => (
-            <div key={item.id} className="relative h-full w-full shrink-0">
-              {item.type === 'video' ? (
-                <VideoPreview
-                  item={item}
-                  active={index === currentIndex}
-                  registerVideo={registerVideo}
-                  onLongPressSpeed={() => {
-                    suppressNextTapRef.current = true
-                  }}
-                  onPlayingChange={(mediaId, playing) => {
-                    if (mediaId !== currentItem.id) {
-                      return
-                    }
+          {media.map((item, index) => {
+            const shouldRender = shouldRenderPreviewItem(index)
 
-                    setVideoPlaying(playing)
+            return (
+              <div key={item.id} className="relative h-full w-full shrink-0">
+                {shouldRender ? (
+                  item.type === 'video' ? (
+                    <VideoPreview
+                      item={item}
+                      active={index === currentIndex}
+                      registerVideo={registerVideo}
+                      onLongPressSpeed={() => {
+                        suppressNextTapRef.current = true
+                      }}
+                      onPlayingChange={(mediaId, playing) => {
+                        if (mediaId !== currentItem.id) {
+                          return
+                        }
 
-                    if (playing) {
-                      setControlsVisible(false)
-                    }
-                  }}
-                />
-              ) : (
-                <ZoomableImage
-                  src={item.url}
-                  alt={item.filename}
-                  active={index === currentIndex}
-                  resetKey={currentIndex}
-                  onTransformStateChange={setImageTransformState}
-                />
-              )}
-            </div>
-          ))}
+                        setVideoPlaying(playing)
+
+                        if (playing) {
+                          setControlsVisible(false)
+                        }
+                      }}
+                    />
+                  ) : (
+                    <ZoomableImage
+                      src={item.url}
+                      alt={item.filename}
+                      active={index === currentIndex}
+                      resetKey={currentIndex}
+                      width={item.width}
+                      height={item.height}
+                      onTransformStateChange={setImageTransformState}
+                    />
+                  )
+                ) : (
+                  <div
+                    aria-hidden="true"
+                    className="h-full w-full bg-[#05080d]"
+                  />
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -994,7 +1057,7 @@ export function MediaPreviewOverlay({
               onClick={() => openIndex(index)}
             >
               <MediaThumbnail
-                src={item.url}
+                src={item.thumbnailUrl ?? item.url}
                 alt=""
                 type={item.type}
                 sizes="48px"

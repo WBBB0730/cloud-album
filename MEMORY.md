@@ -33,7 +33,7 @@
 - 技术栈：Next.js App Router、Server Action、PostgreSQL、Drizzle ORM、腾讯云 COS。
 - 数据库 schema 按 `src/db/schema/` 拆分；业务代码按 `src/features/*/{actions,service,queries}.ts` 分层。
 - 页面业务数据通过 `src/features/app/view-actions.ts` 在客户端拉取；写操作仍使用各模块 Server Action。
-- 私有媒体读取通过 `src/lib/cos.ts` 生成短期 COS GET 签名 URL。
+- 私有媒体前端读取使用 `src/lib/media-url.ts` 生成稳定应用内 URL：原图/原视频为 `/api/media/[mediaId]`，缩略图/视频封面为 `/api/media/[mediaId]/preview`；路由校验 Cookie 会话、空间成员和媒体未永久删除后，服务端再用 `src/lib/cos.ts` 生成短期 COS GET 签名 URL 拉取对象或 CI 处理结果。
 - COS 浏览器直传使用 COS JS SDK；服务端通过 `qcloud-cos-sts` 下发临时上传凭证。
 - COS object key 不能带前导 `/`；否则 STS policy 和 `cos-js-sdk-v5` 的 `?uploads&prefix=` 行为不一致，会导致 403。
 - COS 分片上传临时凭证 resource 使用腾讯云 STS SDK 同款格式，并且动作必须包含 `name/cos:ListMultipartUploads`。
@@ -51,14 +51,19 @@
 
 ## 媒体和缓存
 
-- COS 签名 URL 会解析 `q-sign-time`；已过期或 60 秒内即将过期时不复用，先显示灰色占位，等待新 URL。
-- 相册列表刷新时，同一媒体 id 优先复用当前页面已有可用签名 URL，避免本地缓存切到新数据时缩略图闪烁。
-- 相册页收到同一图片的新签名 URL 时，如果旧 URL 仍可用，先继续显示旧 URL，并以 3 并发后台预加载新 URL；视频暂不做这种预加载。
+- 前端可见媒体 URL 必须保持稳定，使用 `/api/media/[mediaId]`，不要重新把 COS 预签名 URL 下发给浏览器；COS 短签名只作为服务端代理到 COS 的内部实现。
+- 列表数据同时提供 `url` 和 `thumbnailUrl`：相册网格、封面和预览底部缩略条用 `thumbnailUrl`，沉浸式预览、下载和视频播放用 `url`；不要让相册页直接显示原图。
+- 稳定媒体读取路由统一使用协商缓存，返回 `Cache-Control: private, no-cache`、`ETag` 和 `Last-Modified`。浏览器可以保存内容，但每次复用前都要重新验证；服务端在权限有效且版本未变时返回 304。原始媒体路由转发 Range 请求以保留视频播放能力；`/preview` 路由使用数据万象 CI 运行时生成图片缩略图和视频封面，只流式转发，不在 Next 进程内使用 `sharp` 或 `arrayBuffer()` 压缩。
+- 数据万象图片下载时处理的私有读 URL 不要把 `imageMogr2/...` 处理参数放进 `Query` 参与签名；实测会触发 COS `SignatureDoesNotMatch`。当前使用官方 `cos.getObjectUrl({ Sign: true, QueryString })`：签名只覆盖原始对象，处理参数作为未签名 query 追加，图片 preview 可真实返回 200。
+- 视频封面 `ci-process=snapshot` 如果返回 `FunctionNotEnabled`，说明当前存储桶的数据万象媒体处理服务未激活或未绑定生效，不是 URL 签名问题；可用 CI `GET /mediabucket` 查询媒体处理 bucket 列表。`cloud-album-1314488277` 开通媒体处理后，视频 `/preview` 已实测返回 `200 image/jpeg`。
+- 需要 Cookie 鉴权的私有图片不能走 Next Image 默认优化取源链路；`MediaThumbnail` 和 `SafeImage` 使用 `unoptimized`，让浏览器直接请求稳定媒体 URL 并复用自身 HTTP 缓存。
 - 相册媒体缩略图使用 `IntersectionObserver` 懒加载；未进入加载范围前只显示灰色占位，不挂载真实图片或视频。
 - 空态和媒体占位样式集中在全局 CSS：页面空态使用 `EmptyState`；图片/视频懒加载、加载失败、过期 URL 占位使用 `.ca-media-placeholder`。
-- 媒体预览是相册页内 overlay 行为，不使用独立预览路由；打开时使用当次媒体列表快照，后台刷新不替换预览中的签名 URL。
+- 媒体预览是相册页内 overlay 行为，不使用独立预览路由；打开时使用当次媒体列表快照，后台刷新不替换预览中的媒体 URL。
 - 预览图片使用原图；不要恢复“先显示 Next 优化图，稳定后切 COS 原图”的方案。
-- 已尝试并回退预览主区域窗口化、rAF 写 CSS 变量拖动、底部缩略图测量平移、Next Image 小尺寸候选配置；没有 Performance 对照验证时不要恢复。
+- 预览主区域只能挂载当前项和前后 2 项的原图/原视频，其它项使用等宽占位，避免一打开预览就加载整本相册原图。
+- 预览图片加载完成后一帧再重置并居中缩放状态；不要在图片未加载、尺寸为 0 时依赖 `react-zoom-pan-pinch` 的初始居中结果。
+- 已尝试并回退 rAF 写 CSS 变量拖动、底部缩略图测量平移、Next Image 小尺寸候选配置；没有 Performance 对照验证时不要恢复。
 
 ## 预览和手势
 

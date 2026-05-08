@@ -93,6 +93,7 @@ export const MediaThumbnail = memo(function MediaThumbnail({
     setFailed(true)
     onErrorRef.current?.()
   }
+  const shouldRenderVideo = type === 'video' && !src.includes('/preview')
 
   if (!shouldLoad) {
     return (
@@ -104,7 +105,7 @@ export const MediaThumbnail = memo(function MediaThumbnail({
     return <span className="ca-media-placeholder" aria-label={alt} />
   }
 
-  if (type === 'video') {
+  if (shouldRenderVideo) {
     return (
       <video
         src={`${src}#t=0.1`}
@@ -125,6 +126,7 @@ export const MediaThumbnail = memo(function MediaThumbnail({
       src={src}
       alt={alt}
       fill
+      unoptimized
       className={className}
       sizes={sizes}
       priority={priority}

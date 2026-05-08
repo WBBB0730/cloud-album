@@ -36,7 +36,8 @@
 - `src/features/auth/session.ts`：Cookie 会话创建、读取、销毁，`requireUser` 和 `requireAdmin`。
 - `src/features/auth/bootstrap.ts`：按 `.env.local` 初始化或提升全局管理员账号。
 - `src/lib/env.ts`：服务端环境变量读取。
-- `src/lib/cos.ts`：COS object key、STS 临时上传凭证、短期读取签名 URL。
+- `src/lib/cos.ts`：COS object key、STS 临时上传凭证、服务端读取 COS 时使用的短期 GET 签名 URL。
+- `src/lib/media-url.ts`：生成前端可见的稳定媒体读取 URL，支持原始媒体和缩略图变体。
 - `src/lib/security.ts`：随机 token、会话 token hash、邀请 token HMAC hash、手机号规范化。
 
 页面结构：
@@ -52,6 +53,8 @@
 - `/spaces/[spaceId]/trash`：回收站文件夹列表。
 - `/spaces/[spaceId]/trash/[folderId]`：回收站文件夹媒体列表，支持多选批量恢复和批量永久删除。
 - `/admin`：全局管理后台，按 tab 展示邀请、账号和永久删除记录。
+- `/api/media/[mediaId]`：稳定原始媒体读取路由。路由读取当前 Cookie 会话，校验用户属于媒体所在空间且媒体未永久删除，再由服务端使用短期 COS 签名 URL 拉取对象并流式转发；原始媒体保留 Range 支持，用于预览、下载和视频播放。
+- `/api/media/[mediaId]/preview`：稳定预览媒体读取路由。路由同样先做 Cookie 会话和空间权限校验，再使用数据万象 CI 运行时处理参数请求 COS：图片返回最大边 720 的 WebP 缩略图，视频返回 1 秒处 jpg 截图。该路由只流式转发 CI 结果，不在 Next 中使用 `sharp`、`arrayBuffer()` 或其它 CPU 压缩逻辑。
 
 渲染模式：
 
@@ -90,4 +93,4 @@
 
 重要数据页的内部滚动区域使用 `src/components/app/pull-to-refresh.tsx` 提供下拉刷新，刷新动作复用当前页面 `useServerAction().refresh()`。相册详情和回收站相册这类复杂手势页需要在预览、多选等状态下禁用下拉刷新，避免和缩放、左右滑动、长按多选或拖动快速选择冲突。
 
-`src/hooks/use-server-action.ts` 支持页面传入可选合并策略。默认页面仍使用 fresh 数据整份替换；图片密集页面可以通过 `mergeData` 做结构共享，减少缓存数据和 fresh 数据切换时的重渲染，并通过 `getCacheData` 保证本地缓存仍写入最新服务端数据。相册详情页使用该能力保留未变化媒体对象引用，同时继续让签名 URL 预加载和过期恢复拿到服务端新 URL。
+`src/hooks/use-server-action.ts` 支持页面传入可选合并策略。默认页面仍使用 fresh 数据整份替换；图片密集页面可以通过 `mergeData` 做结构共享，减少缓存数据和 fresh 数据切换时的重渲染，并通过 `getCacheData` 保证本地缓存仍写入最新服务端数据。相册详情页使用该能力保留未变化媒体对象引用；媒体内容 URL 由 `src/lib/media-url.ts` 按媒体 id 生成稳定应用内路径。列表数据同时提供 `url` 和 `thumbnailUrl`：`url` 用于预览、下载等原始媒体场景，`thumbnailUrl` 指向 `/api/media/[mediaId]/preview`，用于相册网格、封面和预览底部缩略图，避免相册页直接拉取原图。

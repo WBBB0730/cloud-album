@@ -141,6 +141,22 @@ export const getActiveMediaById = async (spaceId: string, mediaId: string) => {
   return item ?? null
 }
 
+export const getReadableMediaById = async (mediaId: string) => {
+  const [item] = await db
+    .select()
+    .from(media)
+    .where(
+      and(
+        eq(media.id, mediaId),
+        eq(media.status, 'ready'),
+        isNull(media.permanentlyDeletedAt)
+      )
+    )
+    .limit(1)
+
+  return item ?? null
+}
+
 export const getUploaderName = async (userId: string) => {
   const [user] = await db
     .select({ name: users.name })

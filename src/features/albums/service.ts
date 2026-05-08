@@ -5,12 +5,13 @@ import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { deleteBatches, folders, media } from '@/db/schema'
 import { requireSpaceMember } from '@/features/spaces/service'
-import { getSignedReadUrl } from '@/lib/cos'
+import { getMediaContentUrl } from '@/lib/media-url'
 import { safeName } from '@/lib/security'
 
 import {
   getActiveMediaById,
   getFolderById,
+  getReadableMediaById,
   listActiveFolders,
   listActiveMedia,
 } from './queries'
@@ -24,7 +25,9 @@ export const getAlbumHome = async (spaceId: string, userId: string) => {
     currentUserId: userId,
     folders: folderRows.map((folder) => ({
       ...folder,
-      coverUrl: folder.cover ? getSignedReadUrl(folder.cover.cosKey) : null,
+      coverUrl: folder.cover
+        ? getMediaContentUrl(folder.cover.id, 'thumb')
+        : null,
       coverType: folder.cover?.type ?? null,
     })),
   }
@@ -103,9 +106,22 @@ export const getFolderDetail = async (
     folder,
     media: items.map((item) => ({
       ...item,
-      url: getSignedReadUrl(item.cosKey),
+      url: getMediaContentUrl(item.id),
+      thumbnailUrl: getMediaContentUrl(item.id, 'thumb'),
     })),
   }
+}
+
+export const getMediaContent = async (mediaId: string, userId: string) => {
+  const item = await getReadableMediaById(mediaId)
+
+  if (!item) {
+    throw new Error('媒体不存在')
+  }
+
+  await requireSpaceMember(item.spaceId, userId)
+
+  return item
 }
 
 export const deleteMedia = async (

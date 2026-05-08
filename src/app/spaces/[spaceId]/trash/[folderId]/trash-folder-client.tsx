@@ -37,6 +37,7 @@ type TrashMediaItem = {
   type: 'image' | 'video'
   filename: string
   url: string
+  thumbnailUrl: string
   duration: number | null
 }
 
@@ -279,7 +280,7 @@ export function TrashFolderClient({
                       }}
                     >
                       <MediaThumbnail
-                        src={item.url}
+                        src={item.thumbnailUrl}
                         alt={item.filename}
                         type={item.type}
                         sizes="33vw"

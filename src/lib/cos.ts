@@ -1,6 +1,7 @@
 import 'server-only'
 
-import { createHash, createHmac, randomUUID } from 'crypto'
+import { randomUUID } from 'crypto'
+import COS from 'cos-js-sdk-v5'
 
 import { env } from '@/lib/env'
 
@@ -13,6 +14,10 @@ type TemporaryCredential = {
   startTime: number
   expiredTime: number
 }
+
+type CosQueryValue = string | number | boolean | null | undefined
+type CosQuery = Record<string, CosQueryValue>
+type CosClient = InstanceType<typeof COS>
 
 const UPLOAD_ACTIONS = [
   'name/cos:PutObject',
@@ -50,10 +55,38 @@ const parseCosBucket = () => {
 
 const normalizeCosKey = (cosKey: string) => cosKey.replace(/^\/+/, '')
 
+let cosClient: CosClient | null = null
+
+const getCosClient = () => {
+  cosClient ??= new COS({
+    SecretId: env.tencentSecretId,
+    SecretKey: env.tencentSecretKey,
+  })
+
+  return cosClient
+}
+
 const createCosResource = (cosKey: string) => {
   const { appId, shortBucketName } = parseCosBucket()
   return `qcs::cos:${env.cosRegion}:uid/${appId}:prefix//${appId}/${shortBucketName}/${normalizeCosKey(cosKey)}`
 }
+
+const buildCosQueryString = (query: CosQuery = {}) =>
+  Object.entries(query)
+    .filter(
+      (entry): entry is [string, Exclude<CosQueryValue, null | undefined>] => {
+        const [, value] = entry
+        return value !== null && value !== undefined
+      }
+    )
+    .map(([key, value]) => {
+      if (value === '') {
+        return key
+      }
+
+      return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
+    })
+    .join('&')
 
 export const createCosKey = (
   spaceId: string,
@@ -104,32 +137,20 @@ export const getUploadCredential = async (cosKey: string) => {
   })
 }
 
-const hmacSha1 = (key: string, value: string) =>
-  createHmac('sha1', key).update(value).digest('hex')
-
-const sha1 = (value: string) => createHash('sha1').update(value).digest('hex')
-
-export const getSignedReadUrl = (cosKey: string) => {
+export const getSignedReadUrl = (cosKey: string, query: CosQuery = {}) => {
   const normalizedCosKey = normalizeCosKey(cosKey)
-  const start = Math.floor(Date.now() / 1000) - 60
-  const end = start + env.cosSignedUrlExpiresSeconds
-  const keyTime = `${start};${end}`
-  const host = `${env.cosBucket}.cos.${env.cosRegion}.myqcloud.com`
-  const signedPathname = `/${normalizedCosKey}`
-  const urlPathname = `/${normalizedCosKey.split('/').map(encodeURIComponent).join('/')}`
-  const httpString = ['get', signedPathname, '', `host=${host}`, ''].join('\n')
-  const stringToSign = ['sha1', keyTime, sha1(httpString), ''].join('\n')
-  const signKey = hmacSha1(env.tencentSecretKey, keyTime)
-  const signature = hmacSha1(signKey, stringToSign)
-  const authorization = [
-    'q-sign-algorithm=sha1',
-    `q-ak=${env.tencentSecretId}`,
-    `q-sign-time=${keyTime}`,
-    `q-key-time=${keyTime}`,
-    'q-header-list=host',
-    'q-url-param-list=',
-    `q-signature=${signature}`,
-  ].join('&')
+  const queryString = buildCosQueryString(query)
 
-  return `https://${host}${urlPathname}?${authorization}`
+  return getCosClient().getObjectUrl(
+    {
+      Bucket: env.cosBucket,
+      Region: env.cosRegion,
+      Key: normalizedCosKey,
+      Method: 'GET',
+      Expires: env.cosSignedUrlExpiresSeconds,
+      Sign: true,
+      QueryString: queryString || undefined,
+    },
+    () => {}
+  )
 }

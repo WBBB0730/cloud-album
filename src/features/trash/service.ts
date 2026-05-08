@@ -6,7 +6,7 @@ import { db } from '@/db/client'
 import { folders, media, users } from '@/db/schema'
 import { getFolderById } from '@/features/albums/queries'
 import { requireSpaceMember } from '@/features/spaces/service'
-import { getSignedReadUrl } from '@/lib/cos'
+import { getMediaContentUrl } from '@/lib/media-url'
 
 import { listDeletedMediaInFolder, listFoldersForTrash } from './queries'
 
@@ -91,7 +91,7 @@ export const getTrashHome = async (spaceId: string, userId: string) => {
         deletedByName: deletedBy
           ? (userNameById.get(deletedBy) ?? '未知用户')
           : '未知用户',
-        coverUrl: cover ? getSignedReadUrl(cover.cosKey) : null,
+        coverUrl: cover ? getMediaContentUrl(cover.id, 'thumb') : null,
       },
     ]
   })
@@ -118,7 +118,8 @@ export const getTrashFolder = async (
     folder,
     media: items.map((item) => ({
       ...item,
-      url: getSignedReadUrl(item.cosKey),
+      url: getMediaContentUrl(item.id),
+      thumbnailUrl: getMediaContentUrl(item.id, 'thumb'),
     })),
   }
 }

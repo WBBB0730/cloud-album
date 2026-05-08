@@ -33,6 +33,7 @@ export function SafeImage({
       src={src}
       alt={alt}
       fill
+      unoptimized
       className={className}
       sizes={sizes}
       onError={() => setFailed(true)}
