@@ -6,7 +6,7 @@ import { memo, useEffect, useRef, useState } from 'react'
 import { isSignedUrlUsable } from '@/lib/signed-url'
 
 type MediaThumbnailProps = {
-  src: string
+  src?: string | null
   alt: string
   type: 'image' | 'video'
   sizes: string
@@ -83,7 +83,7 @@ export const MediaThumbnail = memo(function MediaThumbnail({
   }, [lazyRootMargin, priority, shouldLoad])
 
   useEffect(() => {
-    if (shouldLoad && !isSignedUrlUsable(src)) {
+    if (shouldLoad && src && !isSignedUrlUsable(src)) {
       setFailed(true)
       onErrorRef.current?.()
     }
@@ -93,7 +93,9 @@ export const MediaThumbnail = memo(function MediaThumbnail({
     setFailed(true)
     onErrorRef.current?.()
   }
-  const shouldRenderVideo = type === 'video' && !src.includes('/preview')
+  const shouldRenderVideo = src
+    ? type === 'video' && !src.includes('/preview')
+    : false
 
   if (!shouldLoad) {
     return (
@@ -101,7 +103,7 @@ export const MediaThumbnail = memo(function MediaThumbnail({
     )
   }
 
-  if (failed || !isSignedUrlUsable(src)) {
+  if (failed || !src || !isSignedUrlUsable(src)) {
     return <span className="ca-media-placeholder" aria-label={alt} />
   }
 

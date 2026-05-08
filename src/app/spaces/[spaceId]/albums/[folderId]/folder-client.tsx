@@ -412,7 +412,7 @@ const FolderMediaGridItem = memo(function FolderMediaGridItem({
         }}
       >
         <MediaThumbnail
-          src={item.thumbnailUrl}
+          src={item.thumbnailUrl ?? item.url}
           alt={item.filename}
           type={item.type}
           sizes="33vw"

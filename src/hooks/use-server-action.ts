@@ -3,6 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const CACHE_PREFIX = 'cloud-album:view:'
+const CACHE_SCHEMA_VERSION = 2
+
+type CacheEnvelope<T> = {
+  data: T
+  savedAt: number
+  version: number
+}
+
+let cacheCleanupDone = false
 
 const getCacheKey = (loader: () => Promise<unknown>, deps: unknown[]) => {
   let serializedDeps = ''
@@ -16,10 +25,69 @@ const getCacheKey = (loader: () => Promise<unknown>, deps: unknown[]) => {
   return `${CACHE_PREFIX}${loader.toString()}:${serializedDeps}`
 }
 
+const isCacheEnvelope = <T>(value: unknown): value is CacheEnvelope<T> => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const record = value as Partial<CacheEnvelope<T>>
+
+  return (
+    record.version === CACHE_SCHEMA_VERSION &&
+    typeof record.savedAt === 'number' &&
+    'data' in record
+  )
+}
+
+const cleanupLegacyCache = () => {
+  if (cacheCleanupDone) {
+    return
+  }
+
+  cacheCleanupDone = true
+
+  try {
+    const keys = Array.from({ length: window.localStorage.length }, (_, index) =>
+      window.localStorage.key(index)
+    ).filter((key): key is string => Boolean(key?.startsWith(CACHE_PREFIX)))
+
+    for (const key of keys) {
+      const cached = window.localStorage.getItem(key)
+
+      if (!cached) {
+        continue
+      }
+
+      try {
+        const parsed = JSON.parse(cached) as unknown
+
+        if (!isCacheEnvelope(parsed)) {
+          window.localStorage.removeItem(key)
+        }
+      } catch {
+        window.localStorage.removeItem(key)
+      }
+    }
+  } catch {
+    // localStorage can be unavailable; fresh data will be loaded as usual.
+  }
+}
+
 const readCache = <T>(key: string) => {
   try {
     const cached = window.localStorage.getItem(key)
-    return cached ? (JSON.parse(cached) as T) : null
+
+    if (!cached) {
+      return null
+    }
+
+    const parsed = JSON.parse(cached) as unknown
+
+    if (!isCacheEnvelope<T>(parsed)) {
+      return null
+    }
+
+    return parsed.data
   } catch {
     return null
   }
@@ -27,7 +95,14 @@ const readCache = <T>(key: string) => {
 
 const writeCache = (key: string, value: unknown) => {
   try {
-    window.localStorage.setItem(key, JSON.stringify(value))
+    window.localStorage.setItem(
+      key,
+      JSON.stringify({
+        data: value,
+        savedAt: Date.now(),
+        version: CACHE_SCHEMA_VERSION,
+      })
+    )
   } catch {
     // localStorage can be unavailable or full; fresh data should still render.
   }
@@ -95,6 +170,10 @@ export function useServerAction<T>(
   loaderRef.current = loader
   getCacheDataRef.current = options.getCacheData
   mergeDataRef.current = options.mergeData
+
+  useEffect(() => {
+    cleanupLegacyCache()
+  }, [])
 
   const updateData = (value: T) => {
     dataRef.current = value
