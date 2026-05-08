@@ -22,6 +22,20 @@
       "when": 1777878617573,
       "tag": "0002_disable_user_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778244793298,
+      "tag": "0003_messy_gressill",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1778247100020,
+      "tag": "0004_blushing_blockbuster",
+      "breakpoints": true
     }
   ]
 }

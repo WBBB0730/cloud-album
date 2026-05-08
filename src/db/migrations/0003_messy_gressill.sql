@@ -1,0 +1,3 @@
+ALTER TABLE "media" ADD COLUMN "content_hash" varchar(64);--> statement-breakpoint
+ALTER TABLE "upload_sessions" ADD COLUMN "content_hash" varchar(64);--> statement-breakpoint
+CREATE UNIQUE INDEX "media_album_content_hash_active_unique" ON "media" USING btree ("space_id","folder_id","content_hash") WHERE "media"."content_hash" IS NOT NULL AND "media"."status" = 'ready' AND "media"."deleted_at" IS NULL AND "media"."permanently_deleted_at" IS NULL;

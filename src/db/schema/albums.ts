@@ -10,6 +10,7 @@ import {
   varchar,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
 
 import { users } from './auth'
 import { deleteBatches } from './deletes'
@@ -71,6 +72,7 @@ export const media = pgTable(
     filename: varchar('filename', { length: 255 }).notNull(),
     mimeType: varchar('mime_type', { length: 120 }).notNull(),
     size: bigint('size', { mode: 'number' }).notNull(),
+    contentHash: varchar('content_hash', { length: 64 }),
     cosKey: text('cos_key').notNull(),
     width: integer('width'),
     height: integer('height'),
@@ -108,6 +110,11 @@ export const media = pgTable(
       table.permanentlyDeletedAt
     ),
     index('media_delete_batch_idx').on(table.deleteBatchId),
+    index('media_album_content_hash_idx')
+      .on(table.spaceId, table.folderId, table.contentHash)
+      .where(
+        sql`${table.contentHash} IS NOT NULL AND ${table.status} = 'ready' AND ${table.deletedAt} IS NULL AND ${table.permanentlyDeletedAt} IS NULL`
+      ),
     uniqueIndex('media_cos_key_unique').on(table.cosKey),
   ]
 )

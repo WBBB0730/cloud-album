@@ -26,6 +26,19 @@ const UPLOAD_FILE_CONCURRENCY = 5
 const COS_CHUNK_CONCURRENCY_PER_FILE = 1
 const VIDEO_META_TIMEOUT_MS = 5000
 
+const getFileContentHash = async (file: File) => {
+  if (!globalThis.crypto?.subtle) {
+    return null
+  }
+
+  const buffer = await file.arrayBuffer()
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', buffer)
+
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
 const getImageMeta = async (file: File) => {
   const [bitmap, exif] = await Promise.all([
     createImageBitmap(file).catch(() => null),
@@ -126,6 +139,8 @@ export function UploadClient({
   const uploadQueueRef = useRef<UploadRow[]>([])
   const queuedUploadIdsRef = useRef(new Set<string>())
   const activeUploadIdsRef = useRef(new Set<string>())
+  const activeContentHashesRef = useRef(new Map<string, string>())
+  const hashQueueRef = useRef<Promise<void>>(Promise.resolve())
   const [rows, setRows] = useState<UploadRow[]>([])
 
   useEffect(() => {
@@ -136,6 +151,8 @@ export function UploadClient({
       uploadQueueRef.current = []
       queuedUploadIdsRef.current.clear()
       activeUploadIdsRef.current.clear()
+      activeContentHashesRef.current.clear()
+      hashQueueRef.current = Promise.resolve()
     }
   }, [])
 
@@ -155,22 +172,63 @@ export function UploadClient({
     )
   }
 
+  const runHashTask = async <T,>(task: () => Promise<T>) => {
+    const run = hashQueueRef.current.then(task, task)
+    hashQueueRef.current = run.then(
+      () => undefined,
+      () => undefined
+    )
+
+    return run
+  }
+
   const uploadRow = async (row: UploadRow) => {
     updateRow(row.id, { status: 'uploading', progress: 0, message: '上传中' })
     let currentSessionId = row.sessionId
+    let currentContentHash: string | null = null
 
     try {
       const meta = row.file.type.startsWith('video/')
         ? await getVideoMeta(row.file)
         : await getImageMeta(row.file)
+      const contentHash = await runHashTask(() =>
+        getFileContentHash(row.file).catch(() => null)
+      )
+
+      if (contentHash) {
+        const activeRowId = activeContentHashesRef.current.get(contentHash)
+
+        if (activeRowId && activeRowId !== row.id) {
+          updateRow(row.id, {
+            status: 'completed',
+            progress: 100,
+            message: '已完成',
+          })
+          return
+        }
+
+        activeContentHashesRef.current.set(contentHash, row.id)
+        currentContentHash = contentHash
+      }
+
       const intent = await createUploadIntentAction({
         spaceId,
         folderId,
         filename: row.file.name,
         mimeType: row.file.type || 'application/octet-stream',
         size: row.file.size,
+        contentHash,
         ...meta,
       })
+
+      if (intent.status === 'duplicate') {
+        updateRow(row.id, {
+          status: 'completed',
+          progress: 100,
+          message: '已完成',
+        })
+        return
+      }
 
       currentSessionId = intent.session.id
       updateRow(row.id, { sessionId: currentSessionId, message: '上传中' })
@@ -222,6 +280,13 @@ export function UploadClient({
         status: 'failed',
         message: error instanceof Error ? error.message : '上传失败，可重试',
       })
+    } finally {
+      if (
+        currentContentHash &&
+        activeContentHashesRef.current.get(currentContentHash) === row.id
+      ) {
+        activeContentHashesRef.current.delete(currentContentHash)
+      }
     }
   }
 

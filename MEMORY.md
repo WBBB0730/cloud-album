@@ -42,6 +42,8 @@
 - 媒体删除只改数据库，不访问 COS；批量删除必须使用单条批量更新并校验数量，避免逐条查询/逐条更新。
 - 删除媒体时如果包含当前封面，必须在同一事务内更新 `folders.cover_media_id` 为剩余最新可用媒体；无剩余媒体时清空。
 - 上传页使用单一队列调度器，文件维度最多 5 并发；成功项隐藏但保留在总进度统计中；组件卸载或离开时要清理本地资源和未完成回写。
+- 上传页会在原有“上传中”状态内静默计算完整文件 SHA-256，并把 `contentHash` 传给创建上传意图；同一空间/相册内已有 ready 媒体命中相同 hash 时，服务端直接返回重复结果，不创建新媒体、不签 COS 上传凭证。数据库对 `content_hash` 使用普通部分索引，不做唯一约束，历史数据允许重复 hash 以便完整回填。
+- 历史媒体 hash 统计使用 `pnpm media:hash`，脚本路径为 `scripts/media-hash.ts`，通过 `tsx` 执行；回填写入使用 `pnpm media:hash:backfill`，会更新 `media.content_hash` 和对应 `upload_sessions.content_hash`。
 - 上传页存在等待或上传中文件时需要离开保护：页面内返回、自带返回、刷新/关闭都要处理，且确认离开前先关闭本地 guard，避免重复拦截。
 - 全局 loading 由 `src/components/app/global-loading.tsx` 提供；长流程需要调用 `useGlobalLoading()` 并用 `try/finally` 关闭。
 - 动态路由壳使用 layout 级 `generateStaticParams() { return [] }` 和 `revalidate = false`；查询参数不要传入 Server Page，放在 client wrapper 中读取。

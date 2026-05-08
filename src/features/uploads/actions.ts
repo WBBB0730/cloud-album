@@ -18,6 +18,7 @@ export const createUploadIntentAction = async (input: {
   height?: number | null
   duration?: number | null
   takenAt?: string | null
+  contentHash?: string | null
 }) => {
   const user = await requireUser()
   return createUploadIntent(user.id, input)

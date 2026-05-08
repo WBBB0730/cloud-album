@@ -67,6 +67,8 @@
 
 空间是数据隔离单位。`folders`、`media`、`upload_sessions`、`delete_batches` 等业务表都必须关联 `space_id`。所有查询、上传签名、读取 URL、删除和恢复操作都必须先校验当前用户属于目标空间；全局管理员是应用级权限，不等同于空间内角色。
 
+上传去重以同一空间、同一相册内的完整文件 SHA-256 为准。客户端在原有上传流程内静默计算内容 hash，并随创建上传意图提交给服务端；服务端只把未删除且状态为 `ready` 的同 hash 媒体视为重复，命中后不创建新 `media`、不创建 `upload_sessions`，也不签发 COS 上传凭证。数据库在 `media(space_id, folder_id, content_hash)` 上维护只覆盖 `ready` 媒体的普通部分索引，用于加速重复查询；历史数据允许保存重复 hash，避免老数据回填时跳过已存在的重复媒体。同一客户端同批次重复文件由上传页内存 hash 表在交互无感的情况下跳过。
+
 空间和相册重命名属于空间创建者权限。Server Action 只负责解析表单和返回结构化结果，具体权限判断和更新写入在 `spaces/service.ts`、`albums/service.ts` 中完成；全局管理员身份不额外授予空间内重命名权限。
 
 删除使用逻辑删除。普通删除写入 `deleted_at`、`deleted_by` 和 `delete_batch_id`；永久删除写入 `permanently_deleted_at`、`permanently_deleted_by`，但不删除 COS 文件。删除文件夹时，文件夹和其中媒体共享同一个删除批次；恢复文件夹时恢复同批次媒体。

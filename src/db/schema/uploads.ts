@@ -39,6 +39,7 @@ export const uploadSessions = pgTable(
     filename: varchar('filename', { length: 255 }).notNull(),
     mimeType: varchar('mime_type', { length: 120 }).notNull(),
     size: bigint('size', { mode: 'number' }).notNull(),
+    contentHash: varchar('content_hash', { length: 64 }),
     status: uploadStatusEnum('status').notNull().default('pending'),
     uploadedBy: uuid('uploaded_by')
       .notNull()

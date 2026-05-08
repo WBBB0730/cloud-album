@@ -1,0 +1,2 @@
+DROP INDEX "media_album_content_hash_active_unique";--> statement-breakpoint
+CREATE INDEX "media_album_content_hash_idx" ON "media" USING btree ("space_id","folder_id","content_hash") WHERE "media"."content_hash" IS NOT NULL AND "media"."status" = 'ready' AND "media"."deleted_at" IS NULL AND "media"."permanently_deleted_at" IS NULL;

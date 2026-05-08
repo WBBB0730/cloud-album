@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import { db } from '@/db/client'
 import { media, uploadSessions } from '@/db/schema'
@@ -19,6 +19,41 @@ type CreateUploadInput = {
   height?: number | null
   duration?: number | null
   takenAt?: string | null
+  contentHash?: string | null
+}
+
+const CONTENT_HASH_PATTERN = /^[a-f0-9]{64}$/
+
+const normalizeContentHash = (contentHash?: string | null) => {
+  if (!contentHash) {
+    return null
+  }
+
+  const normalized = contentHash.toLowerCase()
+  return CONTENT_HASH_PATTERN.test(normalized) ? normalized : null
+}
+
+const findDuplicateMedia = async (
+  spaceId: string,
+  folderId: string,
+  contentHash: string
+) => {
+  const [duplicate] = await db
+    .select({ id: media.id })
+    .from(media)
+    .where(
+      and(
+        eq(media.spaceId, spaceId),
+        eq(media.folderId, folderId),
+        eq(media.contentHash, contentHash),
+        eq(media.status, 'ready'),
+        isNull(media.deletedAt),
+        isNull(media.permanentlyDeletedAt)
+      )
+    )
+    .limit(1)
+
+  return duplicate ?? null
 }
 
 export const createUploadIntent = async (
@@ -37,6 +72,22 @@ export const createUploadIntent = async (
   const type = input.mimeType.startsWith('video/') ? 'video' : 'image'
   const cosKey = createCosKey(input.spaceId, input.folderId, input.filename)
   const takenAt = input.takenAt ? new Date(input.takenAt) : new Date()
+  const contentHash = normalizeContentHash(input.contentHash)
+
+  if (contentHash) {
+    const duplicate = await findDuplicateMedia(
+      input.spaceId,
+      input.folderId,
+      contentHash
+    )
+
+    if (duplicate) {
+      return {
+        status: 'duplicate' as const,
+        duplicateMediaId: duplicate.id,
+      }
+    }
+  }
 
   const result = await db.transaction(async (tx) => {
     const [createdMedia] = await tx
@@ -48,6 +99,7 @@ export const createUploadIntent = async (
         filename: input.filename,
         mimeType: input.mimeType || 'application/octet-stream',
         size: input.size,
+        contentHash,
         cosKey,
         width: input.width ?? null,
         height: input.height ?? null,
@@ -68,6 +120,7 @@ export const createUploadIntent = async (
         filename: input.filename,
         mimeType: input.mimeType || 'application/octet-stream',
         size: input.size,
+        contentHash,
         status: 'uploading',
         uploadedBy: userId,
       })
@@ -79,6 +132,7 @@ export const createUploadIntent = async (
   const credential = await getUploadCredential(cosKey)
 
   return {
+    status: 'upload' as const,
     ...result,
     upload: {
       region: env.cosRegion,
