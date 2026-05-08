@@ -31,6 +31,7 @@
 ## 架构约定
 
 - 技术栈：Next.js App Router、Server Action、PostgreSQL、Drizzle ORM、腾讯云 COS。
+- 根目录 `.env.example` 按 `.env.local` 的键顺序、注释和空行格式维护脱敏示例；新增或删除 `src/lib/env.ts` 中的变量时需要同步更新。
 - 数据库 schema 按 `src/db/schema/` 拆分；业务代码按 `src/features/*/{actions,service,queries}.ts` 分层。
 - 页面业务数据通过 `src/features/app/view-actions.ts` 在客户端拉取；写操作仍使用各模块 Server Action。
 - 私有媒体前端读取使用 `src/lib/media-url.ts` 生成稳定应用内 URL：原图/原视频为 `/api/media/[mediaId]`，缩略图/视频封面为 `/api/media/[mediaId]/preview`；路由校验 Cookie 会话、空间成员和媒体未永久删除后，服务端再用 `src/lib/cos.ts` 生成短期 COS GET 签名 URL 拉取对象或 CI 处理结果。
