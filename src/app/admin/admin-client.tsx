@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Check, ChevronLeft, Copy } from 'lucide-react'
-import { toast } from 'sonner'
+import toast from 'react-hot-toast'
 
 import { ErrorBanner } from '@/components/app/error-banner'
 import { useGlobalLoading } from '@/components/app/global-loading'

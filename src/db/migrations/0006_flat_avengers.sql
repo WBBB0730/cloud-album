@@ -1,0 +1,1 @@
+CREATE INDEX "media_album_cos_key_idx" ON "media" USING btree ("space_id","folder_id","cos_key") WHERE "media"."status" = 'ready' AND "media"."deleted_at" IS NULL AND "media"."permanently_deleted_at" IS NULL;

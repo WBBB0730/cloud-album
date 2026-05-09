@@ -9,6 +9,7 @@ import {
 import {
   ChevronLeft,
   Download,
+  Copy,
   ImageIcon,
   Loader2,
   MoreHorizontal,
@@ -543,12 +544,14 @@ export function MediaPreviewOverlay({
   media,
   initialIndex,
   onClose,
+  onCopy,
   onSetCover,
   onDelete,
 }: {
   media: PreviewMediaItem[]
   initialIndex: number
   onClose: () => void
+  onCopy?: (mediaId: string) => void | Promise<void>
   onSetCover?: (mediaId: string) => void | Promise<void>
   onDelete?: (mediaId: string) => void | Promise<void>
 }) {
@@ -863,6 +866,19 @@ export function MediaPreviewOverlay({
                 <Download className="size-5 text-[#111827]" />
                 下载
               </button>
+              {onCopy ? (
+                <button
+                  type="button"
+                  className="flex items-center gap-3 py-4 text-left"
+                  onClick={() => {
+                    setActionsOpen(false)
+                    void onCopy(currentItem.id)
+                  }}
+                >
+                  <Copy className="size-5 text-[#111827]" />
+                  复制到另一个相册
+                </button>
+              ) : null}
               {onSetCover ? (
                 <button
                   type="button"

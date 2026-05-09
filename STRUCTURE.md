@@ -48,7 +48,7 @@
 - `/spaces/[spaceId]`：相册首页，支持卡片/列表视图、空间创建者修改空间名称、通过弹窗创建相册、进入成员管理、进入回收站。
 - `/spaces/[spaceId]/members`：成员管理页，展示空间成员，通过手机号邀请已注册用户加入，支持创建者移除其他成员和非创建者退出当前空间。
 - `/spaces/[spaceId]/upload`：选择上传文件夹。
-- `/spaces/[spaceId]/albums/[folderId]`：相册媒体网格，支持空间创建者修改相册名称、类型筛选、页内预览、长按多选、拖动快速选择、批量下载、批量删除和选择相册封面。
+- `/spaces/[spaceId]/albums/[folderId]`：相册媒体网格，支持空间创建者修改相册名称、类型筛选、页内预览、长按多选、拖动快速选择、批量复制到另一个相册、批量下载、批量删除和选择相册封面；预览页单项操作也可复制当前媒体到另一个相册；复制是元数据级逻辑复制，只新增目标相册中的 `media` 行并复用原 COS 对象，复制弹窗内可直接新建目标相册。
 - `/spaces/[spaceId]/albums/[folderId]/upload`：COS 分片上传队列，显示总进度，最多 5 个文件并发上传。
 - `/spaces/[spaceId]/trash`：回收站文件夹列表。
 - `/spaces/[spaceId]/trash/[folderId]`：回收站文件夹媒体列表，支持多选批量恢复和批量永久删除。
@@ -68,6 +68,10 @@
 空间是数据隔离单位。`folders`、`media`、`upload_sessions`、`delete_batches` 等业务表都必须关联 `space_id`。所有查询、上传签名、读取 URL、删除和恢复操作都必须先校验当前用户属于目标空间；全局管理员是应用级权限，不等同于空间内角色。
 
 上传去重以同一空间、同一相册内的完整文件 SHA-256 为准。客户端在原有上传流程内静默计算内容 hash，并随创建上传意图提交给服务端；服务端只把未删除且状态为 `ready` 的同 hash 媒体视为重复，命中后不创建新 `media`、不创建 `upload_sessions`，也不签发 COS 上传凭证。数据库在 `media(space_id, folder_id, content_hash)` 上维护只覆盖 `ready` 媒体的普通部分索引，用于加速重复查询；历史数据允许保存重复 hash，避免老数据回填时跳过已存在的重复媒体。同一客户端同批次重复文件由上传页内存 hash 表在交互无感的情况下跳过。
+
+相册间复制媒体不复制 COS 对象。`media.cos_key` 使用普通索引而不是唯一索引，允许多个媒体记录引用同一个 COS object；复制到目标相册时按目标相册内已有 `content_hash` 或同 `cos_key` 跳过重复项。由于 COS 对象可能被多个媒体记录共享，删除、永久删除和回收站操作都只能更新数据库状态，不能删除 COS 文件。
+
+相册复制相关索引按目标相册查询路径维护：`media_album_content_hash_idx` 覆盖 `space_id, folder_id, content_hash`，`media_album_cos_key_idx` 覆盖 `space_id, folder_id, cos_key`，二者都只索引 `ready` 且未删除/未永久删除的媒体。全局 `media_cos_key_idx` 保留给后续对象引用统计或孤儿对象清理。
 
 空间和相册重命名属于空间创建者权限。Server Action 只负责解析表单和返回结构化结果，具体权限判断和更新写入在 `spaces/service.ts`、`albums/service.ts` 中完成；全局管理员身份不额外授予空间内重命名权限。
 
@@ -96,3 +100,5 @@
 重要数据页的内部滚动区域使用 `src/components/app/pull-to-refresh.tsx` 提供下拉刷新，刷新动作复用当前页面 `useServerAction().refresh()`。相册详情和回收站相册这类复杂手势页需要在预览、多选等状态下禁用下拉刷新，避免和缩放、左右滑动、长按多选或拖动快速选择冲突。
 
 `src/hooks/use-server-action.ts` 支持页面传入可选合并策略。默认页面仍使用 fresh 数据整份替换；图片密集页面可以通过 `mergeData` 做结构共享，减少缓存数据和 fresh 数据切换时的重渲染，并通过 `getCacheData` 保证本地缓存仍写入最新服务端数据。相册详情页使用该能力保留未变化媒体对象引用；媒体内容 URL 由 `src/lib/media-url.ts` 按媒体 id 生成稳定应用内路径。列表数据同时提供 `url` 和 `thumbnailUrl`：`url` 用于预览、下载等原始媒体场景，`thumbnailUrl` 指向 `/api/media/[mediaId]/preview`，用于相册网格、封面和预览底部缩略图，避免相册页直接拉取原图。
+
+全局 toast 使用 `react-hot-toast`，入口为 `src/components/app/app-toaster.tsx`，在根布局中挂载到底部居中位置，并通过 `env(safe-area-inset-bottom)` 避开移动端底部安全区；toast 容器层级高于全局 loading，避免操作成功提示被遮挡。`sonner` 依赖和 shadcn 生成的 `src/components/ui/sonner.tsx` 保留在项目中，当前不作为全局 toast 入口。

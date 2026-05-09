@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
-import { toast } from 'sonner'
+import toast from 'react-hot-toast'
 
 import { EmptyState } from '@/components/app/empty-state'
 import { ErrorBanner } from '@/components/app/error-banner'

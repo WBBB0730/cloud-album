@@ -8,7 +8,6 @@ import {
   timestamp,
   uuid,
   varchar,
-  uniqueIndex,
 } from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 
@@ -115,6 +114,11 @@ export const media = pgTable(
       .where(
         sql`${table.contentHash} IS NOT NULL AND ${table.status} = 'ready' AND ${table.deletedAt} IS NULL AND ${table.permanentlyDeletedAt} IS NULL`
       ),
-    uniqueIndex('media_cos_key_unique').on(table.cosKey),
+    index('media_album_cos_key_idx')
+      .on(table.spaceId, table.folderId, table.cosKey)
+      .where(
+        sql`${table.status} = 'ready' AND ${table.deletedAt} IS NULL AND ${table.permanentlyDeletedAt} IS NULL`
+      ),
+    index('media_cos_key_idx').on(table.cosKey),
   ]
 )

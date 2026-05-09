@@ -36,6 +36,20 @@
       "when": 1778247100020,
       "tag": "0004_blushing_blockbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1778294288466,
+      "tag": "0005_warm_havok",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1778297119887,
+      "tag": "0006_flat_avengers",
+      "breakpoints": true
     }
   ]
 }

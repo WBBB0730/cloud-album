@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, Trash2, Undo2 } from 'lucide-react'
-import { toast } from 'sonner'
+import toast from 'react-hot-toast'
 
 import { EmptyState } from '@/components/app/empty-state'
 import { useGlobalLoading } from '@/components/app/global-loading'

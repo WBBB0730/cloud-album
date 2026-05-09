@@ -2,11 +2,11 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import type { Metadata, Viewport } from 'next'
 
 import '@/styles/global.css'
+import { AppToaster } from '@/components/app/app-toaster'
 import { ClientOnlyGate } from '@/components/app/client-only-gate'
 import { GlobalLoadingProvider } from '@/components/app/global-loading'
 import { ViewportSize } from '@/components/app/viewport-size'
 import { ThemeProvider } from '@/components/theme-provider'
-import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
@@ -84,7 +84,7 @@ window.__REACT_GRAB__ && window.__REACT_GRAB__.setOptions && window.__REACT_GRAB
           <GlobalLoadingProvider>
             <ThemeProvider>
               <TooltipProvider>{children}</TooltipProvider>
-              <Toaster richColors position="top-center" />
+              <AppToaster />
             </ThemeProvider>
           </GlobalLoadingProvider>
         </ClientOnlyGate>

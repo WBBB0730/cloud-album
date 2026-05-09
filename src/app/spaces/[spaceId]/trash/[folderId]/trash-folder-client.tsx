@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useMemo } from 'react'
-import { toast } from 'sonner'
+import toast from 'react-hot-toast'
 import { Check, ChevronLeft, Play, Trash2, Undo2, X } from 'lucide-react'
 
 import { EmptyState } from '@/components/app/empty-state'

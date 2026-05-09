@@ -1005,6 +1005,10 @@
   font-weight: 600;
 }
 
+.ca-primary-btn:disabled {
+  opacity: 0.45;
+}
+
 .ca-secondary-btn {
   display: inline-grid;
   place-items: center;
@@ -1022,6 +1026,113 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
+}
+
+.ca-copy-dialog {
+  gap: 16px;
+}
+
+.ca-copy-create-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  border-bottom: 1px solid var(--album-line);
+  padding: 10px 5px 12px;
+}
+
+.ca-copy-create-form .ca-primary-btn {
+  min-height: 40px;
+  padding: 0 14px;
+}
+
+.ca-copy-create-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #c24141;
+  font-size: 12px;
+}
+
+.ca-copy-target-list {
+  display: grid;
+  max-height: min(360px, 56dvh);
+  margin-right: -10px;
+  padding-right: 10px;
+  overflow-y: auto;
+}
+
+.ca-copy-target {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  border: 0;
+  border-bottom: 1px solid var(--album-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--album-text);
+  padding: 0 5px;
+  font-family: inherit;
+  text-align: left;
+}
+
+.ca-copy-target.active {
+  color: var(--album-accent);
+}
+
+.ca-copy-target-new {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--album-line);
+  color: var(--album-accent);
+}
+
+.ca-copy-target-new-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.ca-copy-target-leading-icon {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  color: currentColor;
+}
+
+.ca-copy-target-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ca-copy-target small {
+  color: var(--album-muted);
+  font-size: 12px;
+}
+
+.ca-copy-target-check {
+  width: 16px;
+  height: 16px;
+  color: var(--album-accent);
+}
+
+.ca-copy-target-state {
+  display: grid;
+  place-items: center;
+  min-height: 92px;
+  color: var(--album-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+.ca-copy-dialog-actions {
+  margin-top: 2px;
 }
 
 .ca-upload-zone {

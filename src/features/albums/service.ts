@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, or } from 'drizzle-orm'
 
 import { db } from '@/db/client'
 import { deleteBatches, folders, media } from '@/db/schema'
@@ -31,6 +31,20 @@ export const getAlbumHome = async (spaceId: string, userId: string) => {
       coverType: folder.cover?.type ?? null,
     })),
   }
+}
+
+export const getCopyTargetFolders = async (
+  spaceId: string,
+  userId: string
+) => {
+  await requireSpaceMember(spaceId, userId)
+  const folderRows = await listActiveFolders(spaceId)
+
+  return folderRows.map((folder) => ({
+    id: folder.id,
+    name: folder.name,
+    mediaCount: folder.mediaCount,
+  }))
 }
 
 export const createFolder = async (
@@ -138,6 +152,164 @@ export const deleteMediaBatch = async (
   userId: string
 ) => {
   await deleteActiveMedia(spaceId, mediaIds, userId, '部分媒体不存在')
+}
+
+export const copyMediaBatch = async (
+  spaceId: string,
+  sourceFolderId: string,
+  targetFolderId: string,
+  mediaIds: string[],
+  userId: string
+) => {
+  await requireSpaceMember(spaceId, userId)
+  const uniqueIds = Array.from(new Set(mediaIds.filter(Boolean)))
+
+  if (uniqueIds.length === 0) {
+    throw new Error('请选择要复制的媒体')
+  }
+
+  if (sourceFolderId === targetFolderId) {
+    throw new Error('请选择另一个相册')
+  }
+
+  return db.transaction(async (tx) => {
+    const folderRows = await tx
+      .select({ id: folders.id })
+      .from(folders)
+      .where(
+        and(
+          eq(folders.spaceId, spaceId),
+          inArray(folders.id, [sourceFolderId, targetFolderId]),
+          isNull(folders.deletedAt),
+          isNull(folders.permanentlyDeletedAt)
+        )
+      )
+
+    const folderIds = new Set(folderRows.map((folder) => folder.id))
+
+    if (!folderIds.has(sourceFolderId)) {
+      throw new Error('来源相册不存在')
+    }
+
+    if (!folderIds.has(targetFolderId)) {
+      throw new Error('目标相册不存在')
+    }
+
+    const sourceItems = await tx
+      .select()
+      .from(media)
+      .where(
+        and(
+          eq(media.spaceId, spaceId),
+          eq(media.folderId, sourceFolderId),
+          inArray(media.id, uniqueIds),
+          eq(media.status, 'ready'),
+          isNull(media.deletedAt),
+          isNull(media.permanentlyDeletedAt)
+        )
+      )
+
+    if (sourceItems.length !== uniqueIds.length) {
+      throw new Error('部分媒体不存在')
+    }
+
+    const sourceItemsById = new Map(sourceItems.map((item) => [item.id, item]))
+    const orderedSourceItems = uniqueIds
+      .map((id) => sourceItemsById.get(id))
+      .filter((item): item is (typeof sourceItems)[number] => Boolean(item))
+    const contentHashes = Array.from(
+      new Set(
+        orderedSourceItems
+          .map((item) => item.contentHash)
+          .filter((hash): hash is string => Boolean(hash))
+      )
+    )
+    const cosKeys = Array.from(
+      new Set(orderedSourceItems.map((item) => item.cosKey))
+    )
+    const duplicateConditions = [
+      contentHashes.length > 0
+        ? inArray(media.contentHash, contentHashes)
+        : undefined,
+      cosKeys.length > 0 ? inArray(media.cosKey, cosKeys) : undefined,
+    ].filter(
+      (condition): condition is NonNullable<typeof condition> =>
+        condition !== undefined
+    )
+    const existingItems =
+      duplicateConditions.length > 0
+        ? await tx
+            .select({
+              contentHash: media.contentHash,
+              cosKey: media.cosKey,
+            })
+            .from(media)
+            .where(
+              and(
+                eq(media.spaceId, spaceId),
+                eq(media.folderId, targetFolderId),
+                eq(media.status, 'ready'),
+                isNull(media.deletedAt),
+                isNull(media.permanentlyDeletedAt),
+                duplicateConditions.length === 1
+                  ? duplicateConditions[0]
+                  : or(...duplicateConditions)
+              )
+            )
+        : []
+    const existingHashes = new Set(
+      existingItems
+        .map((item) => item.contentHash)
+        .filter((hash): hash is string => Boolean(hash))
+    )
+    const existingCosKeys = new Set(existingItems.map((item) => item.cosKey))
+    const itemsToCopy = []
+    let skippedCount = 0
+
+    for (const item of orderedSourceItems) {
+      if (
+        (item.contentHash && existingHashes.has(item.contentHash)) ||
+        existingCosKeys.has(item.cosKey)
+      ) {
+        skippedCount += 1
+        continue
+      }
+
+      itemsToCopy.push(item)
+
+      if (item.contentHash) {
+        existingHashes.add(item.contentHash)
+      }
+
+      existingCosKeys.add(item.cosKey)
+    }
+
+    if (itemsToCopy.length > 0) {
+      await tx.insert(media).values(
+        itemsToCopy.map((item) => ({
+          spaceId,
+          folderId: targetFolderId,
+          type: item.type,
+          filename: item.filename,
+          mimeType: item.mimeType,
+          size: item.size,
+          contentHash: item.contentHash,
+          cosKey: item.cosKey,
+          width: item.width,
+          height: item.height,
+          duration: item.duration,
+          takenAt: item.takenAt,
+          uploadedBy: userId,
+          status: 'ready' as const,
+        }))
+      )
+    }
+
+    return {
+      copiedCount: itemsToCopy.length,
+      skippedCount,
+    }
+  })
 }
 
 const deleteActiveMedia = async (

@@ -1,20 +1,30 @@
 'use client'
 
 import Link from 'next/link'
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type FormEvent,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import {
   ArrowDown,
   ArrowUp,
   Check,
   ChevronLeft,
+  Copy,
   Download,
+  FolderPlus,
   Pencil,
   Play,
   Trash2,
   Upload,
   X,
 } from 'lucide-react'
-import { toast } from 'sonner'
+import toast from 'react-hot-toast'
 
 import { EmptyState } from '@/components/app/empty-state'
 import { useGlobalLoading } from '@/components/app/global-loading'
@@ -25,6 +35,7 @@ import { MobileFrame } from '@/components/app/mobile-frame'
 import { NameEditDialog } from '@/components/app/name-edit-dialog'
 import { PullToRefresh } from '@/components/app/pull-to-refresh'
 import { TopBar } from '@/components/app/top-bar'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   AlertDialog,
@@ -38,7 +49,17 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  createFolderAction,
+  copyMediaBatchAction,
   deleteMediaBatchAction,
+  getCopyTargetFoldersAction,
   renameFolderAction,
   setFolderCoverAction,
 } from '@/features/albums/actions'
@@ -63,6 +84,9 @@ const IMAGE_PRELOAD_CONCURRENCY = 3
 
 type FolderViewData = Awaited<ReturnType<typeof getFolderViewAction>>
 type FolderMediaItem = FolderViewData['media'][number]
+type CopyTargetFolder = Awaited<
+  ReturnType<typeof getCopyTargetFoldersAction>
+>['folders'][number]
 type MediaFilterType = 'all' | 'image' | 'video'
 type MediaSortType = 'desc' | 'asc'
 type MediaPointerHandlers = ReturnType<
@@ -448,6 +472,18 @@ export function FolderClient({
   const [previewIndex, setPreviewIndex] = useState<number | null>(null)
   const [previewMedia, setPreviewMedia] = useState<FolderMediaItem[]>([])
   const [renameOpen, setRenameOpen] = useState(false)
+  const [copyOpen, setCopyOpen] = useState(false)
+  const [copyMediaIds, setCopyMediaIds] = useState<string[]>([])
+  const [copyTargetFolders, setCopyTargetFolders] = useState<
+    CopyTargetFolder[]
+  >([])
+  const [copyTargetFolderId, setCopyTargetFolderId] = useState('')
+  const [copyTargetsLoading, setCopyTargetsLoading] = useState(false)
+  const [copyError, setCopyError] = useState<string | null>(null)
+  const [copyCreateOpen, setCopyCreateOpen] = useState(false)
+  const [copyCreateName, setCopyCreateName] = useState('我的相册')
+  const [copyCreatePending, setCopyCreatePending] = useState(false)
+  const [copyCreateError, setCopyCreateError] = useState<string | null>(null)
   const [closingPreviewHistory, setClosingPreviewHistory] = useState(false)
   const [stableMedia, setStableMedia] = useState<FolderMediaItem[]>([])
   const stableMediaRef = useRef<FolderMediaItem[]>([])
@@ -616,6 +652,10 @@ export function FolderClient({
     () => visibleMedia.filter((item) => selectedIds.has(item.id)),
     [selectedIds, visibleMedia]
   )
+  const availableCopyTargetFolders = useMemo(
+    () => copyTargetFolders.filter((folder) => folder.id !== folderId),
+    [copyTargetFolders, folderId]
+  )
   const { requestBack } = useFixedBackNavigation(`/spaces/${spaceId}`, {
     enabled: previewIndex === null && !closingPreviewHistory,
     blocking: selectionMode,
@@ -695,6 +735,142 @@ export function FolderClient({
       hideLoading()
     }
   }, [clearSelection, selectedMedia, showLoading])
+  const handleOpenCopyDialog = useCallback(async (mediaIds?: string[]) => {
+    const nextMediaIds = mediaIds ?? selectedMedia.map((item) => item.id)
+
+    if (nextMediaIds.length === 0) {
+      return
+    }
+
+    setCopyMediaIds(nextMediaIds)
+    setCopyOpen(true)
+    setCopyError(null)
+    setCopyCreateOpen(false)
+    setCopyCreateName('我的相册')
+    setCopyCreateError(null)
+    setCopyTargetsLoading(true)
+
+    try {
+      const result = await getCopyTargetFoldersAction(spaceId)
+
+      if (!result.ok) {
+        setCopyError(result.error)
+        setCopyTargetFolders([])
+        setCopyTargetFolderId('')
+        return
+      }
+
+      const folders = result.folders
+      const targets = folders.filter((folder) => folder.id !== folderId)
+
+      setCopyTargetFolders(folders)
+      setCopyTargetFolderId((current) =>
+        targets.some((folder) => folder.id === current)
+          ? current
+          : (targets[0]?.id ?? '')
+      )
+    } finally {
+      setCopyTargetsLoading(false)
+    }
+  }, [folderId, selectedMedia, spaceId])
+  const handleCreateCopyTarget = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault()
+
+      if (copyCreatePending) {
+        return
+      }
+
+      setCopyCreatePending(true)
+      setCopyCreateError(null)
+
+      const formData = new FormData()
+      formData.set('name', copyCreateName)
+
+      try {
+        const result = await createFolderAction(spaceId, formData)
+
+        if (!result.ok || !result.folderId) {
+          setCopyCreateError(result.error ?? '创建相册失败')
+          return
+        }
+
+        const folderName = copyCreateName.trim() || '我的相册'
+        const createdFolder = {
+          id: result.folderId,
+          name: folderName,
+          mediaCount: 0,
+        }
+
+        setCopyTargetFolders((current) => [createdFolder, ...current])
+        setCopyTargetFolderId(result.folderId)
+        setCopyCreateOpen(false)
+        setCopyCreateName('我的相册')
+        clearServerActionCache()
+      } finally {
+        setCopyCreatePending(false)
+      }
+    },
+    [copyCreateName, copyCreatePending, spaceId]
+  )
+  const handleCopySelected = useCallback(async () => {
+    if (copyMediaIds.length === 0 || !copyTargetFolderId) {
+      return
+    }
+
+    const hideLoading = showLoading({ title: '复制中', timeoutMs: 0 })
+    let nextToast: { message: string; type: 'error' | 'success' } | null = null
+
+    try {
+      await waitForNextFrame()
+      const result = await copyMediaBatchAction(
+        spaceId,
+        folderId,
+        copyTargetFolderId,
+        copyMediaIds
+      )
+
+      if (!result.ok) {
+        nextToast = { type: 'error', message: result.error ?? '复制失败' }
+      } else {
+        if (result.copiedCount > 0 && result.skippedCount > 0) {
+          nextToast = {
+            type: 'success',
+            message: `已复制 ${result.copiedCount} 项，跳过 ${result.skippedCount} 项重复媒体`,
+          }
+        } else if (result.copiedCount > 0) {
+          nextToast = {
+            type: 'success',
+            message: `已复制 ${result.copiedCount} 项`,
+          }
+        } else {
+          nextToast = {
+            type: 'success',
+            message: '所选媒体已存在于目标相册',
+          }
+        }
+
+        setCopyOpen(false)
+        clearSelection()
+        clearServerActionCache()
+      }
+    } finally {
+      hideLoading()
+    }
+
+    if (nextToast?.type === 'error') {
+      toast.error(nextToast.message)
+    } else if (nextToast) {
+      toast.success(nextToast.message)
+    }
+  }, [
+    clearSelection,
+    copyMediaIds,
+    copyTargetFolderId,
+    folderId,
+    showLoading,
+    spaceId,
+  ])
   const handleSetCover = useCallback(
     async (mediaId: string) => {
       const hideLoading = showLoading({ title: '设置中', timeoutMs: 0 })
@@ -1018,6 +1194,17 @@ export function FolderClient({
             <button
               type="button"
               className="ca-selection-icon"
+              aria-label="复制到另一个相册"
+              disabled={selectedIds.size === 0}
+              onClick={() => {
+                void handleOpenCopyDialog()
+              }}
+            >
+              <Copy />
+            </button>
+            <button
+              type="button"
+              className="ca-selection-icon"
               aria-label="下载所选"
               disabled={selectedIds.size === 0}
               onClick={() => {
@@ -1127,10 +1314,127 @@ export function FolderClient({
           media={previewMedia}
           initialIndex={previewIndex}
           onClose={closePreview}
+          onCopy={(mediaId) => handleOpenCopyDialog([mediaId])}
           onSetCover={handleSetCover}
           onDelete={handleDeletePreviewItem}
         />
       ) : null}
+
+      <Dialog open={copyOpen} onOpenChange={setCopyOpen}>
+        <DialogContent className="ca-copy-dialog">
+          <DialogHeader>
+            <DialogTitle>复制到另一个相册</DialogTitle>
+          </DialogHeader>
+
+          <div className="ca-copy-target-list">
+            {copyTargetsLoading ? (
+              <div className="ca-copy-target-state">正在读取相册...</div>
+            ) : copyError ? (
+              <div className="ca-copy-target-state">{copyError}</div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="ca-copy-target ca-copy-target-new"
+                  onClick={() => {
+                    setCopyCreateOpen((open) => !open)
+                    setCopyCreateError(null)
+                  }}
+                >
+                  <span className="ca-copy-target-new-content">
+                    <FolderPlus className="ca-copy-target-leading-icon" />
+                    <span className="ca-copy-target-name">新建相册</span>
+                  </span>
+                  <i className="ca-copy-target-check" aria-hidden="true" />
+                </button>
+
+                {copyCreateOpen ? (
+                  <form
+                    className="ca-copy-create-form"
+                    onSubmit={handleCreateCopyTarget}
+                  >
+                    <Input
+                      autoFocus
+                      aria-label="新相册名称"
+                      className="ca-input"
+                      value={copyCreateName}
+                      onChange={(event) =>
+                        setCopyCreateName(event.target.value)
+                      }
+                    />
+                    <button
+                      type="submit"
+                      className="ca-primary-btn"
+                      disabled={copyCreatePending}
+                    >
+                      {copyCreatePending ? '创建中' : '创建'}
+                    </button>
+                    {copyCreateError ? (
+                      <p className="ca-copy-create-error">
+                        {copyCreateError}
+                      </p>
+                    ) : null}
+                  </form>
+                ) : null}
+
+                {availableCopyTargetFolders.length > 0 ? (
+                  availableCopyTargetFolders.map((folder) => (
+                    <button
+                      key={folder.id}
+                      type="button"
+                      className={`ca-copy-target ${
+                        copyTargetFolderId === folder.id ? 'active' : ''
+                      }`}
+                      onClick={() => setCopyTargetFolderId(folder.id)}
+                    >
+                      <span className="ca-copy-target-name">
+                        {folder.name}
+                      </span>
+                      <small>{folder.mediaCount} 项</small>
+                      {copyTargetFolderId === folder.id ? (
+                        <Check className="ca-copy-target-check" />
+                      ) : (
+                        <i
+                          className="ca-copy-target-check"
+                          aria-hidden="true"
+                        />
+                      )}
+                    </button>
+                  ))
+                ) : (
+                  <div className="ca-copy-target-state">
+                    没有可复制到的相册
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <DialogFooter className="ca-dialog-actions ca-copy-dialog-actions">
+            <button
+              type="button"
+              className="ca-secondary-btn"
+              onClick={() => setCopyOpen(false)}
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              className="ca-primary-btn"
+              disabled={
+                copyTargetsLoading ||
+                availableCopyTargetFolders.length === 0 ||
+                !copyTargetFolderId
+              }
+              onClick={() => {
+                void handleCopySelected()
+              }}
+            >
+              复制
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <NameEditDialog
         initialName={data?.folder.name ?? ''}
