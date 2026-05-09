@@ -11,10 +11,9 @@ import {
   type TouchEvent,
 } from 'react'
 
-const ENTER_SELECTION_LONG_PRESS_MS = 800
+const ENTER_SELECTION_LONG_PRESS_MS = 1000
 const DRAG_SELECT_LONG_PRESS_MS = 500
 const DRAG_SELECT_START_THRESHOLD = 8
-const ENTER_SELECTION_CANCEL_THRESHOLD = 18
 const DRAG_SELECT_SCROLL_EDGE = 56
 const DRAG_SELECT_MAX_SCROLL_SPEED = 12
 
@@ -59,22 +58,12 @@ export function useMediaSelection(orderedIds: string[]) {
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const scrollSectionRef = useRef<HTMLDivElement | null>(null)
-  const longPressTimerRef = useRef<number | null>(null)
   const dragSelectLongPressTimerRef = useRef<number | null>(null)
-  const longPressStartRef = useRef<{ x: number; y: number } | null>(null)
   const activeTouchIdRef = useRef<number | null>(null)
   const dragSelectRef = useRef<DragSelectState>(createEmptyDragState())
   const pendingDragSelectRef = useRef<PendingDragSelect>(null)
   const ignoreNextClickRef = useRef(false)
-
-  const clearLongPressTimer = useCallback(() => {
-    if (longPressTimerRef.current !== null) {
-      window.clearTimeout(longPressTimerRef.current)
-      longPressTimerRef.current = null
-    }
-
-    longPressStartRef.current = null
-  }, [])
+  const ignoreNextContextMenuRef = useRef(false)
 
   const clearSelection = useCallback(() => {
     setSelectionMode(false)
@@ -133,45 +122,6 @@ export function useMediaSelection(orderedIds: string[]) {
 
     return mediaElement?.dataset.mediaId ?? null
   }, [])
-
-  const getMediaElementById = useCallback((mediaId: string) => {
-    const root = scrollSectionRef.current ?? document
-    const mediaElements = root.querySelectorAll<HTMLElement>('[data-media-id]')
-
-    for (const mediaElement of Array.from(mediaElements)) {
-      if (mediaElement.dataset.mediaId === mediaId) {
-        return mediaElement
-      }
-    }
-
-    return null
-  }, [])
-
-  const keepMediaPositionAfterLayoutChange = useCallback(
-    (mediaId: string) => {
-      const scroller = scrollSectionRef.current
-      const beforeRect = getMediaElementById(mediaId)?.getBoundingClientRect()
-
-      if (!scroller || !beforeRect) {
-        return
-      }
-
-      window.requestAnimationFrame(() => {
-        const afterRect = getMediaElementById(mediaId)?.getBoundingClientRect()
-
-        if (!afterRect) {
-          return
-        }
-
-        const deltaY = afterRect.top - beforeRect.top
-
-        if (Math.abs(deltaY) > 0.5) {
-          scroller.scrollTop += deltaY
-        }
-      })
-    },
-    [getMediaElementById]
-  )
 
   const stopDragAutoScroll = useCallback(() => {
     const frame = dragSelectRef.current.scrollFrame
@@ -296,13 +246,11 @@ export function useMediaSelection(orderedIds: string[]) {
   const stopSelectionPointers = useCallback(() => {
     cancelPendingDragSelect()
     stopDragSelect()
-    clearLongPressTimer()
     activeTouchIdRef.current = null
-  }, [cancelPendingDragSelect, clearLongPressTimer, stopDragSelect])
+  }, [cancelPendingDragSelect, stopDragSelect])
 
   const enterSelectionOnly = useCallback(
     (mediaId: string) => {
-      keepMediaPositionAfterLayoutChange(mediaId)
       ignoreNextClickRef.current = true
       setSelectionMode(true)
       setSelectedIds((current) => {
@@ -316,7 +264,7 @@ export function useMediaSelection(orderedIds: string[]) {
         return next
       })
     },
-    [keepMediaPositionAfterLayoutChange]
+    []
   )
 
   const findActiveTouch = useCallback((touches: TouchCollection) => {
@@ -442,7 +390,19 @@ export function useMediaSelection(orderedIds: string[]) {
   )
 
   const scheduleDragSelectLongPress = useCallback(
-    (mediaId: string, select: boolean, clientX: number, clientY: number) => {
+    (
+      mediaId: string,
+      select: boolean,
+      clientX: number,
+      clientY: number,
+      {
+        delayMs = DRAG_SELECT_LONG_PRESS_MS,
+        enterSelectionModeOnReady = false,
+      }: {
+        delayMs?: number
+        enterSelectionModeOnReady?: boolean
+      } = {}
+    ) => {
       cancelPendingDragSelect()
       pendingDragSelectRef.current = {
         mediaId,
@@ -464,27 +424,54 @@ export function useMediaSelection(orderedIds: string[]) {
 
         pendingDragSelect.ready = true
         ignoreNextClickRef.current = true
+        ignoreNextContextMenuRef.current = true
+        if (enterSelectionModeOnReady) {
+          setSelectionMode(true)
+        }
         applySingleSelection(
           pendingDragSelect.mediaId,
           pendingDragSelect.select
         )
-      }, DRAG_SELECT_LONG_PRESS_MS)
+      }, delayMs)
     },
     [applySingleSelection, cancelPendingDragSelect]
   )
 
-  const scheduleLongPress = useCallback(
-    (mediaId: string, clientX: number, clientY: number) => {
-      clearLongPressTimer()
-      longPressStartRef.current = { x: clientX, y: clientY }
-      longPressTimerRef.current = window.setTimeout(() => {
-        longPressTimerRef.current = null
-        longPressStartRef.current = null
-        enterSelectionOnly(mediaId)
-      }, ENTER_SELECTION_LONG_PRESS_MS)
-    },
-    [clearLongPressTimer, enterSelectionOnly]
-  )
+  useEffect(() => {
+    const handleTouchMove = (event: globalThis.TouchEvent) => {
+      const activeTouchId = activeTouchIdRef.current
+
+      if (activeTouchId === null) {
+        return
+      }
+
+      const pendingDragSelect = pendingDragSelectRef.current
+      const shouldBlockScroll =
+        dragSelectRef.current.active || Boolean(pendingDragSelect?.ready)
+
+      if (!shouldBlockScroll) {
+        return
+      }
+
+      for (let index = 0; index < event.touches.length; index += 1) {
+        if (event.touches.item(index)?.identifier === activeTouchId) {
+          event.preventDefault()
+          return
+        }
+      }
+    }
+
+    document.addEventListener('touchmove', handleTouchMove, {
+      capture: true,
+      passive: false,
+    })
+
+    return () => {
+      document.removeEventListener('touchmove', handleTouchMove, {
+        capture: true,
+      })
+    }
+  }, [])
 
   const consumeClickSuppression = useCallback(() => {
     if (!ignoreNextClickRef.current) {
@@ -513,7 +500,16 @@ export function useMediaSelection(orderedIds: string[]) {
           return
         }
 
-        scheduleLongPress(mediaId, event.clientX, event.clientY)
+        scheduleDragSelectLongPress(
+          mediaId,
+          true,
+          event.clientX,
+          event.clientY,
+          {
+            delayMs: ENTER_SELECTION_LONG_PRESS_MS,
+            enterSelectionModeOnReady: true,
+          }
+        )
       },
       onPointerMove: (event: PointerEvent<HTMLButtonElement>) => {
         if (event.pointerType === 'touch') {
@@ -524,20 +520,6 @@ export function useMediaSelection(orderedIds: string[]) {
           event.preventDefault()
           event.currentTarget.setPointerCapture(event.pointerId)
           return
-        }
-
-        const start = longPressStartRef.current
-
-        if (!start) {
-          return
-        }
-
-        if (
-          Math.abs(event.clientX - start.x) >
-            ENTER_SELECTION_CANCEL_THRESHOLD ||
-          Math.abs(event.clientY - start.y) > ENTER_SELECTION_CANCEL_THRESHOLD
-        ) {
-          clearLongPressTimer()
         }
       },
       onPointerUp: (event: PointerEvent<HTMLButtonElement>) => {
@@ -591,7 +573,16 @@ export function useMediaSelection(orderedIds: string[]) {
           return
         }
 
-        scheduleLongPress(mediaId, touch.clientX, touch.clientY)
+        scheduleDragSelectLongPress(
+          mediaId,
+          true,
+          touch.clientX,
+          touch.clientY,
+          {
+            delayMs: ENTER_SELECTION_LONG_PRESS_MS,
+            enterSelectionModeOnReady: true,
+          }
+        )
       },
       onTouchMove: (event: TouchEvent<HTMLButtonElement>) => {
         const touch = findActiveTouch(event.touches)
@@ -605,20 +596,6 @@ export function useMediaSelection(orderedIds: string[]) {
             event.preventDefault()
           }
           return
-        }
-
-        const start = longPressStartRef.current
-
-        if (!start) {
-          return
-        }
-
-        if (
-          Math.abs(touch.clientX - start.x) >
-            ENTER_SELECTION_CANCEL_THRESHOLD ||
-          Math.abs(touch.clientY - start.y) > ENTER_SELECTION_CANCEL_THRESHOLD
-        ) {
-          clearLongPressTimer()
         }
       },
       onTouchEnd: (event: TouchEvent<HTMLButtonElement>) => {
@@ -643,16 +620,27 @@ export function useMediaSelection(orderedIds: string[]) {
       },
       onContextMenu: (event: MouseEvent<HTMLButtonElement>) => {
         event.preventDefault()
+
+        if (ignoreNextContextMenuRef.current) {
+          ignoreNextContextMenuRef.current = false
+          return
+        }
+
+        if (selectionMode) {
+          ignoreNextClickRef.current = true
+          applySingleSelection(mediaId, !selected)
+          return
+        }
+
         enterSelectionOnly(mediaId)
       },
     }),
     [
-      clearLongPressTimer,
+      applySingleSelection,
       enterSelectionOnly,
       findActiveTouch,
       handleDragMove,
       scheduleDragSelectLongPress,
-      scheduleLongPress,
       selectionMode,
       stopSelectionPointers,
     ]

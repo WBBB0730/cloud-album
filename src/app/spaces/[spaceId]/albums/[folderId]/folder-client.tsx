@@ -1144,108 +1144,110 @@ export function FolderClient({
           }
         />
 
-        <div className="ca-filter-row" aria-label="排序和筛选">
-          <div className="ca-segmented" aria-label="类型筛选">
-            {[
-              ['all', '全部'],
-              ['image', '图片'],
-              ['video', '视频'],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                className={`ca-chip ${type === value ? 'active' : ''}`}
-                type="button"
-                onClick={() => setType(value as MediaFilterType)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            className="ca-sort-btn"
-            onClick={() => setSort(nextSort)}
-          >
-            拍摄时间
-            <SortIcon />
-          </button>
-        </div>
-
-        {selectionMode ? (
-          <div className="ca-selection-bar">
-            <button
-              type="button"
-              className="ca-selection-icon"
-              aria-label="取消选择"
-              onClick={clearSelection}
-            >
-              <X />
-            </button>
-            <span>已选择 {selectedIds.size} 项</span>
-            <button
-              type="button"
-              className="ca-selection-text-btn"
-              onClick={toggleAllSelection}
-              disabled={visibleMedia.length === 0}
-            >
-              {allVisibleSelected ? '取消全选' : '全选'}
-            </button>
-            <i className="ca-selection-spacer" aria-hidden="true" />
-            <button
-              type="button"
-              className="ca-selection-icon"
-              aria-label="复制到另一个相册"
-              disabled={selectedIds.size === 0}
-              onClick={() => {
-                void handleOpenCopyDialog()
-              }}
-            >
-              <Copy />
-            </button>
-            <button
-              type="button"
-              className="ca-selection-icon"
-              aria-label="下载所选"
-              disabled={selectedIds.size === 0}
-              onClick={() => {
-                void handleDownloadSelected()
-              }}
-            >
-              <Download />
-            </button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <button
-                  type="button"
-                  className="ca-selection-icon danger"
-                  aria-label="删除所选"
-                  disabled={selectedIds.size === 0}
-                >
-                  <Trash2 />
-                </button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>删除所选媒体？</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    将删除 {selectedIds.size} 项媒体，删除后会进入回收站。
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="ca-confirm-footer">
-                  <AlertDialogAction
-                    className="ca-confirm-button ca-danger-confirm-button"
-                    onClick={handleDeleteSelected}
+        <div className="ca-album-action-row">
+          {!selectionMode ? (
+            <div className="ca-filter-row" aria-label="排序和筛选">
+              <div className="ca-segmented" aria-label="类型筛选">
+                {[
+                  ['all', '全部'],
+                  ['image', '图片'],
+                  ['video', '视频'],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    className={`ca-chip ${type === value ? 'active' : ''}`}
+                    type="button"
+                    onClick={() => setType(value as MediaFilterType)}
                   >
-                    删除
-                  </AlertDialogAction>
-                  <AlertDialogCancel className="ca-confirm-button">
-                    取消
-                  </AlertDialogCancel>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        ) : null}
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="ca-sort-btn"
+                onClick={() => setSort(nextSort)}
+              >
+                拍摄时间
+                <SortIcon />
+              </button>
+            </div>
+          ) : (
+            <div className="ca-selection-bar">
+              <button
+                type="button"
+                className="ca-selection-icon"
+                aria-label="取消选择"
+                onClick={clearSelection}
+              >
+                <X />
+              </button>
+              <span>已选择 {selectedIds.size} 项</span>
+              <button
+                type="button"
+                className="ca-selection-text-btn"
+                onClick={toggleAllSelection}
+                disabled={visibleMedia.length === 0}
+              >
+                {allVisibleSelected ? '取消全选' : '全选'}
+              </button>
+              <i className="ca-selection-spacer" aria-hidden="true" />
+              <button
+                type="button"
+                className="ca-selection-icon"
+                aria-label="复制到另一个相册"
+                disabled={selectedIds.size === 0}
+                onClick={() => {
+                  void handleOpenCopyDialog()
+                }}
+              >
+                <Copy />
+              </button>
+              <button
+                type="button"
+                className="ca-selection-icon"
+                aria-label="下载所选"
+                disabled={selectedIds.size === 0}
+                onClick={() => {
+                  void handleDownloadSelected()
+                }}
+              >
+                <Download />
+              </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    type="button"
+                    className="ca-selection-icon danger"
+                    aria-label="删除所选"
+                    disabled={selectedIds.size === 0}
+                  >
+                    <Trash2 />
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>删除所选媒体？</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      将删除 {selectedIds.size} 项媒体，删除后会进入回收站。
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="ca-confirm-footer">
+                    <AlertDialogAction
+                      className="ca-confirm-button ca-danger-confirm-button"
+                      onClick={handleDeleteSelected}
+                    >
+                      删除
+                    </AlertDialogAction>
+                    <AlertDialogCancel className="ca-confirm-button">
+                      取消
+                    </AlertDialogCancel>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+        </div>
       </div>
 
       <PullToRefresh
