@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 
 import '@/styles/global.css'
 import { AppToaster } from '@/components/app/app-toaster'
+import { AppHistoryRecorder } from '@/components/app/app-history-recorder'
 import { ClientOnlyGate } from '@/components/app/client-only-gate'
 import { GlobalLoadingProvider } from '@/components/app/global-loading'
 import { ViewportSize } from '@/components/app/viewport-size'
@@ -80,6 +81,7 @@ window.__REACT_GRAB__ && window.__REACT_GRAB__.setOptions && window.__REACT_GRAB
       ) : null}
       <body>
         <ClientOnlyGate>
+          <AppHistoryRecorder />
           <ViewportSize />
           <GlobalLoadingProvider>
             <ThemeProvider>

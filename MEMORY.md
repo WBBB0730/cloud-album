@@ -48,6 +48,9 @@
 - 相册复制的目标重复检查需要相册级部分索引：`media_album_content_hash_idx(space_id, folder_id, content_hash)` 和 `media_album_cos_key_idx(space_id, folder_id, cos_key)`，都只覆盖 ready 且未删除/未永久删除媒体；全局 `media_cos_key_idx` 只作为后续按对象做引用统计/清理的辅助索引。
 - 历史媒体 hash 统计使用 `pnpm media:hash`，脚本路径为 `scripts/media-hash.ts`，通过 `tsx` 执行；回填写入使用 `pnpm media:hash:backfill`，会更新 `media.content_hash` 和对应 `upload_sessions.content_hash`。
 - 上传页存在等待或上传中文件时需要离开保护：页面内返回、自带返回、刷新/关闭都要处理，且确认离开前先关闭本地 guard，避免重复拦截。
+- 固定物理返回依赖当前标签页的内存历史和同 URL guard 协作：根布局只记录真实经过的 URL，hook 在目标已存在时使用浏览器真实 `back()`，目标不存在时才 `replace` 到固定上级。不要把固定返回历史写入 `sessionStorage`，新标签页可能复制旧状态并污染返回链路；也不要用全局路由特判猜测目标。
+- 页面内返回按钮不能用 `router.replace()` 伪造返回；否则当前页下面的真实历史仍在，下一次物理返回会回到刚离开的页面。页面内返回应和物理返回一样，优先根据内存历史 `history.go(delta)` 到最近的目标条目。
+- 固定返回遇到多选或上传离开保护这类阻塞态时，不能在 popstate 里重新 `pushState` 新 guard；应恢复刚被弹出的 guard，再执行业务回调。否则会裁剪内存里的真实历史目标，导致取消阻塞态后继续返回直接离开网站。
 - 全局 loading 由 `src/components/app/global-loading.tsx` 提供；长流程需要调用 `useGlobalLoading()` 并用 `try/finally` 关闭。
 - 动态路由壳使用 layout 级 `generateStaticParams() { return [] }` 和 `revalidate = false`；查询参数不要传入 Server Page，放在 client wrapper 中读取。
 - 有明确上级的应用内页面使用固定返回目标，不依赖浏览器真实访问历史；预览、多选、上传离开保护要优先处理自身状态。
