@@ -249,23 +249,20 @@ export function useMediaSelection(orderedIds: string[]) {
     activeTouchIdRef.current = null
   }, [cancelPendingDragSelect, stopDragSelect])
 
-  const enterSelectionOnly = useCallback(
-    (mediaId: string) => {
-      ignoreNextClickRef.current = true
-      setSelectionMode(true)
-      setSelectedIds((current) => {
-        if (current.has(mediaId)) {
-          return current
-        }
+  const enterSelectionOnly = useCallback((mediaId: string) => {
+    ignoreNextClickRef.current = true
+    setSelectionMode(true)
+    setSelectedIds((current) => {
+      if (current.has(mediaId)) {
+        return current
+      }
 
-        const next = new Set(current)
+      const next = new Set(current)
 
-        next.add(mediaId)
-        return next
-      })
-    },
-    []
-  )
+      next.add(mediaId)
+      return next
+    })
+  }, [])
 
   const findActiveTouch = useCallback((touches: TouchCollection) => {
     const activeTouchId = activeTouchIdRef.current

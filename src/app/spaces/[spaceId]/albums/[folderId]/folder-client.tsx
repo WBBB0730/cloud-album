@@ -735,44 +735,47 @@ export function FolderClient({
       hideLoading()
     }
   }, [clearSelection, selectedMedia, showLoading])
-  const handleOpenCopyDialog = useCallback(async (mediaIds?: string[]) => {
-    const nextMediaIds = mediaIds ?? selectedMedia.map((item) => item.id)
+  const handleOpenCopyDialog = useCallback(
+    async (mediaIds?: string[]) => {
+      const nextMediaIds = mediaIds ?? selectedMedia.map((item) => item.id)
 
-    if (nextMediaIds.length === 0) {
-      return
-    }
-
-    setCopyMediaIds(nextMediaIds)
-    setCopyOpen(true)
-    setCopyError(null)
-    setCopyCreateOpen(false)
-    setCopyCreateName('我的相册')
-    setCopyCreateError(null)
-    setCopyTargetsLoading(true)
-
-    try {
-      const result = await getCopyTargetFoldersAction(spaceId)
-
-      if (!result.ok) {
-        setCopyError(result.error)
-        setCopyTargetFolders([])
-        setCopyTargetFolderId('')
+      if (nextMediaIds.length === 0) {
         return
       }
 
-      const folders = result.folders
-      const targets = folders.filter((folder) => folder.id !== folderId)
+      setCopyMediaIds(nextMediaIds)
+      setCopyOpen(true)
+      setCopyError(null)
+      setCopyCreateOpen(false)
+      setCopyCreateName('我的相册')
+      setCopyCreateError(null)
+      setCopyTargetsLoading(true)
 
-      setCopyTargetFolders(folders)
-      setCopyTargetFolderId((current) =>
-        targets.some((folder) => folder.id === current)
-          ? current
-          : (targets[0]?.id ?? '')
-      )
-    } finally {
-      setCopyTargetsLoading(false)
-    }
-  }, [folderId, selectedMedia, spaceId])
+      try {
+        const result = await getCopyTargetFoldersAction(spaceId)
+
+        if (!result.ok) {
+          setCopyError(result.error)
+          setCopyTargetFolders([])
+          setCopyTargetFolderId('')
+          return
+        }
+
+        const folders = result.folders
+        const targets = folders.filter((folder) => folder.id !== folderId)
+
+        setCopyTargetFolders(folders)
+        setCopyTargetFolderId((current) =>
+          targets.some((folder) => folder.id === current)
+            ? current
+            : (targets[0]?.id ?? '')
+        )
+      } finally {
+        setCopyTargetsLoading(false)
+      }
+    },
+    [folderId, selectedMedia, spaceId]
+  )
   const handleCreateCopyTarget = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault()
@@ -1372,9 +1375,7 @@ export function FolderClient({
                       {copyCreatePending ? '创建中' : '创建'}
                     </button>
                     {copyCreateError ? (
-                      <p className="ca-copy-create-error">
-                        {copyCreateError}
-                      </p>
+                      <p className="ca-copy-create-error">{copyCreateError}</p>
                     ) : null}
                   </form>
                 ) : null}
@@ -1389,9 +1390,7 @@ export function FolderClient({
                       }`}
                       onClick={() => setCopyTargetFolderId(folder.id)}
                     >
-                      <span className="ca-copy-target-name">
-                        {folder.name}
-                      </span>
+                      <span className="ca-copy-target-name">{folder.name}</span>
                       <small>{folder.mediaCount} 项</small>
                       {copyTargetFolderId === folder.id ? (
                         <Check className="ca-copy-target-check" />
@@ -1404,9 +1403,7 @@ export function FolderClient({
                     </button>
                   ))
                 ) : (
-                  <div className="ca-copy-target-state">
-                    没有可复制到的相册
-                  </div>
+                  <div className="ca-copy-target-state">没有可复制到的相册</div>
                 )}
               </>
             )}

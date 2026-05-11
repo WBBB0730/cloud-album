@@ -315,9 +315,7 @@ function ZoomableImage({
           const scaledWidth = contentWidth * state.scale
           const minX = Math.min(0, viewportWidth - scaledWidth)
           const maxX =
-            scaledWidth <= viewportWidth
-              ? (viewportWidth - scaledWidth) / 2
-              : 0
+            scaledWidth <= viewportWidth ? (viewportWidth - scaledWidth) / 2 : 0
 
           onTransformStateChange({
             atLeftEdge: state.positionX >= maxX - 2,

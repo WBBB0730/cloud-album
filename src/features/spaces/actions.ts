@@ -40,7 +40,10 @@ export const addMemberAction = async (spaceId: string, formData: FormData) => {
   }
 }
 
-export const renameSpaceAction = async (spaceId: string, formData: FormData) => {
+export const renameSpaceAction = async (
+  spaceId: string,
+  formData: FormData
+) => {
   const user = await requireUser()
 
   try {

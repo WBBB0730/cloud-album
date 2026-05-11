@@ -47,8 +47,9 @@ const cleanupLegacyCache = () => {
   cacheCleanupDone = true
 
   try {
-    const keys = Array.from({ length: window.localStorage.length }, (_, index) =>
-      window.localStorage.key(index)
+    const keys = Array.from(
+      { length: window.localStorage.length },
+      (_, index) => window.localStorage.key(index)
     ).filter((key): key is string => Boolean(key?.startsWith(CACHE_PREFIX)))
 
     for (const key of keys) {
@@ -118,8 +119,9 @@ const removeCache = (key: string) => {
 
 export const clearServerActionCache = () => {
   try {
-    const keys = Array.from({ length: window.localStorage.length }, (_, index) =>
-      window.localStorage.key(index)
+    const keys = Array.from(
+      { length: window.localStorage.length },
+      (_, index) => window.localStorage.key(index)
     ).filter((key): key is string => Boolean(key?.startsWith(CACHE_PREFIX)))
 
     for (const key of keys) {

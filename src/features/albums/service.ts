@@ -33,10 +33,7 @@ export const getAlbumHome = async (spaceId: string, userId: string) => {
   }
 }
 
-export const getCopyTargetFolders = async (
-  spaceId: string,
-  userId: string
-) => {
+export const getCopyTargetFolders = async (spaceId: string, userId: string) => {
   await requireSpaceMember(spaceId, userId)
   const folderRows = await listActiveFolders(spaceId)
 
