@@ -6,6 +6,7 @@ import { AppToaster } from '@/components/app/app-toaster'
 import { AppHistoryRecorder } from '@/components/app/app-history-recorder'
 import { ClientOnlyGate } from '@/components/app/client-only-gate'
 import { GlobalLoadingProvider } from '@/components/app/global-loading'
+import { ShareTargetWorker } from '@/components/app/share-target-worker'
 import { ViewportSize } from '@/components/app/viewport-size'
 import { ThemeProvider } from '@/components/theme-provider'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -90,6 +91,7 @@ window.__REACT_GRAB__ && window.__REACT_GRAB__.setOptions && window.__REACT_GRAB
       <body>
         <ClientOnlyGate>
           <AppHistoryRecorder />
+          <ShareTargetWorker />
           <ViewportSize />
           <GlobalLoadingProvider>
             <ThemeProvider>

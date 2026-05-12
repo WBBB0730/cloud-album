@@ -53,6 +53,24 @@ export const getSpacesViewAction = async () => {
   }
 }
 
+export const getShareImportViewAction = async () => {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    return {
+      authenticated: false as const,
+      spaces: [],
+    }
+  }
+
+  const spaces = await getSpacesForUser(user.id)
+
+  return {
+    authenticated: true as const,
+    spaces,
+  }
+}
+
 export const getSpaceViewAction = async (spaceId: string) => {
   const user = await requireUser()
   return getAlbumHome(spaceId, user.id)

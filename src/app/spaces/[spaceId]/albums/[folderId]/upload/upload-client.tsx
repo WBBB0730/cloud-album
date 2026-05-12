@@ -125,10 +125,14 @@ const getVideoMeta = async (file: File) =>
   })
 
 export function UploadClient({
+  initialFiles,
+  onInitialFilesQueued,
   spaceId,
   folderId,
   onBlockingChange,
 }: {
+  initialFiles?: File[]
+  onInitialFilesQueued?: () => void
   spaceId: string
   folderId: string
   onBlockingChange?: (blocking: boolean) => void
@@ -141,6 +145,7 @@ export function UploadClient({
   const activeUploadIdsRef = useRef(new Set<string>())
   const activeContentHashesRef = useRef(new Map<string, string>())
   const hashQueueRef = useRef<Promise<void>>(Promise.resolve())
+  const queuedInitialFilesRef = useRef<File[] | null>(null)
   const [rows, setRows] = useState<UploadRow[]>([])
 
   useEffect(() => {
@@ -335,7 +340,7 @@ export function UploadClient({
     pumpUploadQueue()
   }
 
-  const uploadFiles = (files: FileList | null) => {
+  const uploadFiles = (files: FileList | File[] | null) => {
     if (!files || files.length === 0) {
       return
     }
@@ -351,6 +356,19 @@ export function UploadClient({
     setRows((current) => [...current, ...nextRows])
     enqueueUploadRows(nextRows)
   }
+
+  useEffect(() => {
+    if (
+      !initialFiles?.length ||
+      queuedInitialFilesRef.current === initialFiles
+    ) {
+      return
+    }
+
+    queuedInitialFilesRef.current = initialFiles
+    uploadFiles(initialFiles)
+    onInitialFilesQueued?.()
+  }, [initialFiles, onInitialFilesQueued])
 
   const visibleRows = rows
     .filter((row) => row.status !== 'completed')

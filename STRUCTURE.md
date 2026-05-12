@@ -50,11 +50,21 @@
 - `/spaces/[spaceId]/upload`：选择上传文件夹。
 - `/spaces/[spaceId]/albums/[folderId]`：相册媒体网格，支持空间创建者修改相册名称、类型筛选、页内预览、长按多选、拖动快速选择、批量复制到另一个相册、批量下载、批量删除和选择相册封面；预览页单项操作也可复制当前媒体到另一个相册；复制是元数据级逻辑复制，只新增目标相册中的 `media` 行并复用原 COS 对象，复制弹窗内可直接新建目标相册。
 - `/spaces/[spaceId]/albums/[folderId]/upload`：COS 分片上传队列，显示总进度，最多 5 个文件并发上传。
+- `/share/import`：PWA 系统分享导入目标选择入口，从 IndexedDB 读取 service worker 暂存的分享批次；页面本身是独立的空间目标选择页，标题为“导入到相册”，视觉复用 `/spaces` 的空间列表样式但不是同一路由，左上角关闭按钮和物理返回通过统一固定返回逻辑回到真正的 `/spaces`。用户点击空间后打开“选择相册”弹窗，相册列表和新建相册交互复用“复制到另一个相册”的列表样式，确认后跳转到原上传页 `/spaces/[spaceId]/albums/[folderId]/upload?shareBatch=...`。开发环境直访 `/share/import` 时会进入预览模式，允许体验选择空间和相册，确认后跳 `/spaces/[spaceId]/albums/[folderId]/upload`，不带 `shareBatch`，不读取 IndexedDB 批次。
+- `/share-target`：Web Share Target 的服务端兜底路由。正常情况下该 POST 会被 service worker 拦截；如果 service worker 尚未准备好，路由只重定向到导入错误页，不读取或暂存媒体正文。
 - `/spaces/[spaceId]/trash`：回收站文件夹列表。
 - `/spaces/[spaceId]/trash/[folderId]`：回收站文件夹媒体列表，支持多选批量恢复和批量永久删除。
 - `/admin`：全局管理后台，按 tab 展示邀请、账号和永久删除记录。
 - `/api/media/[mediaId]`：稳定原始媒体读取路由。路由读取当前 Cookie 会话，校验用户属于媒体所在空间且媒体未永久删除，再由服务端使用短期 COS 签名 URL 拉取对象并流式转发；原始媒体保留 Range 支持，用于预览、下载和视频播放。
 - `/api/media/[mediaId]/preview`：稳定预览媒体读取路由。路由同样先做 Cookie 会话和空间权限校验，再使用数据万象 CI 运行时处理参数请求 COS：图片返回最大边 720 的 WebP 缩略图，视频返回 1 秒处 jpg 截图。该路由只流式转发 CI 结果，不在 Next 中使用 `sharp`、`arrayBuffer()` 或其它 CPU 压缩逻辑。
+
+PWA 系统分享入口：
+
+- `public/manifest.webmanifest` 声明 `share_target`，让已安装的 Android PWA 可以在系统分享面板中接收图片和视频。
+- `public/share-target-sw.js` 是极简 service worker，只处理 `POST /share-target`：读取 `multipart/form-data` 中的图片/视频 `File`，过滤空文件和不支持类型，按批次原样写入 IndexedDB，然后 303 跳转到 `/share/import?batch=...`。它不做离线缓存，也不接管普通请求。
+- `src/components/app/share-target-worker.tsx` 在客户端注册该 service worker。分享入口不可用不会影响普通网页上传。
+- `src/lib/share-import-store.ts` 封装导入批次 IndexedDB 访问。存储内容保持浏览器原生 `File/Blob`，不转 base64、不压缩、不改写文件内容。
+- 分享导入页只负责选择目标空间/相册，不拥有上传队列；原上传页读取 `shareBatch` 后把原始文件排入普通上传队列，并在排队后删除对应 IndexedDB 批次。真正的上传、去重、COS 签名、确认和失败回写仍走 `features/uploads` 原有链路。
 
 渲染模式：
 

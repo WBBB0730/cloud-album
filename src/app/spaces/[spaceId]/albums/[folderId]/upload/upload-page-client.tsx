@@ -1,10 +1,17 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 
 import { MobileFrame } from '@/components/app/mobile-frame'
 import { TopBar } from '@/components/app/top-bar'
+import {
+  cleanupExpiredShareImports,
+  deleteShareImportBatch,
+  listShareImportFiles,
+  type ShareImportFileRecord,
+} from '@/lib/share-import-store'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +26,17 @@ import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
 
 import { UploadClient } from './upload-client'
 
+const getImportFile = (record: ShareImportFileRecord) => {
+  if (record.file instanceof File) {
+    return record.file
+  }
+
+  return new File([record.file], record.name, {
+    lastModified: record.lastModified,
+    type: record.type,
+  })
+}
+
 export function UploadPageClient({
   spaceId,
   folderId,
@@ -27,9 +45,18 @@ export function UploadPageClient({
   folderId: string
 }) {
   const backHref = `/spaces/${spaceId}/albums/${folderId}`
+  const searchParams = useSearchParams()
+  const shareBatchId = searchParams.get('shareBatch')
   const [hasBlockingUploads, setHasBlockingUploads] = useState(false)
+  const [initialFiles, setInitialFiles] = useState<File[] | undefined>()
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
   const hasBlockingUploadsRef = useRef(false)
+  const queuedShareBatchIdRef = useRef<string | null>(null)
+  const initialFilesQueuedRef = useRef(false)
+  const activeShareBatchId = useMemo(
+    () => shareBatchId?.trim() || null,
+    [shareBatchId]
+  )
   const { leaveToTarget, requestBack } = useFixedBackNavigation(backHref, {
     blocking: hasBlockingUploads,
     onBlockedBack: () => setLeaveDialogOpen(true),
@@ -38,6 +65,42 @@ export function UploadPageClient({
   useEffect(() => {
     hasBlockingUploadsRef.current = hasBlockingUploads
   }, [hasBlockingUploads])
+
+  useEffect(() => {
+    if (!activeShareBatchId) {
+      setInitialFiles(undefined)
+      queuedShareBatchIdRef.current = null
+      initialFilesQueuedRef.current = false
+      return
+    }
+
+    let active = true
+    queuedShareBatchIdRef.current = activeShareBatchId
+    initialFilesQueuedRef.current = false
+
+    const loadShareBatch = async () => {
+      try {
+        await cleanupExpiredShareImports()
+        const records = await listShareImportFiles(activeShareBatchId)
+
+        if (!active || queuedShareBatchIdRef.current !== activeShareBatchId) {
+          return
+        }
+
+        setInitialFiles(records.map(getImportFile))
+      } catch {
+        if (active && queuedShareBatchIdRef.current === activeShareBatchId) {
+          setInitialFiles(undefined)
+        }
+      }
+    }
+
+    void loadShareBatch()
+
+    return () => {
+      active = false
+    }
+  }, [activeShareBatchId])
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -69,6 +132,15 @@ export function UploadPageClient({
     leaveToTarget()
   }, [leaveToTarget])
 
+  const handleInitialFilesQueued = useCallback(() => {
+    if (!activeShareBatchId || initialFilesQueuedRef.current) {
+      return
+    }
+
+    initialFilesQueuedRef.current = true
+    void deleteShareImportBatch(activeShareBatchId)
+  }, [activeShareBatchId])
+
   return (
     <>
       <MobileFrame className="ca-scroll-layout">
@@ -89,8 +161,10 @@ export function UploadPageClient({
         </div>
         <div className="ca-scroll-section">
           <UploadClient
+            initialFiles={initialFiles}
             spaceId={spaceId}
             folderId={folderId}
+            onInitialFilesQueued={handleInitialFilesQueued}
             onBlockingChange={setHasBlockingUploads}
           />
         </div>

@@ -9,6 +9,36 @@
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "orientation": "portrait",
+  "share_target": {
+    "action": "/share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "files": [
+        {
+          "name": "mediaFiles",
+          "accept": [
+            "image/*",
+            "video/*",
+            ".avif",
+            ".gif",
+            ".heic",
+            ".heif",
+            ".jpeg",
+            ".jpg",
+            ".m4v",
+            ".mov",
+            ".mp4",
+            ".png",
+            ".webm",
+            ".webp"
+          ]
+        }
+      ]
+    }
+  },
   "icons": [
     {
       "src": "/icons/icon-192.png",

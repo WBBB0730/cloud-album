@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { ErrorBanner } from '@/components/app/error-banner'
 import { useGlobalLoading } from '@/components/app/global-loading'
@@ -11,6 +11,7 @@ import { loginAction } from '@/features/auth/actions'
 
 export function LoginClient() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { hideLoading } = useGlobalLoading()
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
@@ -30,7 +31,11 @@ export function LoginClient() {
         return
       }
 
-      router.replace(result.destination)
+      const next = searchParams.get('next')
+      const safeNext =
+        next && next.startsWith('/') && !next.startsWith('//') ? next : null
+
+      router.replace(safeNext ?? result.destination)
     } finally {
       setPending(false)
       hideLoading()
