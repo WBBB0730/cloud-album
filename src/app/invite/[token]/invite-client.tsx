@@ -11,13 +11,23 @@ import { Input } from '@/components/ui/input'
 import { getInviteViewAction } from '@/features/app/view-actions'
 import { registerAction } from '@/features/auth/actions'
 import { useServerAction } from '@/hooks/use-server-action'
+import { hasStringField, isRecord } from '@/lib/cache-validation'
+
+type InviteViewData = Awaited<ReturnType<typeof getInviteViewAction>>
+
+const isInviteViewData = (value: unknown): value is InviteViewData =>
+  value === null || (isRecord(value) && hasStringField(value, 'phone'))
 
 export function InviteClient({ token }: { token: string }) {
   const router = useRouter()
   const { hideLoading } = useGlobalLoading()
   const { data, loading } = useServerAction(
     () => getInviteViewAction(token),
-    [token]
+    [token],
+    {
+      cacheVersion: 'invite-view:v1',
+      validateCacheData: isInviteViewData,
+    }
   )
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)

@@ -11,11 +11,39 @@ import { TopBar } from '@/components/app/top-bar'
 import { getSpaceViewAction } from '@/features/app/view-actions'
 import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
 import { useServerAction } from '@/hooks/use-server-action'
+import {
+  hasArrayField,
+  hasStringField,
+  isRecord,
+} from '@/lib/cache-validation'
+
+type UploadFolderViewData = Awaited<ReturnType<typeof getSpaceViewAction>>
+
+const isUploadFolderViewData = (
+  value: unknown
+): value is UploadFolderViewData => {
+  if (!isRecord(value)) {
+    return false
+  }
+
+  const space = value.space
+
+  return (
+    isRecord(space) &&
+    hasStringField(space, 'id') &&
+    hasStringField(value, 'currentUserId') &&
+    hasArrayField(value, 'folders')
+  )
+}
 
 export function UploadFolderClient({ spaceId }: { spaceId: string }) {
   const { data, error, loading, refresh } = useServerAction(
     () => getSpaceViewAction(spaceId),
-    [spaceId]
+    [spaceId],
+    {
+      cacheVersion: 'upload-folder-view:v1',
+      validateCacheData: isUploadFolderViewData,
+    }
   )
   useFixedBackNavigation(`/spaces/${spaceId}`)
 

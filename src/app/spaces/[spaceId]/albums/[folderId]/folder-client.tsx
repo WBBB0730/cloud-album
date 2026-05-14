@@ -70,6 +70,11 @@ import {
   clearServerActionCache,
   useServerAction,
 } from '@/hooks/use-server-action'
+import {
+  hasArrayField,
+  hasStringField,
+  isRecord,
+} from '@/lib/cache-validation'
 import { formatDuration } from '@/lib/format'
 import {
   getSignedUrlExpiresAt,
@@ -92,6 +97,24 @@ type MediaSortType = 'desc' | 'asc'
 type MediaPointerHandlers = ReturnType<
   typeof useMediaSelection
 >['getMediaPointerHandlers']
+
+const isFolderViewData = (value: unknown): value is FolderViewData => {
+  if (!isRecord(value)) {
+    return false
+  }
+
+  const folder = value.folder
+  const space = value.space
+
+  return (
+    isRecord(space) &&
+    hasStringField(space, 'id') &&
+    isRecord(folder) &&
+    hasStringField(folder, 'id') &&
+    hasStringField(value, 'currentUserId') &&
+    hasArrayField(value, 'media')
+  )
+}
 
 const ALBUM_SORT_STORAGE_KEY = 'cloud-album:album-sort'
 
@@ -497,8 +520,10 @@ export function FolderClient({
     () => getFolderViewAction(spaceId, folderId),
     [spaceId, folderId],
     {
+      cacheVersion: 'folder-view:v3',
       getCacheData: (_merged, fresh) => fresh,
       mergeData: mergeFolderViewData,
+      validateCacheData: isFolderViewData,
     }
   )
   const nextSort = sort === 'desc' ? 'asc' : 'desc'

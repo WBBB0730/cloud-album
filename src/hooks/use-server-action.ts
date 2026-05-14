@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const CACHE_PREFIX = 'cloud-album:view:'
-const CACHE_SCHEMA_VERSION = 2
+const CACHE_ENVELOPE_VERSION = 3
 
 type CacheEnvelope<T> = {
   data: T
+  dataVersion: string
+  envelopeVersion: number
   savedAt: number
-  version: number
 }
 
 let cacheCleanupDone = false
@@ -33,7 +34,8 @@ const isCacheEnvelope = <T>(value: unknown): value is CacheEnvelope<T> => {
   const record = value as Partial<CacheEnvelope<T>>
 
   return (
-    record.version === CACHE_SCHEMA_VERSION &&
+    record.envelopeVersion === CACHE_ENVELOPE_VERSION &&
+    typeof record.dataVersion === 'string' &&
     typeof record.savedAt === 'number' &&
     'data' in record
   )
@@ -74,7 +76,11 @@ const cleanupLegacyCache = () => {
   }
 }
 
-const readCache = <T>(key: string) => {
+const readCache = <T>(
+  key: string,
+  dataVersion: string,
+  validateCacheData?: (value: unknown) => value is T
+) => {
   try {
     const cached = window.localStorage.getItem(key)
 
@@ -84,7 +90,12 @@ const readCache = <T>(key: string) => {
 
     const parsed = JSON.parse(cached) as unknown
 
-    if (!isCacheEnvelope<T>(parsed)) {
+    if (
+      !isCacheEnvelope<T>(parsed) ||
+      parsed.dataVersion !== dataVersion ||
+      (validateCacheData && !validateCacheData(parsed.data))
+    ) {
+      window.localStorage.removeItem(key)
       return null
     }
 
@@ -94,14 +105,15 @@ const readCache = <T>(key: string) => {
   }
 }
 
-const writeCache = (key: string, value: unknown) => {
+const writeCache = (key: string, dataVersion: string, value: unknown) => {
   try {
     window.localStorage.setItem(
       key,
       JSON.stringify({
         data: value,
+        dataVersion,
+        envelopeVersion: CACHE_ENVELOPE_VERSION,
         savedAt: Date.now(),
-        version: CACHE_SCHEMA_VERSION,
       })
     )
   } catch {
@@ -137,8 +149,10 @@ type RefreshOptions = {
 }
 
 type UseServerActionOptions<T> = {
+  cacheVersion: string
   getCacheData?: (merged: T, fresh: T) => unknown
   mergeData?: (current: T | null, fresh: T) => T
+  validateCacheData?: (value: unknown) => value is T
 }
 
 type MutateData<T> = T | ((current: T | null) => T | null)
@@ -146,13 +160,17 @@ type MutateData<T> = T | ((current: T | null) => T | null)
 export function useServerAction<T>(
   loader: () => Promise<T>,
   deps: unknown[],
-  options: UseServerActionOptions<T> = {}
+  options: UseServerActionOptions<T>
 ) {
   const cacheKey = useMemo(() => getCacheKey(loader, deps), deps)
   const initialDataRef = useRef<T | null | undefined>(undefined)
 
   if (initialDataRef.current === undefined) {
-    initialDataRef.current = readCache<T>(cacheKey)
+    initialDataRef.current = readCache<T>(
+      cacheKey,
+      options.cacheVersion,
+      options.validateCacheData
+    )
   }
 
   const [data, setData] = useState<T | null>(
@@ -161,6 +179,7 @@ export function useServerAction<T>(
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(() => initialDataRef.current === null)
   const cacheKeyRef = useRef(cacheKey)
+  const cacheVersionRef = useRef(options.cacheVersion)
   const dataRef = useRef<T | null>(data)
   const getCacheDataRef = useRef(options.getCacheData)
   const hasDataRef = useRef(data !== null)
@@ -168,10 +187,13 @@ export function useServerAction<T>(
   const mergeDataRef = useRef(options.mergeData)
   const mountedRef = useRef(false)
   const refreshKeyRef = useRef<string | null>(null)
+  const validateCacheDataRef = useRef(options.validateCacheData)
 
   loaderRef.current = loader
+  cacheVersionRef.current = options.cacheVersion
   getCacheDataRef.current = options.getCacheData
   mergeDataRef.current = options.mergeData
+  validateCacheDataRef.current = options.validateCacheData
 
   useEffect(() => {
     cleanupLegacyCache()
@@ -218,10 +240,21 @@ export function useServerAction<T>(
 
           updateData(nextValue)
           setError(null)
-          writeCache(
-            activeCacheKey,
+          const cacheValue =
             getCacheDataRef.current?.(nextValue, freshValue) ?? nextValue
-          )
+
+          if (
+            !validateCacheDataRef.current ||
+            validateCacheDataRef.current(cacheValue)
+          ) {
+            writeCache(
+              activeCacheKey,
+              cacheVersionRef.current,
+              cacheValue
+            )
+          } else {
+            removeCache(activeCacheKey)
+          }
           return nextValue
         }
 
@@ -263,8 +296,13 @@ export function useServerAction<T>(
 
       if (next === null) {
         removeCache(activeCacheKey)
+      } else if (
+        !validateCacheDataRef.current ||
+        validateCacheDataRef.current(next)
+      ) {
+        writeCache(activeCacheKey, cacheVersionRef.current, next)
       } else {
-        writeCache(activeCacheKey, next)
+        removeCache(activeCacheKey)
       }
 
       return next
@@ -275,7 +313,11 @@ export function useServerAction<T>(
   }, [])
 
   useEffect(() => {
-    const cached = readCache<T>(cacheKey)
+    const cached = readCache<T>(
+      cacheKey,
+      options.cacheVersion,
+      options.validateCacheData
+    )
 
     if (cached) {
       updateData(cached)

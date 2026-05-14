@@ -32,6 +32,10 @@ import { getShareImportViewAction } from '@/features/app/view-actions'
 import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
 import { useServerAction } from '@/hooks/use-server-action'
 import {
+  hasArrayField,
+  isRecord,
+} from '@/lib/cache-validation'
+import {
   cleanupExpiredShareImports,
   getShareImportBatch,
   type ShareImportBatch,
@@ -42,6 +46,7 @@ type FolderTarget = {
   mediaCount: number
   name: string
 }
+type ShareImportViewData = Awaited<ReturnType<typeof getShareImportViewAction>>
 
 const ERROR_TEXT: Record<string, string> = {
   empty: '没有可导入的图片或视频',
@@ -54,6 +59,13 @@ const getImportHref = (batchId: string | null) =>
   batchId
     ? `/share/import?batch=${encodeURIComponent(batchId)}`
     : '/share/import'
+
+const isShareImportViewData = (
+  value: unknown
+): value is ShareImportViewData =>
+  isRecord(value) &&
+  typeof value.authenticated === 'boolean' &&
+  hasArrayField(value, 'spaces')
 
 export function ShareImportClient() {
   const router = useRouter()
@@ -76,7 +88,11 @@ export function ShareImportClient() {
   const [createError, setCreateError] = useState<string | null>(null)
   const { data, error, loading, refresh } = useServerAction(
     () => getShareImportViewAction(),
-    []
+    [],
+    {
+      cacheVersion: 'share-import-view:v1',
+      validateCacheData: isShareImportViewData,
+    }
   )
   const importHref = getImportHref(batchId)
   const selectedSpace = useMemo(

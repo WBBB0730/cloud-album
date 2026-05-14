@@ -31,6 +31,11 @@ import {
 import { getAdminViewAction } from '@/features/app/view-actions'
 import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
 import { useServerAction } from '@/hooks/use-server-action'
+import {
+  hasArrayField,
+  hasStringField,
+  isRecord,
+} from '@/lib/cache-validation'
 import { formatDateTime } from '@/lib/format'
 
 const tabs = [
@@ -39,6 +44,7 @@ const tabs = [
 ] as const
 
 type AdminTab = (typeof tabs)[number][0]
+type AdminViewData = Awaited<ReturnType<typeof getAdminViewAction>>
 
 const ADMIN_TAB_STORAGE_KEY = 'cloud-album:admin-tab'
 
@@ -78,6 +84,13 @@ const formatInviteTime = (date: Date | string | null | undefined) => {
   }).format(value)
 }
 
+const isAdminViewData = (value: unknown): value is AdminViewData =>
+  isRecord(value) &&
+  hasStringField(value, 'currentAdminId') &&
+  hasArrayField(value, 'invites') &&
+  hasArrayField(value, 'users') &&
+  hasArrayField(value, 'permanentRecords')
+
 export function AdminClient() {
   const { hideLoading, showLoading } = useGlobalLoading()
   const {
@@ -85,7 +98,10 @@ export function AdminClient() {
     error: loadError,
     loading,
     refresh,
-  } = useServerAction(() => getAdminViewAction(), [])
+  } = useServerAction(() => getAdminViewAction(), [], {
+    cacheVersion: 'admin-view:v2',
+    validateCacheData: isAdminViewData,
+  })
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null)
   const [copiedGeneratedInvite, setCopiedGeneratedInvite] = useState(false)
   const [generatedInvite, setGeneratedInvite] = useState<string | null>(null)

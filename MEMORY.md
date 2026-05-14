@@ -57,7 +57,7 @@
 - 有明确上级的应用内页面使用固定返回目标，不依赖浏览器真实访问历史；预览、多选、上传离开保护要优先处理自身状态。
 - 重要数据页下拉刷新统一使用 `PullToRefresh`；复杂手势页在预览、多选等状态下必须禁用下拉刷新。
 - `useServerAction` 支持可选 `mergeData` / `getCacheData`；相册详情用结构共享减少刷新重渲染，但本地缓存仍应写入服务端 fresh 数据。
-- `useServerAction` 的 `localStorage` 页面数据缓存不能只按 loader/deps 复用；服务端返回字段契约变化时必须加版本、迁移或运行时校验，否则旧缓存会先于 fresh 数据进入组件渲染。当前页面缓存 key 保持稳定，value 使用 `{ version, savedAt, data }` 包装；读取前会清理旧裸缓存和旧 key 版本缓存。
+- `useServerAction` 的 `localStorage` 页面数据缓存不能只按 loader/deps 复用；服务端返回字段契约变化时必须加版本、迁移或运行时校验，否则旧缓存会先于 fresh 数据进入组件渲染。当前页面缓存使用 `{ envelopeVersion, dataVersion, savedAt, data }` 包装：`envelopeVersion` 只代表缓存容器协议，`dataVersion` 是每个页面调用点必须声明的业务数据契约版本；读取缓存时会校验容器版本、页面版本和可选 `validateCacheData`，不合法则删除缓存并重新拉 fresh 数据。修改任意页面 view action 返回结构时，必须同步更新对应 `cacheVersion`，复杂页面保留关键字段 validator。
 - 管理后台用户列表只允许返回页面展示需要的账号字段，不能下发 `passwordHash` 等敏感字段。
 
 ## 媒体和缓存

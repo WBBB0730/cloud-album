@@ -30,8 +30,14 @@ import {
   clearServerActionCache,
   useServerAction,
 } from '@/hooks/use-server-action'
+import {
+  hasArrayField,
+  hasStringField,
+  isRecord,
+} from '@/lib/cache-validation'
 
 type SpaceView = 'grid' | 'list'
+type SpaceViewData = Awaited<ReturnType<typeof getSpaceViewAction>>
 
 const SPACE_VIEW_STORAGE_KEY = 'cloud-album:space-view'
 
@@ -53,6 +59,21 @@ const writeSavedSpaceView = (view: SpaceView) => {
   }
 }
 
+const isSpaceViewData = (value: unknown): value is SpaceViewData => {
+  if (!isRecord(value)) {
+    return false
+  }
+
+  const space = value.space
+
+  return (
+    isRecord(space) &&
+    hasStringField(space, 'id') &&
+    hasStringField(value, 'currentUserId') &&
+    hasArrayField(value, 'folders')
+  )
+}
+
 export function SpaceClient({ spaceId }: { spaceId: string }) {
   const router = useRouter()
   const { showLoading } = useGlobalLoading()
@@ -67,7 +88,10 @@ export function SpaceClient({ spaceId }: { spaceId: string }) {
     loading,
     refresh,
     mutate,
-  } = useServerAction(() => getSpaceViewAction(spaceId), [spaceId])
+  } = useServerAction(() => getSpaceViewAction(spaceId), [spaceId], {
+    cacheVersion: 'space-view:v2',
+    validateCacheData: isSpaceViewData,
+  })
   const canRenameSpace = data
     ? data.space.createdBy === data.currentUserId
     : false

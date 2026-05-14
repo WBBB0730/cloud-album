@@ -32,7 +32,29 @@ import {
   removeMemberAction,
 } from '@/features/spaces/actions'
 import { useServerAction } from '@/hooks/use-server-action'
+import {
+  hasArrayField,
+  hasStringField,
+  isRecord,
+} from '@/lib/cache-validation'
 import { formatDateTime } from '@/lib/format'
+
+type MembersViewData = Awaited<ReturnType<typeof getSpaceMembersViewAction>>
+
+const isMembersViewData = (value: unknown): value is MembersViewData => {
+  if (!isRecord(value)) {
+    return false
+  }
+
+  const space = value.space
+
+  return (
+    isRecord(space) &&
+    hasStringField(space, 'id') &&
+    hasStringField(value, 'currentUserId') &&
+    hasArrayField(value, 'members')
+  )
+}
 
 export function MembersClient({ spaceId }: { spaceId: string }) {
   const router = useRouter()
@@ -42,7 +64,10 @@ export function MembersClient({ spaceId }: { spaceId: string }) {
     loading,
     mutate,
     refresh,
-  } = useServerAction(() => getSpaceMembersViewAction(spaceId), [spaceId])
+  } = useServerAction(() => getSpaceMembersViewAction(spaceId), [spaceId], {
+    cacheVersion: 'space-members-view:v1',
+    validateCacheData: isMembersViewData,
+  })
   const { hideLoading, showLoading } = useGlobalLoading()
   const [phone, setPhone] = useState('')
   const [localError, setLocalError] = useState<string | null>(null)

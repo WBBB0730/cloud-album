@@ -19,6 +19,28 @@ import {
   clearServerActionCache,
   useServerAction,
 } from '@/hooks/use-server-action'
+import {
+  hasArrayField,
+  hasStringField,
+  isRecord,
+} from '@/lib/cache-validation'
+
+type SpacesViewData = Awaited<ReturnType<typeof getSpacesViewAction>>
+
+const isSpacesViewData = (value: unknown): value is SpacesViewData => {
+  if (!isRecord(value)) {
+    return false
+  }
+
+  const user = value.user
+
+  return (
+    isRecord(user) &&
+    hasStringField(user, 'id') &&
+    hasStringField(user, 'name') &&
+    hasArrayField(value, 'spaces')
+  )
+}
 
 export function SpacesClient() {
   const router = useRouter()
@@ -26,7 +48,11 @@ export function SpacesClient() {
   const [createOpen, setCreateOpen] = useState(false)
   const { data, error, loading, refresh } = useServerAction(
     () => getSpacesViewAction(),
-    []
+    [],
+    {
+      cacheVersion: 'spaces-view:v1',
+      validateCacheData: isSpacesViewData,
+    }
   )
 
   const handleLogout = async () => {

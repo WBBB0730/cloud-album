@@ -30,7 +30,14 @@ import {
 import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
 import { useMediaSelection } from '@/hooks/use-media-selection'
 import { useServerAction } from '@/hooks/use-server-action'
+import {
+  hasArrayField,
+  hasStringField,
+  isRecord,
+} from '@/lib/cache-validation'
 import { formatDuration } from '@/lib/format'
+
+type TrashFolderViewData = Awaited<ReturnType<typeof getTrashFolderViewAction>>
 
 type TrashMediaItem = {
   id: string
@@ -39,6 +46,25 @@ type TrashMediaItem = {
   url: string
   thumbnailUrl: string
   duration: number | null
+}
+
+const isTrashFolderViewData = (
+  value: unknown
+): value is TrashFolderViewData => {
+  if (!isRecord(value)) {
+    return false
+  }
+
+  const folder = value.folder
+  const space = value.space
+
+  return (
+    isRecord(space) &&
+    hasStringField(space, 'id') &&
+    isRecord(folder) &&
+    hasStringField(folder, 'id') &&
+    hasArrayField(value, 'media')
+  )
 }
 
 const waitForNextFrame = () =>
@@ -56,7 +82,11 @@ export function TrashFolderClient({
   const { showLoading } = useGlobalLoading()
   const { data, error, loading, mutate, refresh } = useServerAction(
     () => getTrashFolderViewAction(spaceId, folderId),
-    [spaceId, folderId]
+    [spaceId, folderId],
+    {
+      cacheVersion: 'trash-folder-view:v1',
+      validateCacheData: isTrashFolderViewData,
+    }
   )
 
   const media = useMemo<TrashMediaItem[]>(() => data?.media ?? [], [data])

@@ -19,14 +19,41 @@ import {
 } from '@/features/trash/actions'
 import { useFixedBackNavigation } from '@/hooks/use-fixed-back-navigation'
 import { useServerAction } from '@/hooks/use-server-action'
+import {
+  hasArrayField,
+  hasStringField,
+  isRecord,
+} from '@/lib/cache-validation'
 import { formatDateTime } from '@/lib/format'
+
+type TrashHomeViewData = Awaited<ReturnType<typeof getTrashHomeViewAction>>
+
+const isTrashHomeViewData = (
+  value: unknown
+): value is TrashHomeViewData => {
+  if (!isRecord(value)) {
+    return false
+  }
+
+  const space = value.space
+
+  return (
+    isRecord(space) &&
+    hasStringField(space, 'id') &&
+    hasArrayField(value, 'folders')
+  )
+}
 
 export function TrashClient({ spaceId }: { spaceId: string }) {
   const router = useRouter()
   const { hideLoading, showLoading } = useGlobalLoading()
   const { data, error, loading, refresh } = useServerAction(
     () => getTrashHomeViewAction(spaceId),
-    [spaceId]
+    [spaceId],
+    {
+      cacheVersion: 'trash-home-view:v1',
+      validateCacheData: isTrashHomeViewData,
+    }
   )
   useFixedBackNavigation(`/spaces/${spaceId}`)
 
